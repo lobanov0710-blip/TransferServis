@@ -89,3 +89,4 @@ public final class CalculateResponse {
     public RouteGeometryDto getRoute() {
         return route;
     }
+}
