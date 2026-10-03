@@ -90,8 +90,44 @@
         Рассчитать стоимость
     </string>
 
+    <string name="quote_result_overline">
+        РАСЧЁТ ГОТОВ
+    </string>
+
     <string name="quote_result_title">
         Ваш маршрут
+    </string>
+
+    <string name="quote_result_subtitle">
+        Проверьте детали поездки перед оформлением
+    </string>
+
+    <string name="quote_price_label">
+        Стоимость поездки
+    </string>
+
+    <string name="quote_price_note">
+        Рассчитано сервером по выбранному маршруту и тарифу
+    </string>
+
+    <string name="quote_route_label">
+        МАРШРУТ
+    </string>
+
+    <string name="quote_details_title">
+        Детали поездки
+    </string>
+
+    <string name="quote_tariff_label">
+        Тариф
+    </string>
+
+    <string name="quote_distance_label">
+        Расстояние
+    </string>
+
+    <string name="quote_duration_label">
+        В пути
     </string>
 
     <string name="quote_from_value">
@@ -110,12 +146,24 @@
         Расстояние: %1$.1f км
     </string>
 
+    <string name="quote_distance_short_value">
+        %1$.1f км
+    </string>
+
     <string name="quote_duration_value">
         Время в пути: %1$d мин
     </string>
 
+    <string name="quote_duration_unknown">
+        Не определено
+    </string>
+
     <string name="quote_price_value">
         %1$d ₽
+    </string>
+
+    <string name="quote_server_price_note">
+        Итоговая стоимость формируется сервером Transfer Servis
     </string>
 
     <string name="quote_unknown_error">

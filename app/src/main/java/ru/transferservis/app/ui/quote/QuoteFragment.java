@@ -10,10 +10,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.button.MaterialButton;
+
+import java.util.Locale;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.Quote;
@@ -190,38 +191,72 @@ public final class QuoteFragment
         );
 
         quoteFrom.setText(
-                getString(
-                        R.string.quote_from_value,
-                        quote.getFromDisplayName()
-                )
+                quote.getFromDisplayName()
         );
 
         quoteTo.setText(
-                getString(
-                        R.string.quote_to_value,
-                        quote.getToDisplayName()
-                )
+                quote.getToDisplayName()
         );
 
         quoteTariff.setText(
-                getString(
-                        R.string.quote_tariff_value,
-                        quote.getTariffName()
-                )
+                quote.getTariffName()
         );
 
         quoteDistance.setText(
                 getString(
-                        R.string.quote_distance_value,
+                        R.string.quote_distance_short_value,
                         quote.getDistanceKm()
                 )
         );
 
         quoteDuration.setText(
-                getString(
-                        R.string.quote_duration_value,
+                formatDuration(
                         quote.getDurationMinutes()
                 )
+        );
+    }
+
+    @NonNull
+    private String formatDuration(
+            int totalMinutes
+    ) {
+
+        if (totalMinutes <= 0) {
+
+            return getString(
+                    R.string.quote_duration_unknown
+            );
+        }
+
+        int hours =
+                totalMinutes / 60;
+
+        int minutes =
+                totalMinutes % 60;
+
+        if (hours <= 0) {
+
+            return String.format(
+                    Locale.ROOT,
+                    "%d мин",
+                    minutes
+            );
+        }
+
+        if (minutes <= 0) {
+
+            return String.format(
+                    Locale.ROOT,
+                    "%d ч",
+                    hours
+            );
+        }
+
+        return String.format(
+                Locale.ROOT,
+                "%d ч %d мин",
+                hours,
+                minutes
         );
     }
 
