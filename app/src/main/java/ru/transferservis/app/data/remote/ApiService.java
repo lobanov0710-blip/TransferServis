@@ -3,6 +3,8 @@ package ru.transferservis.app.data.remote;
 import ru.transferservis.app.constants.AppConstants;
 import ru.transferservis.app.data.remote.dto.CalculateRequest;
 import ru.transferservis.app.data.remote.dto.CalculateResponse;
+import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
+import ru.transferservis.app.data.remote.dto.CreateOrderResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -17,5 +19,13 @@ public interface ApiService {
     @POST(AppConstants.API_CALCULATE)
     Call<CalculateResponse> calculate(
             @Body CalculateRequest request
+    );
+
+    @Headers({
+            "Accept: application/json"
+    })
+    @POST(AppConstants.API_ORDERS)
+    Call<CreateOrderResponse> createOrder(
+            @Body CreateOrderRequest request
     );
 }
