@@ -2,8 +2,54 @@
 
     <string name="app_name">Transfer Servis</string>
 
-    <string name="home_title">
-        Transfer Servis
+    <string name="home_title">Transfer Servis</string>
+
+    <string name="home_overline">
+        МЕЖДУГОРОДНИЙ ТРАНСФЕР
+    </string>
+
+    <string name="home_slogan">
+        Ваш проводник в мир комфортных междугородних поездок
+    </string>
+
+    <string name="home_feature_24_7">
+        24/7
+    </string>
+
+    <string name="home_feature_direct">
+        Без пересадок
+    </string>
+
+    <string name="home_feature_private">
+        Конфиденциально
+    </string>
+
+    <string name="home_route_title">
+        Куда едем?
+    </string>
+
+    <string name="home_route_subtitle">
+        Укажите полный адрес отправления и назначения
+    </string>
+
+    <string name="home_tariff_subtitle">
+        Выберите подходящий класс автомобиля
+    </string>
+
+    <string name="home_service_title">
+        Поездка без лишних сложностей
+    </string>
+
+    <string name="home_service_fixed_price">
+        • Стоимость рассчитывается и фиксируется заранее
+    </string>
+
+    <string name="home_service_no_transfer">
+        • Прямая поездка без пересадок и попутчиков
+    </string>
+
+    <string name="home_service_private">
+        • Индивидуальный сервис и конфиденциальность
     </string>
 
     <!-- QUOTE -->
