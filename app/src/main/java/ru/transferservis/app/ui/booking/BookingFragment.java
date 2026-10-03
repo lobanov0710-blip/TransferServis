@@ -35,7 +35,19 @@ public final class BookingFragment
     private static final String STATE_ORDER_REQUESTED =
             "order_requested";
 
-    private TextView bookingQuoteSummary;
+    // =========================
+    // QUOTE SUMMARY
+    // =========================
+
+    private TextView bookingFrom;
+    private TextView bookingTo;
+    private TextView bookingTariff;
+    private TextView bookingDistance;
+    private TextView bookingPrice;
+
+    // =========================
+    // PASSENGER
+    // =========================
 
     private TextInputEditText bookingNameInput;
     private TextInputEditText bookingPhoneInput;
@@ -47,6 +59,10 @@ public final class BookingFragment
     private CircularProgressIndicator orderProgressIndicator;
 
     private TextView orderErrorText;
+
+    // =========================
+    // VIEW MODELS
+    // =========================
 
     private QuoteViewModel quoteViewModel;
     private OrderViewModel orderViewModel;
@@ -98,13 +114,37 @@ public final class BookingFragment
         renderQuoteSummary();
     }
 
+    // =========================
+    // BIND
+    // =========================
+
     private void bindViews(
             @NonNull View root
     ) {
 
-        bookingQuoteSummary =
+        bookingFrom =
                 root.findViewById(
-                        R.id.bookingQuoteSummary
+                        R.id.bookingFrom
+                );
+
+        bookingTo =
+                root.findViewById(
+                        R.id.bookingTo
+                );
+
+        bookingTariff =
+                root.findViewById(
+                        R.id.bookingTariff
+                );
+
+        bookingDistance =
+                root.findViewById(
+                        R.id.bookingDistance
+                );
+
+        bookingPrice =
+                root.findViewById(
+                        R.id.bookingPrice
                 );
 
         bookingNameInput =
@@ -143,6 +183,10 @@ public final class BookingFragment
                 );
     }
 
+    // =========================
+    // VIEW MODELS
+    // =========================
+
     private void configureViewModels() {
 
         quoteViewModel =
@@ -166,6 +210,10 @@ public final class BookingFragment
                         this::renderOrderState
                 );
     }
+
+    // =========================
+    // ACTIONS
+    // =========================
 
     private void configureActions() {
 
@@ -208,6 +256,10 @@ public final class BookingFragment
         );
     }
 
+    // =========================
+    // QUOTE SUMMARY
+    // =========================
+
     private void renderQuoteSummary() {
 
         Quote quote =
@@ -231,32 +283,44 @@ public final class BookingFragment
             return;
         }
 
-        String summary =
+        orderErrorText.setVisibility(
+                View.GONE
+        );
+
+        bookingFrom.setText(
                 quote.getFromDisplayName()
-                        + "\n→ "
-                        + quote.getToDisplayName()
-                        + "\n"
-                        + quote.getTariffName()
-                        + " • "
-                        + String.format(
-                        Locale.ROOT,
-                        "%.1f км",
+        );
+
+        bookingTo.setText(
+                quote.getToDisplayName()
+        );
+
+        bookingTariff.setText(
+                quote.getTariffName()
+        );
+
+        bookingDistance.setText(
+                getString(
+                        R.string.quote_distance_short_value,
                         quote.getDistanceKm()
                 )
-                        + "\n"
-                        + getString(
+        );
+
+        bookingPrice.setText(
+                getString(
                         R.string.quote_price_value,
                         quote.getPriceRub()
-                );
-
-        bookingQuoteSummary.setText(
-                summary
+                )
         );
 
         orderButton.setEnabled(
                 true
         );
     }
+
+    // =========================
+    // SUBMIT
+    // =========================
 
     private void submitOrder() {
 
@@ -298,7 +362,9 @@ public final class BookingFragment
         if (apiDate == null) {
 
             renderOrderError(
-                    "Выберите корректную дату поездки."
+                    getString(
+                            R.string.booking_invalid_date
+                    )
             );
 
             return;
@@ -321,6 +387,10 @@ public final class BookingFragment
         );
     }
 
+    // =========================
+    // CURRENT QUOTE
+    // =========================
+
     @Nullable
     private Quote getCurrentQuote() {
 
@@ -337,6 +407,10 @@ public final class BookingFragment
 
         return state.getQuote();
     }
+
+    // =========================
+    // DATE PICKER
+    // =========================
 
     private void showDatePicker() {
 
@@ -409,54 +483,9 @@ public final class BookingFragment
         dialog.show();
     }
 
-    private void hideKeyboard() {
-
-        FragmentActivity activity =
-                getActivity();
-
-        if (activity == null) {
-            return;
-        }
-
-        View focusedView =
-                activity.getCurrentFocus();
-
-        if (focusedView == null) {
-            return;
-        }
-
-        InputMethodManager manager =
-                (InputMethodManager)
-                        requireContext()
-                                .getSystemService(
-                                        Context.INPUT_METHOD_SERVICE
-                                );
-
-        if (manager != null) {
-
-            manager.hideSoftInputFromWindow(
-                    focusedView.getWindowToken(),
-                    0
-            );
-        }
-
-        focusedView.clearFocus();
-    }
-
-    @NonNull
-    private String getInputText(
-            @NonNull TextInputEditText input
-    ) {
-
-        if (input.getText() == null) {
-            return "";
-        }
-
-        return input
-                .getText()
-                .toString()
-                .trim();
-    }
+    // =========================
+    // DATE FORMAT
+    // =========================
 
     @Nullable
     private String convertDisplayDateToApiDate(
@@ -494,6 +523,67 @@ public final class BookingFragment
                 + "-"
                 + day;
     }
+
+    // =========================
+    // KEYBOARD
+    // =========================
+
+    private void hideKeyboard() {
+
+        FragmentActivity activity =
+                getActivity();
+
+        if (activity == null) {
+            return;
+        }
+
+        View focusedView =
+                activity.getCurrentFocus();
+
+        if (focusedView == null) {
+            return;
+        }
+
+        InputMethodManager manager =
+                (InputMethodManager)
+                        requireContext()
+                                .getSystemService(
+                                        Context.INPUT_METHOD_SERVICE
+                                );
+
+        if (manager != null) {
+
+            manager.hideSoftInputFromWindow(
+                    focusedView.getWindowToken(),
+                    0
+            );
+        }
+
+        focusedView.clearFocus();
+    }
+
+    // =========================
+    // INPUT
+    // =========================
+
+    @NonNull
+    private String getInputText(
+            @NonNull TextInputEditText input
+    ) {
+
+        if (input.getText() == null) {
+            return "";
+        }
+
+        return input
+                .getText()
+                .toString()
+                .trim();
+    }
+
+    // =========================
+    // ORDER STATE
+    // =========================
 
     private void renderOrderState(
             @NonNull OrderUiState state
@@ -539,8 +629,12 @@ public final class BookingFragment
                 View.GONE
         );
 
+        Quote quote =
+                getCurrentQuote();
+
         orderButton.setEnabled(
-                getCurrentQuote() != null
+                quote != null
+                        && !quote.isExpired()
         );
     }
 
@@ -596,8 +690,12 @@ public final class BookingFragment
                 View.GONE
         );
 
+        Quote quote =
+                getCurrentQuote();
+
         orderButton.setEnabled(
-                getCurrentQuote() != null
+                quote != null
+                        && !quote.isExpired()
         );
 
         String safeMessage =
@@ -623,6 +721,10 @@ public final class BookingFragment
         );
     }
 
+    // =========================
+    // STATE
+    // =========================
+
     @Override
     public void onSaveInstanceState(
             @NonNull Bundle outState
@@ -638,12 +740,28 @@ public final class BookingFragment
         );
     }
 
+    // =========================
+    // CLEANUP
+    // =========================
+
     @Override
     public void onDestroyView() {
 
         super.onDestroyView();
 
-        bookingQuoteSummary =
+        bookingFrom =
+                null;
+
+        bookingTo =
+                null;
+
+        bookingTariff =
+                null;
+
+        bookingDistance =
+                null;
+
+        bookingPrice =
                 null;
 
         bookingNameInput =

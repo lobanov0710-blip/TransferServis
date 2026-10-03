@@ -180,12 +180,28 @@
 
     <!-- BOOKING -->
 
+    <string name="booking_overline">
+        ОФОРМЛЕНИЕ ЗАЯВКИ
+    </string>
+
     <string name="booking_title">
         Оформление поездки
     </string>
 
     <string name="booking_subtitle">
-        Заполните данные пассажира
+        Укажите контактные данные и дату поездки
+    </string>
+
+    <string name="booking_trip_summary_title">
+        Ваша поездка
+    </string>
+
+    <string name="booking_passenger_title">
+        Данные пассажира
+    </string>
+
+    <string name="booking_price_label">
+        Стоимость
     </string>
 
     <string name="booking_name_hint">
@@ -208,8 +224,16 @@
         Заказать поездку
     </string>
 
+    <string name="booking_submit_note">
+        После отправки заявки мы свяжемся с вами для подтверждения поездки
+    </string>
+
     <string name="booking_no_quote">
         Расчёт стоимости отсутствует или устарел. Выполните расчёт повторно.
+    </string>
+
+    <string name="booking_invalid_date">
+        Выберите корректную дату поездки.
     </string>
 
     <string name="booking_unknown_error">
