@@ -285,10 +285,24 @@ public final class BookingFragment
                         bookingPhoneInput
                 );
 
-        String date =
+        String displayDate =
                 getInputText(
                         bookingDateInput
                 );
+
+        String apiDate =
+                convertDisplayDateToApiDate(
+                        displayDate
+                );
+
+        if (apiDate == null) {
+
+            renderOrderError(
+                    "Выберите корректную дату поездки."
+            );
+
+            return;
+        }
 
         String comment =
                 getInputText(
@@ -302,7 +316,7 @@ public final class BookingFragment
                 quote,
                 name,
                 phone,
-                date,
+                apiDate,
                 comment
         );
     }
@@ -362,17 +376,17 @@ public final class BookingFragment
                                 dayOfMonth
                         ) -> {
 
-                            String date =
+                            String displayDate =
                                     String.format(
                                             Locale.ROOT,
-                                            "%04d-%02d-%02d",
-                                            year,
+                                            "%02d.%02d.%04d",
+                                            dayOfMonth,
                                             month + 1,
-                                            dayOfMonth
+                                            year
                                     );
 
                             bookingDateInput.setText(
-                                    date
+                                    displayDate
                             );
                         },
                         today.get(
@@ -442,6 +456,43 @@ public final class BookingFragment
                 .getText()
                 .toString()
                 .trim();
+    }
+
+    @Nullable
+    private String convertDisplayDateToApiDate(
+            @NonNull String displayDate
+    ) {
+
+        if (!displayDate.matches(
+                "^\\d{2}\\.\\d{2}\\.\\d{4}$"
+        )) {
+
+            return null;
+        }
+
+        String[] parts =
+                displayDate.split(
+                        "\\."
+                );
+
+        if (parts.length != 3) {
+            return null;
+        }
+
+        String day =
+                parts[0];
+
+        String month =
+                parts[1];
+
+        String year =
+                parts[2];
+
+        return year
+                + "-"
+                + month
+                + "-"
+                + day;
     }
 
     private void renderOrderState(
