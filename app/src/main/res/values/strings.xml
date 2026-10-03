@@ -1,3 +1,32 @@
 <resources>
-    <string name="app_name">TransferServis</string>
+
+    <string name="app_name">Transfer Servis</string>
+
+    <string name="quote_screen_title">Расчёт поездки</string>
+    <string name="quote_screen_subtitle">Укажите полный адрес отправления и назначения</string>
+
+    <string name="quote_from_hint">Откуда</string>
+    <string name="quote_to_hint">Куда</string>
+
+    <string name="quote_tariff_title">Тариф</string>
+
+    <string name="tariff_comfort">Комфорт</string>
+    <string name="tariff_business">Бизнес</string>
+    <string name="tariff_minivan">Минивэн</string>
+
+    <string name="quote_calculate">Рассчитать стоимость</string>
+
+    <string name="quote_result_title">Расчёт маршрута</string>
+
+    <string name="quote_from_value">Откуда: %1$s</string>
+    <string name="quote_to_value">Куда: %1$s</string>
+    <string name="quote_tariff_value">Тариф: %1$s</string>
+    <string name="quote_distance_value">Расстояние: %1$.1f км</string>
+    <string name="quote_duration_value">Время в пути: %1$d мин</string>
+    <string name="quote_price_value">%1$d ₽</string>
+
+    <string name="quote_id_value">Quote ID: %1$s</string>
+
+    <string name="quote_unknown_error">Не удалось выполнить расчёт.</string>
+
 </resources>

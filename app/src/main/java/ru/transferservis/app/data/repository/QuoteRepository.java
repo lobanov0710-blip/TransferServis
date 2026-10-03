@@ -2,6 +2,7 @@ package ru.transferservis.app.data.repository;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import android.util.Log;
 
 import com.google.gson.Gson;
 
@@ -154,6 +155,15 @@ public final class QuoteRepository {
                                 if (call.isCanceled()) {
                                     return;
                                 }
+
+                                Log.e(
+                                        "QuoteRepository",
+                                        "CALCULATE FAILED | "
+                                                + throwable.getClass().getName()
+                                                + " | "
+                                                + throwable.getMessage(),
+                                        throwable
+                                );
 
                                 callback.onResult(
                                         ApiResult.networkError(
