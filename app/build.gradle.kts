@@ -26,6 +26,7 @@ android {
         release {
             optimization {
                 enable = true
+
                 packageScope =
                     setOf(
                         "androidx.**",
@@ -46,16 +47,20 @@ android {
 }
 
 dependencies {
+
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
     implementation(libs.material)
 
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.gson)
-
     implementation(libs.lifecycle.viewmodel)
     implementation(libs.lifecycle.livedata)
+
+    implementation(libs.navigation.fragment)
+    implementation(libs.navigation.ui)
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
 
     implementation(libs.okhttp)
 
