@@ -242,12 +242,32 @@
 
     <!-- SUCCESS -->
 
+    <string name="order_success_overline">
+        ЗАЯВКА ОТПРАВЛЕНА
+    </string>
+
+    <string name="order_success_check">
+        ✓
+    </string>
+
     <string name="order_success_title">
         Заявка принята
     </string>
 
     <string name="order_success_message">
-        Мы получили вашу заявку.
+        Мы получили вашу заявку на поездку. Диспетчер Transfer Servis свяжется с вами для подтверждения.
+    </string>
+
+    <string name="order_success_details_title">
+        Данные заявки
+    </string>
+
+    <string name="order_success_id_label">
+        Номер заявки
+    </string>
+
+    <string name="order_success_status_label">
+        Статус
     </string>
 
     <string name="order_id_value">
@@ -258,8 +278,16 @@
         Статус: %1$s
     </string>
 
+    <string name="order_next_title">
+        Что дальше?
+    </string>
+
+    <string name="order_next_message">
+        Заявка уже передана в обработку. После подтверждения диспетчер согласует с вами детали поездки.
+    </string>
+
     <string name="order_new_trip">
-        Новая поездка
+        Рассчитать новую поездку
     </string>
 
 </resources>

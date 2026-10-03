@@ -133,6 +133,14 @@ public final class OrderSuccessFragment
         if (receipt == null
                 || !state.isSuccess()) {
 
+            orderSuccessId.setVisibility(
+                    View.GONE
+            );
+
+            orderSuccessStatus.setVisibility(
+                    View.GONE
+            );
+
             orderSuccessError.setText(
                     R.string.booking_unknown_error
             );
@@ -148,20 +156,22 @@ public final class OrderSuccessFragment
                 View.GONE
         );
 
+        orderSuccessId.setVisibility(
+                View.VISIBLE
+        );
+
+        orderSuccessStatus.setVisibility(
+                View.VISIBLE
+        );
+
         orderSuccessId.setText(
-                getString(
-                        R.string.order_id_value,
-                        receipt.getOrderId()
-                )
+                receipt.getOrderId()
         );
 
         orderSuccessStatus.setText(
-                getString(
-                        R.string.order_status_value,
-                        receipt
-                                .getStatus()
-                                .getDisplayName()
-                )
+                receipt
+                        .getStatus()
+                        .getDisplayName()
         );
     }
 
