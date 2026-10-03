@@ -2,6 +2,8 @@
 
     <string name="app_name">Transfer Servis</string>
 
+    <!-- QUOTE -->
+
     <string name="quote_screen_title">Расчёт поездки</string>
     <string name="quote_screen_subtitle">Укажите полный адрес отправления и назначения</string>
 
@@ -28,5 +30,36 @@
     <string name="quote_id_value">Quote ID: %1$s</string>
 
     <string name="quote_unknown_error">Не удалось выполнить расчёт.</string>
+
+    <!-- BOOKING -->
+
+    <string name="booking_title">Оформление поездки</string>
+    <string name="booking_subtitle">Заполните данные пассажира</string>
+
+    <string name="booking_name_hint">Имя</string>
+    <string name="booking_phone_hint">Телефон</string>
+    <string name="booking_date_hint">Дата поездки</string>
+    <string name="booking_comment_hint">Комментарий</string>
+
+    <string name="booking_submit">Заказать поездку</string>
+
+    <string name="booking_no_quote">
+        Сначала выполните расчёт стоимости поездки.
+    </string>
+
+    <string name="booking_unknown_error">
+        Не удалось создать заявку.
+    </string>
+
+    <!-- ORDER SUCCESS -->
+
+    <string name="order_success_title">Заявка принята</string>
+
+    <string name="order_success_message">
+        Мы получили вашу заявку.
+    </string>
+
+    <string name="order_id_value">ID заявки: %1$s</string>
+    <string name="order_status_value">Статус: %1$s</string>
 
 </resources>

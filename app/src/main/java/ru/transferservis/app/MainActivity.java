@@ -1,15 +1,15 @@
 package ru.transferservis.app;
 
+import android.app.DatePickerDialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
@@ -18,12 +18,23 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.Calendar;
+import java.util.Locale;
+
 import ru.transferservis.app.data.model.TariffType;
+import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
+import ru.transferservis.app.ui.booking.OrderUiState;
+import ru.transferservis.app.ui.booking.OrderViewModel;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
 
-public final class MainActivity extends AppCompatActivity {
+public final class MainActivity
+        extends AppCompatActivity {
+
+    // =========================
+    // QUOTE
+    // =========================
 
     private TextInputEditText fromInput;
     private TextInputEditText toInput;
@@ -46,58 +57,73 @@ public final class MainActivity extends AppCompatActivity {
     private TextView resultDuration;
     private TextView resultQuoteId;
 
-    private QuoteViewModel viewModel;
+    // =========================
+    // BOOKING
+    // =========================
+
+    private MaterialCardView bookingCard;
+
+    private TextInputEditText bookingNameInput;
+    private TextInputEditText bookingPhoneInput;
+    private TextInputEditText bookingDateInput;
+    private TextInputEditText bookingCommentInput;
+
+    private MaterialButton orderButton;
+
+    private CircularProgressIndicator orderProgressIndicator;
+
+    private TextView orderErrorText;
+
+    // =========================
+    // ORDER SUCCESS
+    // =========================
+
+    private MaterialCardView orderSuccessCard;
+
+    private TextView orderSuccessId;
+    private TextView orderSuccessStatus;
+
+    // =========================
+    // VIEW MODELS
+    // =========================
+
+    private QuoteViewModel quoteViewModel;
+    private OrderViewModel orderViewModel;
+
+    // =========================
+    // CURRENT QUOTE
+    // =========================
+
+    private Quote currentQuote;
 
     @Override
     protected void onCreate(
             Bundle savedInstanceState
     ) {
-        super.onCreate(savedInstanceState);
-
-        EdgeToEdge.enable(this);
+        super.onCreate(
+                savedInstanceState
+        );
 
         setContentView(
                 R.layout.activity_main
         );
 
-        configureInsets();
-
         bindViews();
 
         configureTariffs();
 
-        configureViewModel();
-
         configureActions();
-    }
 
-    private void configureInsets() {
+        configureViewModels();
 
-        View root =
-                findViewById(
-                        R.id.main
-                );
-
-        ViewCompat.setOnApplyWindowInsetsListener(
-                root,
-                (view, insets) -> {
-
-                    Insets systemBars =
-                            insets.getInsets(
-                                    WindowInsetsCompat.Type.systemBars()
-                            );
-
-                    view.setPadding(
-                            systemBars.left,
-                            systemBars.top,
-                            systemBars.right,
-                            systemBars.bottom
-                    );
-
-                    return insets;
-                }
+        setOrderButtonEnabled(
+                false
         );
     }
+
+    // =========================
+    // BIND VIEWS
+    // =========================
 
     private void bindViews() {
 
@@ -170,7 +196,66 @@ public final class MainActivity extends AppCompatActivity {
                 findViewById(
                         R.id.resultQuoteId
                 );
+
+        bookingCard =
+                findViewById(
+                        R.id.bookingCard
+                );
+
+        bookingNameInput =
+                findViewById(
+                        R.id.bookingNameInput
+                );
+
+        bookingPhoneInput =
+                findViewById(
+                        R.id.bookingPhoneInput
+                );
+
+        bookingDateInput =
+                findViewById(
+                        R.id.bookingDateInput
+                );
+
+        bookingCommentInput =
+                findViewById(
+                        R.id.bookingCommentInput
+                );
+
+        orderButton =
+                findViewById(
+                        R.id.orderButton
+                );
+
+        orderProgressIndicator =
+                findViewById(
+                        R.id.orderProgressIndicator
+                );
+
+        orderErrorText =
+                findViewById(
+                        R.id.orderErrorText
+                );
+
+        orderSuccessCard =
+                findViewById(
+                        R.id.orderSuccessCard
+                );
+
+        orderSuccessId =
+                findViewById(
+                        R.id.orderSuccessId
+                );
+
+        orderSuccessStatus =
+                findViewById(
+                        R.id.orderSuccessStatus
+                );
     }
+
+    // =========================
+    // TARIFF
+    // =========================
 
     private void configureTariffs() {
 
@@ -179,48 +264,307 @@ public final class MainActivity extends AppCompatActivity {
         );
     }
 
-    private void configureViewModel() {
+    // =========================
+    // VIEW MODELS
+    // =========================
 
-        viewModel =
-                new ViewModelProvider(this)
-                        .get(
-                                QuoteViewModel.class
-                        );
+    private void configureViewModels() {
 
-        viewModel
+        quoteViewModel =
+                new ViewModelProvider(
+                        this
+                ).get(
+                        QuoteViewModel.class
+                );
+
+        orderViewModel =
+                new ViewModelProvider(
+                        this
+                ).get(
+                        OrderViewModel.class
+                );
+
+        quoteViewModel
                 .getUiState()
                 .observe(
                         this,
-                        this::renderState
+                        this::renderQuoteState
+                );
+
+        orderViewModel
+                .getUiState()
+                .observe(
+                        this,
+                        this::renderOrderState
                 );
     }
+
+    // =========================
+    // ACTIONS
+    // =========================
 
     private void configureActions() {
 
         calculateButton.setOnClickListener(
                 view -> {
 
-                    String from =
-                            getInputText(
-                                    fromInput
-                            );
+                    hideKeyboard();
 
-                    String to =
-                            getInputText(
-                                    toInput
-                            );
+                    calculateQuote();
+                }
+        );
 
-                    TariffType tariff =
-                            getSelectedTariff();
+        bookingDateInput.setOnClickListener(
+                view -> {
 
-                    viewModel.calculate(
-                            from,
-                            to,
-                            tariff
-                    );
+                    hideKeyboard();
+
+                    showDatePicker();
+                }
+        );
+
+        bookingCommentInput.setOnEditorActionListener(
+                (view, actionId, event) -> {
+
+                    if (actionId
+                            == EditorInfo.IME_ACTION_DONE) {
+
+                        hideKeyboard();
+
+                        return true;
+                    }
+
+                    return false;
+                }
+        );
+
+        orderButton.setOnClickListener(
+                view -> {
+
+                    hideKeyboard();
+
+                    submitOrder();
                 }
         );
     }
+
+    // =========================
+    // CALCULATE
+    // =========================
+
+    private void calculateQuote() {
+
+        currentQuote =
+                null;
+
+        setOrderButtonEnabled(
+                false
+        );
+
+        orderViewModel.reset();
+
+        orderSuccessCard.setVisibility(
+                View.GONE
+        );
+
+        bookingCard.setVisibility(
+                View.GONE
+        );
+
+        String from =
+                getInputText(
+                        fromInput
+                );
+
+        String to =
+                getInputText(
+                        toInput
+                );
+
+        TariffType tariff =
+                getSelectedTariff();
+
+        quoteViewModel.calculate(
+                from,
+                to,
+                tariff
+        );
+    }
+
+    // =========================
+    // SUBMIT ORDER
+    // =========================
+
+    private void submitOrder() {
+
+        Quote quote =
+                currentQuote;
+
+        if (quote == null) {
+
+            renderOrderError(
+                    getString(
+                            R.string.booking_no_quote
+                    )
+            );
+
+            return;
+        }
+
+        String name =
+                getInputText(
+                        bookingNameInput
+                );
+
+        String phone =
+                getInputText(
+                        bookingPhoneInput
+                );
+
+        String date =
+                getInputText(
+                        bookingDateInput
+                );
+
+        String comment =
+                getInputText(
+                        bookingCommentInput
+                );
+
+        orderViewModel.createOrder(
+                quote,
+                name,
+                phone,
+                date,
+                comment
+        );
+    }
+
+    // =========================
+    // DATE PICKER
+    // =========================
+
+    private void showDatePicker() {
+
+        Calendar today =
+                Calendar.getInstance();
+
+        Calendar minDate =
+                Calendar.getInstance();
+
+        minDate.set(
+                Calendar.HOUR_OF_DAY,
+                0
+        );
+
+        minDate.set(
+                Calendar.MINUTE,
+                0
+        );
+
+        minDate.set(
+                Calendar.SECOND,
+                0
+        );
+
+        minDate.set(
+                Calendar.MILLISECOND,
+                0
+        );
+
+        DatePickerDialog dialog =
+                new DatePickerDialog(
+                        this,
+                        (datePicker,
+                         year,
+                         month,
+                         dayOfMonth) -> {
+
+                            String date =
+                                    String.format(
+                                            Locale.ROOT,
+                                            "%04d-%02d-%02d",
+                                            year,
+                                            month + 1,
+                                            dayOfMonth
+                                    );
+
+                            bookingDateInput.setText(
+                                    date
+                            );
+                        },
+                        today.get(
+                                Calendar.YEAR
+                        ),
+                        today.get(
+                                Calendar.MONTH
+                        ),
+                        today.get(
+                                Calendar.DAY_OF_MONTH
+                        )
+                );
+
+        dialog
+                .getDatePicker()
+                .setMinDate(
+                        minDate.getTimeInMillis()
+                );
+
+        dialog.show();
+    }
+
+    // =========================
+    // KEYBOARD
+    // =========================
+
+    private void hideKeyboard() {
+
+        View currentView =
+                getCurrentFocus();
+
+        if (currentView == null) {
+            return;
+        }
+
+        InputMethodManager inputMethodManager =
+                (InputMethodManager)
+                        getSystemService(
+                                Context.INPUT_METHOD_SERVICE
+                        );
+
+        if (inputMethodManager != null) {
+
+            inputMethodManager
+                    .hideSoftInputFromWindow(
+                            currentView
+                                    .getWindowToken(),
+                            0
+                    );
+        }
+
+        currentView.clearFocus();
+    }
+
+    // =========================
+    // ORDER BUTTON
+    // =========================
+
+    private void setOrderButtonEnabled(
+            boolean enabled
+    ) {
+
+        orderButton.setEnabled(
+                enabled
+        );
+
+        orderButton.setClickable(
+                enabled
+        );
+    }
+
+    // =========================
+    // SELECTED TARIFF
+    // =========================
 
     @NonNull
     private TariffType getSelectedTariff() {
@@ -244,6 +588,10 @@ public final class MainActivity extends AppCompatActivity {
         return TariffType.COMFORT;
     }
 
+    // =========================
+    // INPUT
+    // =========================
+
     @NonNull
     private String getInputText(
             @NonNull TextInputEditText input
@@ -259,37 +607,51 @@ public final class MainActivity extends AppCompatActivity {
                 .trim();
     }
 
-    private void renderState(
+    // =========================
+    // QUOTE STATE
+    // =========================
+
+    private void renderQuoteState(
             @NonNull QuoteUiState state
     ) {
 
-        switch (
-                state.getStatus()
-        ) {
+        switch (state.getStatus()) {
 
             case IDLE:
-                renderIdle();
+
+                renderQuoteIdle();
+
                 break;
 
             case LOADING:
-                renderLoading();
+
+                renderQuoteLoading();
+
                 break;
 
             case SUCCESS:
-                renderSuccess(
+
+                renderQuoteSuccess(
                         state.getQuote()
                 );
+
                 break;
 
             case ERROR:
-                renderError(
+
+                renderQuoteError(
                         state.getMessage()
                 );
+
                 break;
         }
     }
 
-    private void renderIdle() {
+    // =========================
+    // QUOTE IDLE
+    // =========================
+
+    private void renderQuoteIdle() {
 
         progressIndicator.setVisibility(
                 View.GONE
@@ -303,12 +665,34 @@ public final class MainActivity extends AppCompatActivity {
                 View.GONE
         );
 
+        bookingCard.setVisibility(
+                View.GONE
+        );
+
         calculateButton.setEnabled(
                 true
         );
+
+        currentQuote =
+                null;
+
+        setOrderButtonEnabled(
+                false
+        );
     }
 
-    private void renderLoading() {
+    // =========================
+    // QUOTE LOADING
+    // =========================
+
+    private void renderQuoteLoading() {
+
+        currentQuote =
+                null;
+
+        setOrderButtonEnabled(
+                false
+        );
 
         progressIndicator.setVisibility(
                 View.VISIBLE
@@ -322,12 +706,24 @@ public final class MainActivity extends AppCompatActivity {
                 View.GONE
         );
 
+        bookingCard.setVisibility(
+                View.GONE
+        );
+
+        orderSuccessCard.setVisibility(
+                View.GONE
+        );
+
         calculateButton.setEnabled(
                 false
         );
     }
 
-    private void renderSuccess(
+    // =========================
+    // QUOTE SUCCESS
+    // =========================
+
+    private void renderQuoteSuccess(
             Quote quote
     ) {
 
@@ -345,7 +741,7 @@ public final class MainActivity extends AppCompatActivity {
 
         if (quote == null) {
 
-            renderError(
+            renderQuoteError(
                     getString(
                             R.string.quote_unknown_error
                     )
@@ -353,6 +749,17 @@ public final class MainActivity extends AppCompatActivity {
 
             return;
         }
+
+        currentQuote =
+                quote;
+
+        /*
+         * Только успешный Quote
+         * активирует кнопку заказа.
+         */
+        setOrderButtonEnabled(
+                true
+        );
 
         resultPrice.setText(
                 getString(
@@ -406,17 +813,44 @@ public final class MainActivity extends AppCompatActivity {
         resultCard.setVisibility(
                 View.VISIBLE
         );
+
+        bookingCard.setVisibility(
+                View.VISIBLE
+        );
+
+        orderSuccessCard.setVisibility(
+                View.GONE
+        );
     }
 
-    private void renderError(
+    // =========================
+    // QUOTE ERROR
+    // =========================
+
+    private void renderQuoteError(
             String message
     ) {
+
+        currentQuote =
+                null;
+
+        setOrderButtonEnabled(
+                false
+        );
 
         progressIndicator.setVisibility(
                 View.GONE
         );
 
         resultCard.setVisibility(
+                View.GONE
+        );
+
+        bookingCard.setVisibility(
+                View.GONE
+        );
+
+        orderSuccessCard.setVisibility(
                 View.GONE
         );
 
@@ -428,7 +862,9 @@ public final class MainActivity extends AppCompatActivity {
                 message;
 
         if (safeMessage == null
-                || safeMessage.trim().isEmpty()) {
+                || safeMessage
+                .trim()
+                .isEmpty()) {
 
             safeMessage =
                     getString(
@@ -441,6 +877,202 @@ public final class MainActivity extends AppCompatActivity {
         );
 
         errorText.setVisibility(
+                View.VISIBLE
+        );
+    }
+
+    // =========================
+    // ORDER STATE
+    // =========================
+
+    private void renderOrderState(
+            @NonNull OrderUiState state
+    ) {
+
+        switch (state.getStatus()) {
+
+            case IDLE:
+
+                renderOrderIdle();
+
+                break;
+
+            case LOADING:
+
+                renderOrderLoading();
+
+                break;
+
+            case SUCCESS:
+
+                renderOrderSuccess(
+                        state.getReceipt()
+                );
+
+                break;
+
+            case ERROR:
+
+                renderOrderError(
+                        state.getMessage()
+                );
+
+                break;
+        }
+    }
+
+    // =========================
+    // ORDER IDLE
+    // =========================
+
+    private void renderOrderIdle() {
+
+        orderProgressIndicator.setVisibility(
+                View.GONE
+        );
+
+        orderErrorText.setVisibility(
+                View.GONE
+        );
+
+        orderSuccessCard.setVisibility(
+                View.GONE
+        );
+
+        /*
+         * IDLE больше не управляет
+         * состоянием кнопки заказа.
+         *
+         * Кнопку активирует только
+         * успешный Quote.
+         */
+    }
+
+    // =========================
+    // ORDER LOADING
+    // =========================
+
+    private void renderOrderLoading() {
+
+        orderProgressIndicator.setVisibility(
+                View.VISIBLE
+        );
+
+        orderErrorText.setVisibility(
+                View.GONE
+        );
+
+        orderSuccessCard.setVisibility(
+                View.GONE
+        );
+
+        setOrderButtonEnabled(
+                false
+        );
+    }
+
+    // =========================
+    // ORDER SUCCESS
+    // =========================
+
+    private void renderOrderSuccess(
+            OrderReceipt receipt
+    ) {
+
+        orderProgressIndicator.setVisibility(
+                View.GONE
+        );
+
+        orderErrorText.setVisibility(
+                View.GONE
+        );
+
+        setOrderButtonEnabled(
+                false
+        );
+
+        if (receipt == null) {
+
+            renderOrderError(
+                    getString(
+                            R.string.booking_unknown_error
+                    )
+            );
+
+            return;
+        }
+
+        /*
+         * Quote после успешного заказа
+         * больше использовать нельзя.
+         */
+        currentQuote =
+                null;
+
+        bookingCard.setVisibility(
+                View.GONE
+        );
+
+        orderSuccessId.setText(
+                getString(
+                        R.string.order_id_value,
+                        receipt.getOrderId()
+                )
+        );
+
+        orderSuccessStatus.setText(
+                getString(
+                        R.string.order_status_value,
+                        receipt
+                                .getStatus()
+                                .getDisplayName()
+                )
+        );
+
+        orderSuccessCard.setVisibility(
+                View.VISIBLE
+        );
+    }
+
+    // =========================
+    // ORDER ERROR
+    // =========================
+
+    private void renderOrderError(
+            String message
+    ) {
+
+        orderProgressIndicator.setVisibility(
+                View.GONE
+        );
+
+        orderSuccessCard.setVisibility(
+                View.GONE
+        );
+
+        setOrderButtonEnabled(
+                currentQuote != null
+        );
+
+        String safeMessage =
+                message;
+
+        if (safeMessage == null
+                || safeMessage
+                .trim()
+                .isEmpty()) {
+
+            safeMessage =
+                    getString(
+                            R.string.booking_unknown_error
+                    );
+        }
+
+        orderErrorText.setText(
+                safeMessage
+        );
+
+        orderErrorText.setVisibility(
                 View.VISIBLE
         );
     }
