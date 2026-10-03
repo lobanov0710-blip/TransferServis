@@ -2,7 +2,6 @@
 
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
 
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -23,17 +22,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
-            android:text="@string/home_title"
+            android:text="@string/booking_title"
 
             android:textAppearance="?attr/textAppearanceHeadlineMedium" />
 
         <TextView
+            android:id="@+id/bookingQuoteSummary"
+
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
-            android:layout_marginTop="6dp"
-
-            android:text="@string/quote_screen_subtitle"
+            android:layout_marginTop="8dp"
 
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -43,16 +42,18 @@
 
             android:layout_marginTop="24dp"
 
-            android:hint="@string/quote_from_hint">
+            android:hint="@string/booking_name_hint">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/fromInput"
+                android:id="@+id/bookingNameInput"
 
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
 
-                android:inputType="textPostalAddress"
-                android:maxLines="3" />
+                android:imeOptions="actionNext"
+                android:inputType="textPersonName"
+                android:maxLength="100"
+                android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -62,114 +63,95 @@
 
             android:layout_marginTop="12dp"
 
-            android:hint="@string/quote_to_hint">
+            android:hint="@string/booking_phone_hint">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/toInput"
+                android:id="@+id/bookingPhoneInput"
 
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
 
-                android:inputType="textPostalAddress"
-                android:maxLines="3" />
+                android:inputType="phone"
+                android:maxLength="40"
+                android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
 
-            android:text="@string/quote_tariff_title"
+            android:hint="@string/booking_date_hint">
 
-            android:textAppearance="?attr/textAppearanceTitleMedium" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/bookingDateInput"
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/tariffToggleGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
 
+                android:clickable="true"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:inputType="none" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="12dp"
 
-            app:selectionRequired="true"
-            app:singleSelection="true">
+            android:hint="@string/booking_comment_hint">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonComfort"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/bookingCommentInput"
 
-                style="?attr/materialButtonOutlinedStyle"
-
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
 
-                android:layout_weight="1"
+                android:gravity="top|start"
 
-                android:text="@string/tariff_comfort"
-                android:textAllCaps="false" />
+                android:imeOptions="actionDone"
+                android:inputType="textCapSentences|textMultiLine"
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonBusiness"
+                android:maxLength="2000"
+                android:maxLines="5"
+                android:minLines="3" />
 
-                style="?attr/materialButtonOutlinedStyle"
-
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-
-                android:layout_weight="1"
-
-                android:text="@string/tariff_business"
-                android:textAllCaps="false" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonMinivan"
-
-                style="?attr/materialButtonOutlinedStyle"
-
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-
-                android:layout_weight="1"
-
-                android:text="@string/tariff_minivan"
-                android:textAllCaps="false" />
-
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/calculateButton"
+            android:id="@+id/orderButton"
 
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="20dp"
 
-            android:text="@string/quote_calculate"
+            android:text="@string/booking_submit"
             android:textAllCaps="false" />
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/progressIndicator"
+            android:id="@+id/orderProgressIndicator"
 
             android:layout_width="32dp"
             android:layout_height="32dp"
 
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
 
-            android:visibility="gone"
-
-            app:indicatorSize="32dp" />
+            android:visibility="gone" />
 
         <TextView
-            android:id="@+id/errorText"
+            android:id="@+id/orderErrorText"
 
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
             android:layout_marginTop="16dp"
-
-            android:textAppearance="?attr/textAppearanceBodyMedium"
 
             android:visibility="gone" />
 
