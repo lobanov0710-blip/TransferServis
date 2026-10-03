@@ -3,6 +3,8 @@ package ru.transferservis.app.data.model;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Locale;
+
 public enum OrderStatus {
 
     NEW(
@@ -55,15 +57,23 @@ public enum OrderStatus {
     public static OrderStatus fromApiValue(
             @Nullable String value
     ) {
+
         if (value == null) {
             return null;
         }
 
         String normalized =
-                value.trim().toLowerCase();
+                value
+                        .trim()
+                        .toLowerCase(
+                                Locale.ROOT
+                        );
 
         for (OrderStatus status : values()) {
-            if (status.apiValue.equals(normalized)) {
+
+            if (status.apiValue.equals(
+                    normalized
+            )) {
                 return status;
             }
         }
