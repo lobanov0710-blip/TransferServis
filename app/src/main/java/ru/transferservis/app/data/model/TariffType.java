@@ -3,6 +3,8 @@ package ru.transferservis.app.data.model;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Locale;
+
 public enum TariffType {
 
     COMFORT(
@@ -27,8 +29,11 @@ public enum TariffType {
             String apiValue,
             String displayName
     ) {
-        this.apiValue = apiValue;
-        this.displayName = displayName;
+        this.apiValue =
+                apiValue;
+
+        this.displayName =
+                displayName;
     }
 
     @NonNull
@@ -45,15 +50,24 @@ public enum TariffType {
     public static TariffType fromApiValue(
             @Nullable String value
     ) {
+
         if (value == null) {
             return null;
         }
 
         String normalized =
-                value.trim().toLowerCase();
+                value
+                        .trim()
+                        .toLowerCase(
+                                Locale.ROOT
+                        );
 
         for (TariffType tariff : values()) {
-            if (tariff.apiValue.equals(normalized)) {
+
+            if (tariff.apiValue.equals(
+                    normalized
+            )) {
+
                 return tariff;
             }
         }
