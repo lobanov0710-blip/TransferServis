@@ -290,4 +290,70 @@
         Рассчитать новую поездку
     </string>
 
+    <!-- MAIN NAVIGATION -->
+
+    <string name="bottom_home">
+        Главная
+    </string>
+
+    <string name="bottom_trips">
+        Поездки
+    </string>
+
+    <string name="bottom_profile">
+        Профиль
+    </string>
+
+    <!-- HISTORY -->
+
+    <string name="history_overline">
+        МОИ ПОЕЗДКИ
+    </string>
+
+    <string name="history_title">
+        Поездки
+    </string>
+
+    <string name="history_subtitle">
+        История заявок и поездок Transfer Servis
+    </string>
+
+    <string name="history_empty_title">
+        Поездок пока нет
+    </string>
+
+    <string name="history_empty_message">
+        Здесь будут отображаться поездки, оформленные в приложении.
+    </string>
+
+    <!-- PROFILE -->
+
+    <string name="profile_overline">
+        TRANSFER SERVIS
+    </string>
+
+    <string name="profile_title">
+        Профиль
+    </string>
+
+    <string name="profile_subtitle">
+        Данные пассажира и настройки приложения
+    </string>
+
+    <string name="profile_passenger_title">
+        Данные пассажира
+    </string>
+
+    <string name="profile_passenger_message">
+        Имя и телефон можно будет сохранить для более быстрого оформления следующих поездок.
+    </string>
+
+    <string name="profile_service_title">
+        Сервис
+    </string>
+
+    <string name="profile_service_message">
+        Междугородние поездки 24/7 без пересадок с индивидуальным обслуживанием.
+    </string>
+
 </resources>
