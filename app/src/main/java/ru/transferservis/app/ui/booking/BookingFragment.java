@@ -30,6 +30,8 @@ import ru.transferservis.app.domain.model.Quote;
 import ru.transferservis.app.ui.profile.ProfileViewModel;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
+import ru.transferservis.app.data.remote.ApiErrorCode;
+import ru.transferservis.app.ui.common.UiErrorMapper;
 
 public final class BookingFragment
         extends Fragment {
@@ -343,9 +345,7 @@ public final class BookingFragment
                 || quote.isExpired()) {
 
             renderOrderError(
-                    getString(
-                            R.string.booking_no_quote
-                    )
+                    ApiErrorCode.QUOTE_EXPIRED
             );
 
             return;
@@ -374,9 +374,7 @@ public final class BookingFragment
         if (apiDate == null) {
 
             renderOrderError(
-                    getString(
-                            R.string.booking_invalid_date
-                    )
+                    ApiErrorCode.DATE_INVALID
             );
 
             return;
@@ -600,7 +598,7 @@ public final class BookingFragment
             case ERROR:
 
                 renderOrderError(
-                        state.getMessage()
+                        state.getErrorCode()
                 );
 
                 break;
@@ -668,7 +666,7 @@ public final class BookingFragment
     }
 
     private void renderOrderError(
-            @Nullable String message
+            @Nullable ApiErrorCode errorCode
     ) {
 
         orderRequested =
@@ -686,22 +684,10 @@ public final class BookingFragment
                         && !quote.isExpired()
         );
 
-        String safeMessage =
-                message;
-
-        if (safeMessage == null
-                || safeMessage
-                .trim()
-                .isEmpty()) {
-
-            safeMessage =
-                    getString(
-                            R.string.booking_unknown_error
-                    );
-        }
-
         orderErrorText.setText(
-                safeMessage
+                UiErrorMapper.bookingMessage(
+                        errorCode
+                )
         );
 
         orderErrorText.setVisibility(

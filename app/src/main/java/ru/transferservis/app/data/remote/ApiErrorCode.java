@@ -1,0 +1,37 @@
+package ru.transferservis.app.data.remote;
+
+public enum ApiErrorCode {
+
+    UNKNOWN,
+
+    FROM_REQUIRED,
+    TO_REQUIRED,
+
+    INVALID_INPUT,
+
+    INVALID_QUOTE_ID,
+
+    NAME_REQUIRED,
+    NAME_TOO_LONG,
+
+    PHONE_INVALID,
+    DATE_INVALID,
+    COMMENT_TOO_LONG,
+
+    QUOTE_EXPIRED,
+    QUOTE_ALREADY_USED,
+
+    ROUTE_NOT_FOUND,
+
+    REQUEST_TOO_LARGE,
+    RATE_LIMITED,
+
+    NETWORK,
+    SERVICE_UNAVAILABLE,
+
+    INVALID_RESPONSE,
+    TARIFF_MISMATCH,
+
+    ORDER_CREATE_FAILED,
+    REQUEST_FAILED
+}

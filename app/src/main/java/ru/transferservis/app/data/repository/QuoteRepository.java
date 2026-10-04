@@ -3,21 +3,15 @@ package ru.transferservis.app.data.repository;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.gson.Gson;
-
-import java.io.IOException;
-
-import okhttp3.ResponseBody;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiClient;
+import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.remote.ApiService;
-import ru.transferservis.app.data.remote.dto.ApiError;
 import ru.transferservis.app.data.remote.dto.CalculateRequest;
 import ru.transferservis.app.data.remote.dto.CalculateResponse;
 import ru.transferservis.app.data.remote.dto.PlaceDto;
@@ -25,31 +19,21 @@ import ru.transferservis.app.domain.model.Quote;
 
 public final class QuoteRepository {
 
-    private static final String NETWORK_ERROR_MESSAGE =
-            "Не удалось связаться с сервером. Проверьте интернет-соединение.";
-
-    private static final String INVALID_RESPONSE_MESSAGE =
-            "Сервер вернул некорректные данные.";
-
-    private static final String EXPIRED_QUOTE_MESSAGE =
-            "Расчёт уже устарел. Выполните расчёт повторно.";
-
     private final ApiService apiService;
-    private final Gson gson;
 
     public QuoteRepository() {
+
         this(
-                ApiClient.getApiService(),
-                new Gson()
+                ApiClient.getApiService()
         );
     }
 
     public QuoteRepository(
-            @NonNull ApiService apiService,
-            @NonNull Gson gson
+            @NonNull ApiService apiService
     ) {
-        this.apiService = apiService;
-        this.gson = gson;
+
+        this.apiService =
+                apiService;
     }
 
     public interface QuoteCallback {
@@ -73,20 +57,24 @@ public final class QuoteRepository {
                 to.trim();
 
         if (cleanFrom.length() < 3) {
+
             callback.onResult(
                     ApiResult.validationError(
-                            "Укажите адрес отправления."
+                            ApiErrorCode.FROM_REQUIRED
                     )
             );
+
             return;
         }
 
         if (cleanTo.length() < 3) {
+
             callback.onResult(
                     ApiResult.validationError(
-                            "Укажите адрес назначения."
+                            ApiErrorCode.TO_REQUIRED
                     )
             );
+
             return;
         }
 
@@ -98,7 +86,9 @@ public final class QuoteRepository {
                 );
 
         apiService
-                .calculate(request)
+                .calculate(
+                        request
+                )
                 .enqueue(
                         new Callback<CalculateResponse>() {
 
@@ -108,12 +98,17 @@ public final class QuoteRepository {
                                     @NonNull Response<CalculateResponse> response
                             ) {
 
+                                int httpCode =
+                                        response.code();
+
                                 if (!response.isSuccessful()) {
 
                                     callback.onResult(
                                             ApiResult.httpError(
-                                                    response.code(),
-                                                    readApiError(response)
+                                                    httpCode,
+                                                    mapHttpError(
+                                                            httpCode
+                                                    )
                                             )
                                     );
 
@@ -127,21 +122,20 @@ public final class QuoteRepository {
 
                                     callback.onResult(
                                             ApiResult.invalidResponse(
-                                                    INVALID_RESPONSE_MESSAGE
+                                                    httpCode,
+                                                    ApiErrorCode.INVALID_RESPONSE
                                             )
                                     );
 
                                     return;
                                 }
 
-                                ApiResult<Quote> result =
+                                callback.onResult(
                                         mapQuote(
                                                 body,
-                                                tariff
-                                        );
-
-                                callback.onResult(
-                                        result
+                                                tariff,
+                                                httpCode
+                                        )
                                 );
                             }
 
@@ -157,7 +151,7 @@ public final class QuoteRepository {
 
                                 callback.onResult(
                                         ApiResult.networkError(
-                                                NETWORK_ERROR_MESSAGE,
+                                                ApiErrorCode.NETWORK,
                                                 throwable
                                         )
                                 );
@@ -169,7 +163,8 @@ public final class QuoteRepository {
     @NonNull
     private ApiResult<Quote> mapQuote(
             @NonNull CalculateResponse response,
-            @NonNull TariffType requestedTariff
+            @NonNull TariffType requestedTariff,
+            int httpCode
     ) {
 
         if (!Boolean.TRUE.equals(
@@ -177,7 +172,8 @@ public final class QuoteRepository {
         )) {
 
             return ApiResult.invalidResponse(
-                    INVALID_RESPONSE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
             );
         }
 
@@ -219,7 +215,8 @@ public final class QuoteRepository {
                 || price == null) {
 
             return ApiResult.invalidResponse(
-                    INVALID_RESPONSE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
             );
         }
 
@@ -237,7 +234,8 @@ public final class QuoteRepository {
                 || toDisplayName == null) {
 
             return ApiResult.invalidResponse(
-                    INVALID_RESPONSE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
             );
         }
 
@@ -245,7 +243,8 @@ public final class QuoteRepository {
                 != requestedTariff) {
 
             return ApiResult.invalidResponse(
-                    "Сервер вернул другой тариф."
+                    httpCode,
+                    ApiErrorCode.TARIFF_MISMATCH
             );
         }
 
@@ -254,7 +253,8 @@ public final class QuoteRepository {
                 || price <= 0) {
 
             return ApiResult.invalidResponse(
-                    INVALID_RESPONSE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
             );
         }
 
@@ -262,7 +262,8 @@ public final class QuoteRepository {
                 <= System.currentTimeMillis()) {
 
             return ApiResult.invalidResponse(
-                    EXPIRED_QUOTE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.QUOTE_EXPIRED
             );
         }
 
@@ -272,6 +273,7 @@ public final class QuoteRepository {
                 );
 
         if (tariffName == null) {
+
             tariffName =
                     responseTariff
                             .getDisplayName();
@@ -291,81 +293,42 @@ public final class QuoteRepository {
                 );
 
         return ApiResult.success(
-                quote
+                quote,
+                httpCode
         );
     }
 
     @NonNull
-    private String readApiError(
-            @NonNull Response<?> response
-    ) {
-
-        ResponseBody errorBody =
-                response.errorBody();
-
-        if (errorBody != null) {
-
-            try {
-
-                String json =
-                        errorBody.string();
-
-                ApiError apiError =
-                        gson.fromJson(
-                                json,
-                                ApiError.class
-                        );
-
-                String serverMessage =
-                        apiError == null
-                                ? null
-                                : cleanString(
-                                apiError.getError()
-                        );
-
-                if (serverMessage != null) {
-                    return serverMessage;
-                }
-
-            } catch (
-                    IOException |
-                    RuntimeException ignored
-            ) {
-                // Используем безопасное сообщение ниже.
-            }
-        }
-
-        return defaultHttpMessage(
-                response.code()
-        );
-    }
-
-    @NonNull
-    private String defaultHttpMessage(
+    private ApiErrorCode mapHttpError(
             int httpCode
     ) {
 
         if (httpCode == 400) {
-            return "Проверьте введённые данные.";
+
+            return ApiErrorCode.INVALID_INPUT;
         }
 
         if (httpCode == 404) {
-            return "Не удалось построить маршрут.";
+
+            return ApiErrorCode.ROUTE_NOT_FOUND;
         }
 
         if (httpCode == 409) {
-            return "Расчёт устарел. Выполните его повторно.";
+
+            return ApiErrorCode.QUOTE_EXPIRED;
         }
 
         if (httpCode == 429) {
-            return "Слишком много запросов. Попробуйте немного позже.";
+
+            return ApiErrorCode.RATE_LIMITED;
         }
 
         if (httpCode >= 500) {
-            return "Сервис временно недоступен.";
+
+            return ApiErrorCode.SERVICE_UNAVAILABLE;
         }
 
-        return "Не удалось выполнить запрос.";
+        return ApiErrorCode.REQUEST_FAILED;
     }
 
     @Nullable

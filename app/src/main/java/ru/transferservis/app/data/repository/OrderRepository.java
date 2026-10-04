@@ -17,6 +17,7 @@ import retrofit2.Response;
 
 import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.data.remote.ApiClient;
+import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.remote.ApiService;
 import ru.transferservis.app.data.remote.dto.ApiError;
@@ -28,17 +29,11 @@ import ru.transferservis.app.domain.model.Quote;
 
 public final class OrderRepository {
 
-    private static final String NETWORK_ERROR_MESSAGE =
-            "Не удалось связаться с сервером. Проверьте интернет-соединение.";
+    private static final int MAX_NAME_LENGTH =
+            100;
 
-    private static final String INVALID_RESPONSE_MESSAGE =
-            "Сервер вернул некорректный ответ при создании заявки.";
-
-    private static final String EXPIRED_QUOTE_MESSAGE =
-            "Расчёт стоимости устарел. Выполните расчёт повторно.";
-
-    private static final int MAX_NAME_LENGTH = 100;
-    private static final int MAX_COMMENT_LENGTH = 2000;
+    private static final int MAX_COMMENT_LENGTH =
+            2000;
 
     private static final Pattern DATE_PATTERN =
             Pattern.compile(
@@ -56,9 +51,11 @@ public final class OrderRepository {
             );
 
     private final ApiService apiService;
+
     private final Gson gson;
 
     public OrderRepository() {
+
         this(
                 ApiClient.getApiService(),
                 new Gson()
@@ -69,8 +66,12 @@ public final class OrderRepository {
             @NonNull ApiService apiService,
             @NonNull Gson gson
     ) {
-        this.apiService = apiService;
-        this.gson = gson;
+
+        this.apiService =
+                apiService;
+
+        this.gson =
+                gson;
     }
 
     public interface OrderCallback {
@@ -93,7 +94,7 @@ public final class OrderRepository {
 
             callback.onResult(
                     ApiResult.validationError(
-                            EXPIRED_QUOTE_MESSAGE
+                            ApiErrorCode.QUOTE_EXPIRED
                     )
             );
 
@@ -107,12 +108,14 @@ public final class OrderRepository {
 
         if (quoteId == null
                 || !QUOTE_ID_PATTERN
-                .matcher(quoteId)
+                .matcher(
+                        quoteId
+                )
                 .matches()) {
 
             callback.onResult(
                     ApiResult.validationError(
-                            "Некорректный идентификатор расчёта. Выполните расчёт повторно."
+                            ApiErrorCode.INVALID_QUOTE_ID
                     )
             );
 
@@ -120,13 +123,15 @@ public final class OrderRepository {
         }
 
         String cleanName =
-                cleanString(name);
+                cleanString(
+                        name
+                );
 
         if (cleanName == null) {
 
             callback.onResult(
                     ApiResult.validationError(
-                            "Укажите имя."
+                            ApiErrorCode.NAME_REQUIRED
                     )
             );
 
@@ -138,7 +143,7 @@ public final class OrderRepository {
 
             callback.onResult(
                     ApiResult.validationError(
-                            "Имя слишком длинное."
+                            ApiErrorCode.NAME_TOO_LONG
                     )
             );
 
@@ -146,7 +151,9 @@ public final class OrderRepository {
         }
 
         String cleanPhone =
-                cleanString(phone);
+                cleanString(
+                        phone
+                );
 
         if (cleanPhone == null
                 || !isValidPhone(
@@ -155,7 +162,7 @@ public final class OrderRepository {
 
             callback.onResult(
                     ApiResult.validationError(
-                            "Проверьте номер телефона."
+                            ApiErrorCode.PHONE_INVALID
                     )
             );
 
@@ -163,16 +170,20 @@ public final class OrderRepository {
         }
 
         String cleanDate =
-                cleanString(date);
+                cleanString(
+                        date
+                );
 
         if (cleanDate == null
                 || !DATE_PATTERN
-                .matcher(cleanDate)
+                .matcher(
+                        cleanDate
+                )
                 .matches()) {
 
             callback.onResult(
                     ApiResult.validationError(
-                            "Проверьте дату поездки."
+                            ApiErrorCode.DATE_INVALID
                     )
             );
 
@@ -190,7 +201,7 @@ public final class OrderRepository {
 
             callback.onResult(
                     ApiResult.validationError(
-                            "Комментарий слишком длинный."
+                            ApiErrorCode.COMMENT_TOO_LONG
                     )
             );
 
@@ -207,7 +218,9 @@ public final class OrderRepository {
                 );
 
         apiService
-                .createOrder(request)
+                .createOrder(
+                        request
+                )
                 .enqueue(
                         new Callback<CreateOrderResponse>() {
 
@@ -217,11 +230,14 @@ public final class OrderRepository {
                                     @NonNull Response<CreateOrderResponse> response
                             ) {
 
+                                int httpCode =
+                                        response.code();
+
                                 if (!response.isSuccessful()) {
 
                                     callback.onResult(
                                             ApiResult.httpError(
-                                                    response.code(),
+                                                    httpCode,
                                                     readApiError(
                                                             response
                                                     )
@@ -241,20 +257,19 @@ public final class OrderRepository {
 
                                     callback.onResult(
                                             ApiResult.invalidResponse(
-                                                    INVALID_RESPONSE_MESSAGE
+                                                    httpCode,
+                                                    ApiErrorCode.INVALID_RESPONSE
                                             )
                                     );
 
                                     return;
                                 }
 
-                                ApiResult<OrderReceipt> result =
-                                        mapReceipt(
-                                                body
-                                        );
-
                                 callback.onResult(
-                                        result
+                                        mapReceipt(
+                                                body,
+                                                httpCode
+                                        )
                                 );
                             }
 
@@ -270,7 +285,7 @@ public final class OrderRepository {
 
                                 callback.onResult(
                                         ApiResult.networkError(
-                                                NETWORK_ERROR_MESSAGE,
+                                                ApiErrorCode.NETWORK,
                                                 throwable
                                         )
                                 );
@@ -281,7 +296,8 @@ public final class OrderRepository {
 
     @NonNull
     private ApiResult<OrderReceipt> mapReceipt(
-            @NonNull CreateOrderResponse response
+            @NonNull CreateOrderResponse response,
+            int httpCode
     ) {
 
         OrderReceiptDto dto =
@@ -290,7 +306,8 @@ public final class OrderRepository {
         if (dto == null) {
 
             return ApiResult.invalidResponse(
-                    INVALID_RESPONSE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
             );
         }
 
@@ -313,7 +330,8 @@ public final class OrderRepository {
                 || createdAt <= 0L) {
 
             return ApiResult.invalidResponse(
-                    INVALID_RESPONSE_MESSAGE
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
             );
         }
 
@@ -325,7 +343,8 @@ public final class OrderRepository {
                 );
 
         return ApiResult.success(
-                receipt
+                receipt,
+                httpCode
         );
     }
 
@@ -344,7 +363,7 @@ public final class OrderRepository {
     }
 
     @NonNull
-    private String readApiError(
+    private ApiErrorCode readApiError(
             @NonNull Response<?> response
     ) {
 
@@ -373,12 +392,13 @@ public final class OrderRepository {
 
                 if (serverError != null) {
 
-                    String translated =
+                    ApiErrorCode translated =
                             translateServerError(
                                     serverError
                             );
 
                     if (translated != null) {
+
                         return translated;
                     }
                 }
@@ -387,17 +407,18 @@ public final class OrderRepository {
                     IOException |
                     RuntimeException ignored
             ) {
-                // Используем безопасное сообщение ниже.
+
+                // Используем безопасный код ниже.
             }
         }
 
-        return defaultHttpMessage(
+        return defaultHttpError(
                 response.code()
         );
     }
 
     @Nullable
-    private String translateServerError(
+    private ApiErrorCode translateServerError(
             @NonNull String serverError
     ) {
 
@@ -411,57 +432,70 @@ public final class OrderRepository {
         switch (value) {
 
             case "missing name":
-                return "Укажите имя.";
+
+                return ApiErrorCode.NAME_REQUIRED;
 
             case "invalid phone":
-                return "Проверьте номер телефона.";
+
+                return ApiErrorCode.PHONE_INVALID;
 
             case "invalid date":
-                return "Проверьте дату поездки.";
+
+                return ApiErrorCode.DATE_INVALID;
 
             case "invalid quoteid":
-                return "Расчёт повреждён. Выполните его повторно.";
+
+                return ApiErrorCode.INVALID_QUOTE_ID;
 
             case "quote expired or not found":
-                return EXPIRED_QUOTE_MESSAGE;
+
+                return ApiErrorCode.QUOTE_EXPIRED;
 
             case "quote already used":
-                return "Этот расчёт уже использован для другой заявки. Выполните расчёт повторно.";
+
+                return ApiErrorCode.QUOTE_ALREADY_USED;
 
             case "order create failed":
-                return "Не удалось создать заявку.";
+
+                return ApiErrorCode.ORDER_CREATE_FAILED;
 
             default:
+
                 return null;
         }
     }
 
     @NonNull
-    private String defaultHttpMessage(
+    private ApiErrorCode defaultHttpError(
             int httpCode
     ) {
 
         if (httpCode == 400) {
-            return "Проверьте данные заявки.";
+
+            return ApiErrorCode.INVALID_INPUT;
         }
 
         if (httpCode == 409) {
-            return "Расчёт больше нельзя использовать. Выполните расчёт повторно.";
+
+            return ApiErrorCode.QUOTE_EXPIRED;
         }
 
         if (httpCode == 413) {
-            return "Данные заявки слишком большие.";
+
+            return ApiErrorCode.REQUEST_TOO_LARGE;
         }
 
         if (httpCode == 429) {
-            return "Слишком много запросов. Попробуйте немного позже.";
+
+            return ApiErrorCode.RATE_LIMITED;
         }
 
         if (httpCode >= 500) {
-            return "Сервис временно недоступен.";
+
+            return ApiErrorCode.SERVICE_UNAVAILABLE;
         }
 
-        return "Не удалось создать заявку.";
+        return ApiErrorCode.REQUEST_FAILED;
     }
 
     @Nullable

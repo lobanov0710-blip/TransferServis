@@ -408,4 +408,82 @@
         Междугородние поездки 24/7 без пересадок с индивидуальным обслуживанием и конфиденциальностью.
     </string>
 
+    <!-- API / VALIDATION ERRORS -->
+
+    <string name="error_from_required">
+        Укажите адрес отправления.
+    </string>
+
+    <string name="error_to_required">
+        Укажите адрес назначения.
+    </string>
+
+    <string name="error_invalid_input">
+        Проверьте введённые данные.
+    </string>
+
+    <string name="error_route_not_found">
+        Не удалось построить маршрут.
+    </string>
+
+    <string name="error_quote_expired">
+        Расчёт стоимости устарел. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_rate_limited">
+        Слишком много запросов. Попробуйте немного позже.
+    </string>
+
+    <string name="error_network">
+        Не удалось связаться с сервером. Проверьте интернет-соединение.
+    </string>
+
+    <string name="error_service_unavailable">
+        Сервис временно недоступен. Попробуйте позже.
+    </string>
+
+    <string name="error_invalid_response">
+        Сервер вернул некорректные данные.
+    </string>
+
+    <string name="error_tariff_mismatch">
+        Не удалось подтвердить выбранный тариф. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_request_failed">
+        Не удалось выполнить запрос.
+    </string>
+
+    <string name="error_invalid_quote">
+        Расчёт повреждён. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_name_required">
+        Укажите имя.
+    </string>
+
+    <string name="error_name_too_long">
+        Имя слишком длинное.
+    </string>
+
+    <string name="error_phone_invalid">
+        Проверьте номер телефона.
+    </string>
+
+    <string name="error_comment_too_long">
+        Комментарий слишком длинный.
+    </string>
+
+    <string name="error_quote_already_used">
+        Этот расчёт уже использован для другой заявки. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_invalid_order_data">
+        Проверьте данные заявки.
+    </string>
+
+    <string name="error_request_too_large">
+        Данные заявки слишком большие.
+    </string>
+
 </resources>

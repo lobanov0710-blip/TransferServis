@@ -3,11 +3,13 @@ package ru.transferservis.app.ui.booking;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.domain.model.OrderReceipt;
 
 public final class OrderUiState {
 
     public enum Status {
+
         IDLE,
         LOADING,
         SUCCESS,
@@ -18,16 +20,22 @@ public final class OrderUiState {
 
     private final OrderReceipt receipt;
 
-    private final String message;
+    private final ApiErrorCode errorCode;
 
     private OrderUiState(
             @NonNull Status status,
             @Nullable OrderReceipt receipt,
-            @Nullable String message
+            @Nullable ApiErrorCode errorCode
     ) {
-        this.status = status;
-        this.receipt = receipt;
-        this.message = message;
+
+        this.status =
+                status;
+
+        this.receipt =
+                receipt;
+
+        this.errorCode =
+                errorCode;
     }
 
     @NonNull
@@ -64,29 +72,32 @@ public final class OrderUiState {
 
     @NonNull
     public static OrderUiState error(
-            @NonNull String message
+            @NonNull ApiErrorCode errorCode
     ) {
 
         return new OrderUiState(
                 Status.ERROR,
                 null,
-                message
+                errorCode
         );
     }
 
     @NonNull
     public Status getStatus() {
+
         return status;
     }
 
     @Nullable
     public OrderReceipt getReceipt() {
+
         return receipt;
     }
 
     @Nullable
-    public String getMessage() {
-        return message;
+    public ApiErrorCode getErrorCode() {
+
+        return errorCode;
     }
 
     public boolean isLoading() {

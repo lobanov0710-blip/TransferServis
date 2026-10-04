@@ -6,14 +6,13 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import ru.transferservis.app.data.model.TariffType;
+import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.repository.QuoteRepository;
 import ru.transferservis.app.domain.model.Quote;
 
-public final class QuoteViewModel extends ViewModel {
-
-    private static final String UNKNOWN_ERROR =
-            "Не удалось выполнить расчёт.";
+public final class QuoteViewModel
+        extends ViewModel {
 
     private final QuoteRepository repository;
 
@@ -22,9 +21,11 @@ public final class QuoteViewModel extends ViewModel {
                     QuoteUiState.idle()
             );
 
-    private long requestSequence = 0L;
+    private long requestSequence =
+            0L;
 
     public QuoteViewModel() {
+
         this(
                 new QuoteRepository()
         );
@@ -33,11 +34,14 @@ public final class QuoteViewModel extends ViewModel {
     public QuoteViewModel(
             @NonNull QuoteRepository repository
     ) {
-        this.repository = repository;
+
+        this.repository =
+                repository;
     }
 
     @NonNull
     public LiveData<QuoteUiState> getUiState() {
+
         return uiState;
     }
 
@@ -60,13 +64,9 @@ public final class QuoteViewModel extends ViewModel {
                 tariff,
                 result -> {
 
-                    /*
-                     * Если пользователь успел запустить
-                     * более новый расчёт, старый ответ
-                     * больше не должен менять UI.
-                     */
                     if (requestId
                             != requestSequence) {
+
                         return;
                     }
 
@@ -87,20 +87,24 @@ public final class QuoteViewModel extends ViewModel {
                     result.getData();
 
             if (quote == null) {
+
                 uiState.postValue(
                         QuoteUiState.error(
-                                UNKNOWN_ERROR
+                                ApiErrorCode.UNKNOWN
                         )
                 );
+
                 return;
             }
 
             if (quote.isExpired()) {
+
                 uiState.postValue(
                         QuoteUiState.error(
-                                "Расчёт уже устарел. Выполните его повторно."
+                                ApiErrorCode.QUOTE_EXPIRED
                         )
                 );
+
                 return;
             }
 
@@ -113,19 +117,18 @@ public final class QuoteViewModel extends ViewModel {
             return;
         }
 
-        String message =
-                result.getMessage();
+        ApiErrorCode errorCode =
+                result.getErrorCode();
 
-        if (message == null
-                || message.trim().isEmpty()) {
+        if (errorCode == null) {
 
-            message =
-                    UNKNOWN_ERROR;
+            errorCode =
+                    ApiErrorCode.UNKNOWN;
         }
 
         uiState.postValue(
                 QuoteUiState.error(
-                        message
+                        errorCode
                 )
         );
     }

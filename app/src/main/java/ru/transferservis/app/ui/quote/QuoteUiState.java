@@ -3,11 +3,13 @@ package ru.transferservis.app.ui.quote;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.domain.model.Quote;
 
 public final class QuoteUiState {
 
     public enum Status {
+
         IDLE,
         LOADING,
         SUCCESS,
@@ -15,21 +17,30 @@ public final class QuoteUiState {
     }
 
     private final Status status;
+
     private final Quote quote;
-    private final String message;
+
+    private final ApiErrorCode errorCode;
 
     private QuoteUiState(
             @NonNull Status status,
             @Nullable Quote quote,
-            @Nullable String message
+            @Nullable ApiErrorCode errorCode
     ) {
-        this.status = status;
-        this.quote = quote;
-        this.message = message;
+
+        this.status =
+                status;
+
+        this.quote =
+                quote;
+
+        this.errorCode =
+                errorCode;
     }
 
     @NonNull
     public static QuoteUiState idle() {
+
         return new QuoteUiState(
                 Status.IDLE,
                 null,
@@ -39,6 +50,7 @@ public final class QuoteUiState {
 
     @NonNull
     public static QuoteUiState loading() {
+
         return new QuoteUiState(
                 Status.LOADING,
                 null,
@@ -50,6 +62,7 @@ public final class QuoteUiState {
     public static QuoteUiState success(
             @NonNull Quote quote
     ) {
+
         return new QuoteUiState(
                 Status.SUCCESS,
                 quote,
@@ -59,36 +72,44 @@ public final class QuoteUiState {
 
     @NonNull
     public static QuoteUiState error(
-            @NonNull String message
+            @NonNull ApiErrorCode errorCode
     ) {
+
         return new QuoteUiState(
                 Status.ERROR,
                 null,
-                message
+                errorCode
         );
     }
 
     @NonNull
     public Status getStatus() {
+
         return status;
     }
 
     @Nullable
     public Quote getQuote() {
+
         return quote;
     }
 
     @Nullable
-    public String getMessage() {
-        return message;
+    public ApiErrorCode getErrorCode() {
+
+        return errorCode;
     }
 
     public boolean isLoading() {
-        return status == Status.LOADING;
+
+        return status
+                == Status.LOADING;
     }
 
     public boolean isSuccess() {
-        return status == Status.SUCCESS
+
+        return status
+                == Status.SUCCESS
                 && quote != null;
     }
 }

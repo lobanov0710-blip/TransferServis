@@ -24,6 +24,8 @@ import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.ui.booking.OrderViewModel;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
+import ru.transferservis.app.data.remote.ApiErrorCode;
+import ru.transferservis.app.ui.common.UiErrorMapper;
 
 public final class HomeFragment
         extends Fragment {
@@ -261,7 +263,7 @@ public final class HomeFragment
             case ERROR:
 
                 renderError(
-                        state.getMessage()
+                        state.getErrorCode()
                 );
 
                 break;
@@ -349,7 +351,7 @@ public final class HomeFragment
     }
 
     private void renderError(
-            @Nullable String message
+            @Nullable ApiErrorCode errorCode
     ) {
 
         calculationRequested =
@@ -363,22 +365,10 @@ public final class HomeFragment
                 true
         );
 
-        String safeMessage =
-                message;
-
-        if (safeMessage == null
-                || safeMessage
-                .trim()
-                .isEmpty()) {
-
-            safeMessage =
-                    getString(
-                            R.string.quote_unknown_error
-                    );
-        }
-
         errorText.setText(
-                safeMessage
+                UiErrorMapper.quoteMessage(
+                        errorCode
+                )
         );
 
         errorText.setVisibility(

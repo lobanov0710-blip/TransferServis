@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.repository.OrderRepository;
 import ru.transferservis.app.data.repository.TripHistoryRepository;
@@ -16,9 +17,6 @@ import ru.transferservis.app.domain.model.Quote;
 
 public final class OrderViewModel
         extends AndroidViewModel {
-
-    private static final String UNKNOWN_ERROR =
-            "Не удалось создать заявку.";
 
     private final OrderRepository repository;
 
@@ -35,6 +33,7 @@ public final class OrderViewModel
     public OrderViewModel(
             @NonNull Application application
     ) {
+
         super(
                 application
         );
@@ -107,17 +106,13 @@ public final class OrderViewModel
 
                 uiState.postValue(
                         OrderUiState.error(
-                                UNKNOWN_ERROR
+                                ApiErrorCode.UNKNOWN
                         )
                 );
 
                 return;
             }
 
-            /*
-             * Только подтверждённый сервером
-             * заказ попадает в локальную историю.
-             */
             historyRepository.save(
                     quote,
                     receipt,
@@ -133,21 +128,18 @@ public final class OrderViewModel
             return;
         }
 
-        String message =
-                result.getMessage();
+        ApiErrorCode errorCode =
+                result.getErrorCode();
 
-        if (message == null
-                || message
-                .trim()
-                .isEmpty()) {
+        if (errorCode == null) {
 
-            message =
-                    UNKNOWN_ERROR;
+            errorCode =
+                    ApiErrorCode.UNKNOWN;
         }
 
         uiState.postValue(
                 OrderUiState.error(
-                        message
+                        errorCode
                 )
         );
     }
