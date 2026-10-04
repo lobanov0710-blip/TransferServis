@@ -315,7 +315,7 @@
     </string>
 
     <string name="history_subtitle">
-        История заявок и поездок Transfer Servis
+        История заявок, оформленных в приложении
     </string>
 
     <string name="history_empty_title">
@@ -323,7 +323,27 @@
     </string>
 
     <string name="history_empty_message">
-        Здесь будут отображаться поездки, оформленные в приложении.
+        После оформления первой поездки она появится здесь автоматически.
+    </string>
+
+    <string name="history_item_meta">
+        %1$s • %2$.1f км • %3$s
+    </string>
+
+    <string name="history_order_id_value">
+        Заявка: %1$s
+    </string>
+
+    <string name="history_duration_minutes">
+        %1$d мин
+    </string>
+
+    <string name="history_duration_hours">
+        %1$d ч
+    </string>
+
+    <string name="history_duration_hours_minutes">
+        %1$d ч %2$d мин
     </string>
 
     <!-- PROFILE -->

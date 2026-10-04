@@ -1,49 +1,51 @@
 package ru.transferservis.app.ui.booking;
 
+import android.app.Application;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.repository.OrderRepository;
+import ru.transferservis.app.data.repository.TripHistoryRepository;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 
 public final class OrderViewModel
-        extends ViewModel {
+        extends AndroidViewModel {
 
     private static final String UNKNOWN_ERROR =
             "Не удалось создать заявку.";
 
     private final OrderRepository repository;
 
+    private final TripHistoryRepository historyRepository;
+
     private final MutableLiveData<OrderUiState> uiState =
             new MutableLiveData<>(
                     OrderUiState.idle()
             );
 
-    /*
-     * Каждый новый submit получает свой номер.
-     *
-     * Если старый HTTP-ответ придёт позже нового,
-     * он не сможет изменить актуальное состояние UI.
-     */
-    private long requestSequence = 0L;
-
-    public OrderViewModel() {
-
-        this(
-                new OrderRepository()
-        );
-    }
+    private long requestSequence =
+            0L;
 
     public OrderViewModel(
-            @NonNull OrderRepository repository
+            @NonNull Application application
     ) {
-        this.repository =
-                repository;
+        super(
+                application
+        );
+
+        repository =
+                new OrderRepository();
+
+        historyRepository =
+                new TripHistoryRepository(
+                        application
+                );
     }
 
     @NonNull
@@ -75,10 +77,6 @@ public final class OrderViewModel
                 comment,
                 result -> {
 
-                    /*
-                     * Ответ от старого запроса
-                     * больше не актуален.
-                     */
                     if (requestId
                             != requestSequence) {
 
@@ -86,14 +84,18 @@ public final class OrderViewModel
                     }
 
                     handleResult(
-                            result
+                            result,
+                            quote,
+                            date
                     );
                 }
         );
     }
 
     private void handleResult(
-            @NonNull ApiResult<OrderReceipt> result
+            @NonNull ApiResult<OrderReceipt> result,
+            @NonNull Quote quote,
+            @NonNull String tripDate
     ) {
 
         if (result.isSuccess()) {
@@ -111,6 +113,16 @@ public final class OrderViewModel
 
                 return;
             }
+
+            /*
+             * Только подтверждённый сервером
+             * заказ попадает в локальную историю.
+             */
+            historyRepository.save(
+                    quote,
+                    receipt,
+                    tripDate
+            );
 
             uiState.postValue(
                     OrderUiState.success(
