@@ -56,6 +56,8 @@
 
             android:textSize="15sp" />
 
+        <!-- PASSENGER PROFILE -->
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -91,16 +93,134 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
 
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
 
                     android:text="@string/profile_passenger_message"
                     android:textColor="@color/ts_text_secondary"
 
                     android:textSize="14sp" />
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/profileNameLayout"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:layout_marginTop="20dp"
+
+                    android:hint="@string/profile_name_hint"
+
+                    app:boxBackgroundColor="@color/ts_surface_high"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+
+                    app:boxStrokeColor="@color/ts_primary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/profileNameInput"
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+
+                        android:imeOptions="actionNext"
+                        android:inputType="textPersonName"
+
+                        android:maxLength="100"
+                        android:maxLines="1"
+
+                        android:textColor="@color/ts_text_primary"
+                        android:textColorHint="@color/ts_text_muted" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/profilePhoneLayout"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:layout_marginTop="12dp"
+
+                    android:hint="@string/profile_phone_hint"
+
+                    app:boxBackgroundColor="@color/ts_surface_high"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+
+                    app:boxStrokeColor="@color/ts_primary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/profilePhoneInput"
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+
+                        android:imeOptions="actionDone"
+                        android:inputType="phone"
+
+                        android:maxLength="40"
+                        android:maxLines="1"
+
+                        android:textColor="@color/ts_text_primary"
+                        android:textColorHint="@color/ts_text_muted" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/profileSaveButton"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+
+                    android:layout_marginTop="20dp"
+
+                    android:text="@string/profile_save"
+                    android:textAllCaps="false"
+
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+
+                    app:backgroundTint="@color/ts_primary"
+                    app:cornerRadius="16dp" />
+
+                <TextView
+                    android:id="@+id/profileSaveStatus"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:layout_marginTop="12dp"
+
+                    android:gravity="center"
+
+                    android:textColor="@color/ts_success"
+
+                    android:textSize="13sp"
+
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:layout_marginTop="14dp"
+
+                    android:lineSpacingExtra="2dp"
+
+                    android:text="@string/profile_privacy_note"
+                    android:textColor="@color/ts_text_muted"
+
+                    android:textSize="12sp" />
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- SERVICE -->
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -138,6 +258,8 @@
                     android:layout_height="wrap_content"
 
                     android:layout_marginTop="8dp"
+
+                    android:lineSpacingExtra="2dp"
 
                     android:text="@string/profile_service_message"
                     android:textColor="@color/ts_text_secondary"

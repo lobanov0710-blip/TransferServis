@@ -365,15 +365,47 @@
     </string>
 
     <string name="profile_passenger_message">
-        Имя и телефон можно будет сохранить для более быстрого оформления следующих поездок.
+        Сохраните имя и телефон — они будут автоматически подставляться при оформлении следующих поездок.
+    </string>
+
+    <string name="profile_name_hint">
+        Имя
+    </string>
+
+    <string name="profile_phone_hint">
+        Телефон
+    </string>
+
+    <string name="profile_save">
+        Сохранить данные
+    </string>
+
+    <string name="profile_saved">
+        Данные сохранены
+    </string>
+
+    <string name="profile_name_required">
+        Укажите имя.
+    </string>
+
+    <string name="profile_name_too_long">
+        Имя слишком длинное.
+    </string>
+
+    <string name="profile_phone_invalid">
+        Укажите корректный номер телефона.
+    </string>
+
+    <string name="profile_privacy_note">
+        Имя и телефон сохраняются локально в данных приложения и используются для автозаполнения формы поездки.
     </string>
 
     <string name="profile_service_title">
-        Сервис
+        Transfer Servis
     </string>
 
     <string name="profile_service_message">
-        Междугородние поездки 24/7 без пересадок с индивидуальным обслуживанием.
+        Междугородние поездки 24/7 без пересадок с индивидуальным обслуживанием и конфиденциальностью.
     </string>
 
 </resources>

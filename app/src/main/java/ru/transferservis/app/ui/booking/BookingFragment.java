@@ -25,7 +25,9 @@ import java.util.Calendar;
 import java.util.Locale;
 
 import ru.transferservis.app.R;
+import ru.transferservis.app.domain.model.PassengerProfile;
 import ru.transferservis.app.domain.model.Quote;
+import ru.transferservis.app.ui.profile.ProfileViewModel;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
 
@@ -35,19 +37,11 @@ public final class BookingFragment
     private static final String STATE_ORDER_REQUESTED =
             "order_requested";
 
-    // =========================
-    // QUOTE SUMMARY
-    // =========================
-
     private TextView bookingFrom;
     private TextView bookingTo;
     private TextView bookingTariff;
     private TextView bookingDistance;
     private TextView bookingPrice;
-
-    // =========================
-    // PASSENGER
-    // =========================
 
     private TextInputEditText bookingNameInput;
     private TextInputEditText bookingPhoneInput;
@@ -60,12 +54,9 @@ public final class BookingFragment
 
     private TextView orderErrorText;
 
-    // =========================
-    // VIEW MODELS
-    // =========================
-
     private QuoteViewModel quoteViewModel;
     private OrderViewModel orderViewModel;
+    private ProfileViewModel profileViewModel;
 
     private boolean orderRequested;
 
@@ -112,11 +103,9 @@ public final class BookingFragment
         configureActions();
 
         renderQuoteSummary();
-    }
 
-    // =========================
-    // BIND
-    // =========================
+        applySavedProfile();
+    }
 
     private void bindViews(
             @NonNull View root
@@ -183,10 +172,6 @@ public final class BookingFragment
                 );
     }
 
-    // =========================
-    // VIEW MODELS
-    // =========================
-
     private void configureViewModels() {
 
         quoteViewModel =
@@ -203,6 +188,13 @@ public final class BookingFragment
                         OrderViewModel.class
                 );
 
+        profileViewModel =
+                new ViewModelProvider(
+                        requireActivity()
+                ).get(
+                        ProfileViewModel.class
+                );
+
         orderViewModel
                 .getUiState()
                 .observe(
@@ -210,10 +202,6 @@ public final class BookingFragment
                         this::renderOrderState
                 );
     }
-
-    // =========================
-    // ACTIONS
-    // =========================
 
     private void configureActions() {
 
@@ -256,9 +244,37 @@ public final class BookingFragment
         );
     }
 
-    // =========================
-    // QUOTE SUMMARY
-    // =========================
+    private void applySavedProfile() {
+
+        PassengerProfile profile =
+                profileViewModel
+                        .getProfile()
+                        .getValue();
+
+        if (profile == null
+                || profile.isEmpty()) {
+
+            return;
+        }
+
+        if (getInputText(
+                bookingNameInput
+        ).isEmpty()) {
+
+            bookingNameInput.setText(
+                    profile.getName()
+            );
+        }
+
+        if (getInputText(
+                bookingPhoneInput
+        ).isEmpty()) {
+
+            bookingPhoneInput.setText(
+                    profile.getPhone()
+            );
+        }
+    }
 
     private void renderQuoteSummary() {
 
@@ -317,10 +333,6 @@ public final class BookingFragment
                 true
         );
     }
-
-    // =========================
-    // SUBMIT
-    // =========================
 
     private void submitOrder() {
 
@@ -387,10 +399,6 @@ public final class BookingFragment
         );
     }
 
-    // =========================
-    // CURRENT QUOTE
-    // =========================
-
     @Nullable
     private Quote getCurrentQuote() {
 
@@ -407,10 +415,6 @@ public final class BookingFragment
 
         return state.getQuote();
     }
-
-    // =========================
-    // DATE PICKER
-    // =========================
 
     private void showDatePicker() {
 
@@ -483,10 +487,6 @@ public final class BookingFragment
         dialog.show();
     }
 
-    // =========================
-    // DATE FORMAT
-    // =========================
-
     @Nullable
     private String convertDisplayDateToApiDate(
             @NonNull String displayDate
@@ -524,10 +524,6 @@ public final class BookingFragment
                 + day;
     }
 
-    // =========================
-    // KEYBOARD
-    // =========================
-
     private void hideKeyboard() {
 
         FragmentActivity activity =
@@ -562,10 +558,6 @@ public final class BookingFragment
         focusedView.clearFocus();
     }
 
-    // =========================
-    // INPUT
-    // =========================
-
     @NonNull
     private String getInputText(
             @NonNull TextInputEditText input
@@ -580,10 +572,6 @@ public final class BookingFragment
                 .toString()
                 .trim();
     }
-
-    // =========================
-    // ORDER STATE
-    // =========================
 
     private void renderOrderState(
             @NonNull OrderUiState state
@@ -721,10 +709,6 @@ public final class BookingFragment
         );
     }
 
-    // =========================
-    // STATE
-    // =========================
-
     @Override
     public void onSaveInstanceState(
             @NonNull Bundle outState
@@ -740,14 +724,8 @@ public final class BookingFragment
         );
     }
 
-    // =========================
-    // CLEANUP
-    // =========================
-
     @Override
     public void onDestroyView() {
-
-        super.onDestroyView();
 
         bookingFrom =
                 null;
@@ -784,5 +762,7 @@ public final class BookingFragment
 
         orderErrorText =
                 null;
+
+        super.onDestroyView();
     }
 }
