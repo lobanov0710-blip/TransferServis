@@ -71,6 +71,7 @@ dependencies {
     annotationProcessor(libs.room.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockwebserver)
 
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
