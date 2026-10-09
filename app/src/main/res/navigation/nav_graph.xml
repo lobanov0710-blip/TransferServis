@@ -24,7 +24,23 @@
 
             app:destination="@id/quoteFragment" />
 
+        <action
+            android:id="@+id/action_homeFragment_to_activeOrderFragment"
+
+            app:destination="@id/activeOrderFragment" />
+
     </fragment>
+
+    <!-- =========================
+         ACTIVE ORDER
+    ========================== -->
+
+    <fragment
+        android:id="@+id/activeOrderFragment"
+
+        android:name="ru.transferservis.app.ui.active.ActiveOrderFragment"
+
+        android:label="@string/active_order_title" />
 
     <!-- =========================
          HISTORY
@@ -96,6 +112,16 @@
 
         android:name="ru.transferservis.app.ui.success.OrderSuccessFragment"
 
-        android:label="@string/order_success_title" />
+        android:label="@string/order_success_title">
+
+        <action
+            android:id="@+id/action_orderSuccessFragment_to_activeOrderFragment"
+
+            app:destination="@id/activeOrderFragment"
+
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+
+    </fragment>
 
 </navigation>

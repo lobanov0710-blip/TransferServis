@@ -25,13 +25,21 @@ public final class OrderSuccessFragment
         extends Fragment {
 
     private TextView orderSuccessId;
+
     private TextView orderSuccessStatus;
+
     private TextView orderSuccessError;
+
+
+    private MaterialButton activeOrderButton;
 
     private MaterialButton newTripButton;
 
+
     private QuoteViewModel quoteViewModel;
+
     private OrderViewModel orderViewModel;
+
 
     @Nullable
     @Override
@@ -48,26 +56,33 @@ public final class OrderSuccessFragment
         );
     }
 
+
     @Override
     public void onViewCreated(
             @NonNull View view,
             @Nullable Bundle savedInstanceState
     ) {
+
         super.onViewCreated(
                 view,
                 savedInstanceState
         );
 
+
         bindViews(
                 view
         );
 
+
         configureViewModels();
+
 
         configureActions();
 
+
         renderReceipt();
     }
+
 
     private void bindViews(
             @NonNull View root
@@ -78,21 +93,31 @@ public final class OrderSuccessFragment
                         R.id.orderSuccessId
                 );
 
+
         orderSuccessStatus =
                 root.findViewById(
                         R.id.orderSuccessStatus
                 );
+
 
         orderSuccessError =
                 root.findViewById(
                         R.id.orderSuccessError
                 );
 
+
+        activeOrderButton =
+                root.findViewById(
+                        R.id.activeOrderButtonSuccess
+                );
+
+
         newTripButton =
                 root.findViewById(
                         R.id.newTripButton
                 );
     }
+
 
     private void configureViewModels() {
 
@@ -103,6 +128,7 @@ public final class OrderSuccessFragment
                         QuoteViewModel.class
                 );
 
+
         orderViewModel =
                 new ViewModelProvider(
                         requireActivity()
@@ -111,12 +137,19 @@ public final class OrderSuccessFragment
                 );
     }
 
+
     private void configureActions() {
+
+        activeOrderButton.setOnClickListener(
+                view -> openActiveOrder()
+        );
+
 
         newTripButton.setOnClickListener(
                 view -> startNewTrip()
         );
     }
+
 
     private void renderReceipt() {
 
@@ -125,48 +158,71 @@ public final class OrderSuccessFragment
                         .getUiState()
                         .getValue();
 
+
         OrderReceipt receipt =
                 state == null
                         ? null
                         : state.getReceipt();
 
-        if (receipt == null
-                || !state.isSuccess()) {
+
+        if (
+                receipt == null
+                        || !state.isSuccess()
+        ) {
 
             orderSuccessId.setVisibility(
                     View.GONE
             );
 
+
             orderSuccessStatus.setVisibility(
                     View.GONE
             );
+
+
+            activeOrderButton.setVisibility(
+                    View.GONE
+            );
+
 
             orderSuccessError.setText(
                     R.string.booking_unknown_error
             );
 
+
             orderSuccessError.setVisibility(
                     View.VISIBLE
             );
 
+
             return;
         }
+
 
         orderSuccessError.setVisibility(
                 View.GONE
         );
 
+
         orderSuccessId.setVisibility(
                 View.VISIBLE
         );
+
 
         orderSuccessStatus.setVisibility(
                 View.VISIBLE
         );
 
+
+        activeOrderButton.setVisibility(
+                View.VISIBLE
+        );
+
+
         orderSuccessId.setText(
                 receipt.getOrderId()
         );
+
 
         orderSuccessStatus.setText(
                 receipt
@@ -175,16 +231,47 @@ public final class OrderSuccessFragment
         );
     }
 
-    private void startNewTrip() {
 
-        quoteViewModel.reset();
-
-        orderViewModel.reset();
+    private void openActiveOrder() {
 
         NavController navController =
                 NavHostFragment.findNavController(
                         this
                 );
+
+
+        if (
+                navController.getCurrentDestination()
+                        == null
+                        || navController
+                        .getCurrentDestination()
+                        .getId()
+                        != R.id.orderSuccessFragment
+        ) {
+
+            return;
+        }
+
+
+        navController.navigate(
+                R.id.action_orderSuccessFragment_to_activeOrderFragment
+        );
+    }
+
+
+    private void startNewTrip() {
+
+        quoteViewModel.reset();
+
+
+        orderViewModel.reset();
+
+
+        NavController navController =
+                NavHostFragment.findNavController(
+                        this
+                );
+
 
         navController.popBackStack(
                 R.id.homeFragment,
@@ -192,21 +279,30 @@ public final class OrderSuccessFragment
         );
     }
 
+
     @Override
     public void onDestroyView() {
-
-        super.onDestroyView();
 
         orderSuccessId =
                 null;
 
+
         orderSuccessStatus =
                 null;
+
 
         orderSuccessError =
                 null;
 
+
+        activeOrderButton =
+                null;
+
+
         newTripButton =
                 null;
+
+
+        super.onDestroyView();
     }
 }

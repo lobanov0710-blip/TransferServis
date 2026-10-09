@@ -257,15 +257,38 @@
 
             android:visibility="gone" />
 
-        <!-- NEW TRIP -->
+        <!-- ACTIVE ORDER -->
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/newTripButton"
+            android:id="@+id/activeOrderButtonSuccess"
 
             android:layout_width="match_parent"
             android:layout_height="56dp"
 
             android:layout_marginTop="28dp"
+
+            android:text="@string/active_order_open"
+            android:textAllCaps="false"
+
+            android:textSize="16sp"
+            android:textStyle="bold"
+
+            android:visibility="gone"
+
+            app:backgroundTint="@color/ts_primary"
+            app:cornerRadius="16dp" />
+
+        <!-- NEW TRIP -->
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/newTripButton"
+
+            style="?attr/materialButtonOutlinedStyle"
+
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+
+            android:layout_marginTop="12dp"
 
             android:text="@string/order_new_trip"
             android:textAllCaps="false"
@@ -273,8 +296,9 @@
             android:textSize="16sp"
             android:textStyle="bold"
 
-            app:backgroundTint="@color/ts_primary"
-            app:cornerRadius="16dp" />
+            app:cornerRadius="16dp"
+            app:strokeColor="@color/ts_outline"
+            app:strokeWidth="1dp" />
 
     </LinearLayout>
 
