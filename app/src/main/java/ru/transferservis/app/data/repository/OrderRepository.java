@@ -16,6 +16,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import ru.transferservis.app.data.model.OrderStatus;
+import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiClient;
 import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
@@ -24,6 +25,10 @@ import ru.transferservis.app.data.remote.dto.ApiError;
 import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
 import ru.transferservis.app.data.remote.dto.CreateOrderResponse;
 import ru.transferservis.app.data.remote.dto.OrderReceiptDto;
+import ru.transferservis.app.data.remote.dto.OrderStatusRequest;
+import ru.transferservis.app.data.remote.dto.OrderStatusResponse;
+import ru.transferservis.app.data.remote.dto.PassengerOrderDto;
+import ru.transferservis.app.domain.model.ActiveOrder;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 
@@ -78,6 +83,14 @@ public final class OrderRepository {
 
         void onResult(
                 @NonNull ApiResult<OrderReceipt> result
+        );
+    }
+
+
+    public interface ActiveOrderCallback {
+
+        void onResult(
+                @NonNull ApiResult<ActiveOrder> result
         );
     }
 
@@ -294,6 +307,121 @@ public final class OrderRepository {
                 );
     }
 
+    public void getOrderStatus(
+            @NonNull String accessToken,
+            @NonNull ActiveOrderCallback callback
+    ) {
+
+        String cleanAccessToken =
+                cleanString(
+                        accessToken
+                );
+
+
+        if (cleanAccessToken == null) {
+
+            callback.onResult(
+                    ApiResult.validationError(
+                            ApiErrorCode.INVALID_INPUT
+                    )
+            );
+
+            return;
+        }
+
+
+        OrderStatusRequest request =
+                new OrderStatusRequest(
+                        cleanAccessToken
+                );
+
+
+        apiService
+                .getOrderStatus(
+                        request
+                )
+                .enqueue(
+                        new Callback<OrderStatusResponse>() {
+
+                            @Override
+                            public void onResponse(
+                                    @NonNull Call<OrderStatusResponse> call,
+                                    @NonNull Response<OrderStatusResponse> response
+                            ) {
+
+                                int httpCode =
+                                        response.code();
+
+
+                                if (!response.isSuccessful()) {
+
+                                    callback.onResult(
+                                            ApiResult.httpError(
+                                                    httpCode,
+                                                    readApiError(
+                                                            response
+                                                    )
+                                            )
+                                    );
+
+                                    return;
+                                }
+
+
+                                OrderStatusResponse body =
+                                        response.body();
+
+
+                                if (
+                                        body == null
+                                                || !Boolean.TRUE.equals(
+                                                body.getOk()
+                                        )
+                                ) {
+
+                                    callback.onResult(
+                                            ApiResult.invalidResponse(
+                                                    httpCode,
+                                                    ApiErrorCode.INVALID_RESPONSE
+                                            )
+                                    );
+
+                                    return;
+                                }
+
+
+                                callback.onResult(
+                                        mapActiveOrder(
+                                                body,
+                                                httpCode
+                                        )
+                                );
+                            }
+
+
+                            @Override
+                            public void onFailure(
+                                    @NonNull Call<OrderStatusResponse> call,
+                                    @NonNull Throwable throwable
+                            ) {
+
+                                if (call.isCanceled()) {
+                                    return;
+                                }
+
+
+                                callback.onResult(
+                                        ApiResult.networkError(
+                                                ApiErrorCode.NETWORK,
+                                                throwable
+                                        )
+                                );
+                            }
+                        }
+                );
+    }
+
+
     @NonNull
     private ApiResult<OrderReceipt> mapReceipt(
             @NonNull CreateOrderResponse response,
@@ -368,6 +496,200 @@ public final class OrderRepository {
 
         return ApiResult.success(
                 receipt,
+                httpCode
+        );
+    }
+
+
+    @NonNull
+    private ApiResult<ActiveOrder> mapActiveOrder(
+            @NonNull OrderStatusResponse response,
+            int httpCode
+    ) {
+
+        PassengerOrderDto dto =
+                response.getOrder();
+
+
+        if (dto == null) {
+
+            return ApiResult.invalidResponse(
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
+            );
+        }
+
+
+        String orderId =
+                cleanString(
+                        dto.getId()
+                );
+
+
+        OrderStatus status =
+                OrderStatus.fromApiValue(
+                        dto.getStatus()
+                );
+
+
+        String route =
+                cleanString(
+                        dto.getRoute()
+                );
+
+
+        String from =
+                dto.getFrom() == null
+                        ? ""
+                        : dto.getFrom().trim();
+
+
+        String to =
+                dto.getTo() == null
+                        ? ""
+                        : dto.getTo().trim();
+
+
+        String date =
+                cleanString(
+                        dto.getDate()
+                );
+
+
+        String tariffValue =
+                cleanString(
+                        dto.getTariff()
+                );
+
+
+        TariffType tariff =
+                tariffValue == null
+                        ? null
+                        : TariffType.fromApiValue(
+                        tariffValue
+                );
+
+
+        Double distance =
+                dto.getDistance();
+
+
+        Double duration =
+                dto.getDuration();
+
+
+        Integer price =
+                dto.getPrice();
+
+
+        Long createdAt =
+                dto.getCreatedAt();
+
+
+        Long updatedAt =
+                dto.getUpdatedAt();
+
+
+        if (
+                orderId == null
+                        || status == null
+                        || route == null
+                        || date == null
+                        || !DATE_PATTERN
+                        .matcher(
+                                date
+                        )
+                        .matches()
+                        || createdAt == null
+                        || createdAt <= 0L
+                        || updatedAt == null
+                        || updatedAt < createdAt
+        ) {
+
+            return ApiResult.invalidResponse(
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
+            );
+        }
+
+
+        if (
+                tariffValue != null
+                        && tariff == null
+        ) {
+
+            return ApiResult.invalidResponse(
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
+            );
+        }
+
+
+        if (
+                distance != null
+                        && (
+                        !Double.isFinite(
+                                distance
+                        )
+                                || distance <= 0.0
+                )
+        ) {
+
+            return ApiResult.invalidResponse(
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
+            );
+        }
+
+
+        if (
+                duration != null
+                        && (
+                        !Double.isFinite(
+                                duration
+                        )
+                                || duration <= 0.0
+                )
+        ) {
+
+            return ApiResult.invalidResponse(
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
+            );
+        }
+
+
+        if (
+                price != null
+                        && price <= 0
+        ) {
+
+            return ApiResult.invalidResponse(
+                    httpCode,
+                    ApiErrorCode.INVALID_RESPONSE
+            );
+        }
+
+
+        ActiveOrder activeOrder =
+                new ActiveOrder(
+                        orderId,
+                        status,
+                        route,
+                        from,
+                        to,
+                        date,
+                        tariff,
+                        distance,
+                        duration,
+                        price,
+                        createdAt,
+                        updatedAt
+                );
+
+
+        return ApiResult.success(
+                activeOrder,
                 httpCode
         );
     }
