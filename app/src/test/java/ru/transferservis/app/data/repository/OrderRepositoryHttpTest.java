@@ -94,7 +94,9 @@ public final class OrderRepositoryHttpTest {
                         + "\"id\":\"order-123\","
                         + "\"status\":\"new\","
                         + "\"createdAt\":1791234567000"
-                        + "}"
+                        + "},"
+                        + "\"accessToken\":\"test-passenger-access-token\","
+                        + "\"accessExpiresAt\":1793834567000"
                         + "}";
 
         enqueueJson(
@@ -134,6 +136,16 @@ public final class OrderRepositoryHttpTest {
         assertEquals(
                 1791234567000L,
                 receipt.getCreatedAtMillis()
+        );
+
+        assertEquals(
+                "test-passenger-access-token",
+                receipt.getAccessToken()
+        );
+
+        assertEquals(
+                1793834567000L,
+                receipt.getAccessExpiresAtMillis()
         );
     }
 

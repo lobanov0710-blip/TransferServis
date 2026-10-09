@@ -303,6 +303,7 @@ public final class OrderRepository {
         OrderReceiptDto dto =
                 response.getOrder();
 
+
         if (dto == null) {
 
             return ApiResult.invalidResponse(
@@ -311,23 +312,42 @@ public final class OrderRepository {
             );
         }
 
+
         String orderId =
                 cleanString(
                         dto.getId()
                 );
+
 
         OrderStatus status =
                 OrderStatus.fromApiValue(
                         dto.getStatus()
                 );
 
+
         Long createdAt =
                 dto.getCreatedAt();
 
-        if (orderId == null
-                || status == null
-                || createdAt == null
-                || createdAt <= 0L) {
+
+        String accessToken =
+                cleanString(
+                        response.getAccessToken()
+                );
+
+
+        Long accessExpiresAt =
+                response.getAccessExpiresAt();
+
+
+        if (
+                orderId == null
+                        || status == null
+                        || createdAt == null
+                        || createdAt <= 0L
+                        || accessToken == null
+                        || accessExpiresAt == null
+                        || accessExpiresAt <= createdAt
+        ) {
 
             return ApiResult.invalidResponse(
                     httpCode,
@@ -335,12 +355,16 @@ public final class OrderRepository {
             );
         }
 
+
         OrderReceipt receipt =
                 new OrderReceipt(
                         orderId,
                         status,
-                        createdAt
+                        createdAt,
+                        accessToken,
+                        accessExpiresAt
                 );
+
 
         return ApiResult.success(
                 receipt,
