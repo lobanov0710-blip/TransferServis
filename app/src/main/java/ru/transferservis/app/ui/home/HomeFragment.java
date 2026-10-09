@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,15 +18,15 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 
-import android.widget.TextView;
-
 import ru.transferservis.app.R;
 import ru.transferservis.app.data.model.TariffType;
+import ru.transferservis.app.data.remote.ApiErrorCode;
+import ru.transferservis.app.ui.active.ActiveOrderUiState;
+import ru.transferservis.app.ui.active.ActiveOrderViewModel;
 import ru.transferservis.app.ui.booking.OrderViewModel;
+import ru.transferservis.app.ui.common.UiErrorMapper;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
-import ru.transferservis.app.data.remote.ApiErrorCode;
-import ru.transferservis.app.ui.common.UiErrorMapper;
 
 public final class HomeFragment
         extends Fragment {
@@ -33,21 +34,35 @@ public final class HomeFragment
     private static final String STATE_CALCULATION_REQUESTED =
             "calculation_requested";
 
+
     private TextInputEditText fromInput;
+
     private TextInputEditText toInput;
+
 
     private MaterialButtonToggleGroup tariffToggleGroup;
 
+
     private MaterialButton calculateButton;
+
+    private MaterialButton activeOrderButton;
+
 
     private CircularProgressIndicator progressIndicator;
 
+
     private TextView errorText;
 
+
     private QuoteViewModel quoteViewModel;
+
     private OrderViewModel orderViewModel;
 
+    private ActiveOrderViewModel activeOrderViewModel;
+
+
     private boolean calculationRequested;
+
 
     @Nullable
     @Override
@@ -64,15 +79,18 @@ public final class HomeFragment
         );
     }
 
+
     @Override
     public void onViewCreated(
             @NonNull View view,
             @Nullable Bundle savedInstanceState
     ) {
+
         super.onViewCreated(
                 view,
                 savedInstanceState
         );
+
 
         if (savedInstanceState != null) {
 
@@ -83,16 +101,21 @@ public final class HomeFragment
                     );
         }
 
+
         bindViews(
                 view
         );
 
+
         configureTariffs();
+
 
         configureViewModels();
 
+
         configureActions();
     }
+
 
     private void bindViews(
             @NonNull View root
@@ -103,25 +126,36 @@ public final class HomeFragment
                         R.id.fromInput
                 );
 
+
         toInput =
                 root.findViewById(
                         R.id.toInput
                 );
+
 
         tariffToggleGroup =
                 root.findViewById(
                         R.id.tariffToggleGroup
                 );
 
+
         calculateButton =
                 root.findViewById(
                         R.id.calculateButton
                 );
 
+
+        activeOrderButton =
+                root.findViewById(
+                        R.id.activeOrderButton
+                );
+
+
         progressIndicator =
                 root.findViewById(
                         R.id.progressIndicator
                 );
+
 
         errorText =
                 root.findViewById(
@@ -129,12 +163,14 @@ public final class HomeFragment
                 );
     }
 
+
     private void configureTariffs() {
 
         tariffToggleGroup.check(
                 R.id.buttonComfort
         );
     }
+
 
     private void configureViewModels() {
 
@@ -145,6 +181,7 @@ public final class HomeFragment
                         QuoteViewModel.class
                 );
 
+
         orderViewModel =
                 new ViewModelProvider(
                         requireActivity()
@@ -152,20 +189,44 @@ public final class HomeFragment
                         OrderViewModel.class
                 );
 
+
+        activeOrderViewModel =
+                new ViewModelProvider(
+                        requireActivity()
+                ).get(
+                        ActiveOrderViewModel.class
+                );
+
+
         quoteViewModel
                 .getUiState()
                 .observe(
                         getViewLifecycleOwner(),
                         this::renderQuoteState
                 );
+
+
+        activeOrderViewModel
+                .getUiState()
+                .observe(
+                        getViewLifecycleOwner(),
+                        this::renderActiveOrderEntry
+                );
     }
+
 
     private void configureActions() {
 
         calculateButton.setOnClickListener(
                 view -> calculateQuote()
         );
+
+
+        activeOrderButton.setOnClickListener(
+                view -> openActiveOrder()
+        );
     }
+
 
     private void calculateQuote() {
 
@@ -174,23 +235,32 @@ public final class HomeFragment
                         fromInput
                 );
 
+
         String to =
                 getInputText(
                         toInput
                 );
 
+
         TariffType tariff =
                 getSelectedTariff();
 
+
         /*
          * Новый расчёт означает новый flow.
-         * Предыдущий order state больше
-         * не относится к этой поездке.
+         * Предыдущий order UI state больше
+         * не относится к форме новой поездки.
+         *
+         * Secure passenger session при этом
+         * не удаляется.
          */
+
         orderViewModel.reset();
+
 
         calculationRequested =
                 true;
+
 
         quoteViewModel.calculate(
                 from,
@@ -199,6 +269,34 @@ public final class HomeFragment
         );
     }
 
+
+    private void openActiveOrder() {
+
+        NavController navController =
+                NavHostFragment.findNavController(
+                        this
+                );
+
+
+        if (
+                navController.getCurrentDestination()
+                        == null
+                        || navController
+                        .getCurrentDestination()
+                        .getId()
+                        != R.id.homeFragment
+        ) {
+
+            return;
+        }
+
+
+        navController.navigate(
+                R.id.action_homeFragment_to_activeOrderFragment
+        );
+    }
+
+
     @NonNull
     private TariffType getSelectedTariff() {
 
@@ -206,20 +304,28 @@ public final class HomeFragment
                 tariffToggleGroup
                         .getCheckedButtonId();
 
-        if (checkedId
-                == R.id.buttonBusiness) {
+
+        if (
+                checkedId ==
+                        R.id.buttonBusiness
+        ) {
 
             return TariffType.BUSINESS;
         }
 
-        if (checkedId
-                == R.id.buttonMinivan) {
+
+        if (
+                checkedId ==
+                        R.id.buttonMinivan
+        ) {
 
             return TariffType.MINIVAN;
         }
 
+
         return TariffType.COMFORT;
     }
+
 
     @NonNull
     private String getInputText(
@@ -227,14 +333,17 @@ public final class HomeFragment
     ) {
 
         if (input.getText() == null) {
+
             return "";
         }
+
 
         return input
                 .getText()
                 .toString()
                 .trim();
     }
+
 
     private void renderQuoteState(
             @NonNull QuoteUiState state
@@ -248,17 +357,20 @@ public final class HomeFragment
 
                 break;
 
+
             case LOADING:
 
                 renderLoading();
 
                 break;
 
+
             case SUCCESS:
 
                 renderSuccess();
 
                 break;
+
 
             case ERROR:
 
@@ -270,20 +382,56 @@ public final class HomeFragment
         }
     }
 
+
+    private void renderActiveOrderEntry(
+            @NonNull ActiveOrderUiState state
+    ) {
+
+        switch (state.getStatus()) {
+
+            case SUCCESS:
+
+            case ERROR:
+
+                activeOrderButton.setVisibility(
+                        View.VISIBLE
+                );
+
+                break;
+
+
+            case EMPTY:
+
+            case LOADING:
+
+            default:
+
+                activeOrderButton.setVisibility(
+                        View.GONE
+                );
+
+                break;
+        }
+    }
+
+
     private void renderIdle() {
 
         progressIndicator.setVisibility(
                 View.GONE
         );
 
+
         errorText.setVisibility(
                 View.GONE
         );
+
 
         calculateButton.setEnabled(
                 true
         );
     }
+
 
     private void renderLoading() {
 
@@ -291,14 +439,17 @@ public final class HomeFragment
                 View.VISIBLE
         );
 
+
         errorText.setVisibility(
                 View.GONE
         );
+
 
         calculateButton.setEnabled(
                 false
         );
     }
+
 
     private void renderSuccess() {
 
@@ -306,13 +457,16 @@ public final class HomeFragment
                 View.GONE
         );
 
+
         errorText.setVisibility(
                 View.GONE
         );
 
+
         calculateButton.setEnabled(
                 true
         );
+
 
         /*
          * SUCCESS может уже находиться
@@ -323,32 +477,41 @@ public final class HomeFragment
          * только если расчёт был реально
          * запущен с этого экземпляра экрана.
          */
+
         if (!calculationRequested) {
+
             return;
         }
 
+
         calculationRequested =
                 false;
+
 
         NavController navController =
                 NavHostFragment.findNavController(
                         this
                 );
 
-        if (navController
-                .getCurrentDestination() == null
-                || navController
-                .getCurrentDestination()
-                .getId()
-                != R.id.homeFragment) {
+
+        if (
+                navController.getCurrentDestination()
+                        == null
+                        || navController
+                        .getCurrentDestination()
+                        .getId()
+                        != R.id.homeFragment
+        ) {
 
             return;
         }
+
 
         navController.navigate(
                 R.id.action_homeFragment_to_quoteFragment
         );
     }
+
 
     private void renderError(
             @Nullable ApiErrorCode errorCode
@@ -357,13 +520,16 @@ public final class HomeFragment
         calculationRequested =
                 false;
 
+
         progressIndicator.setVisibility(
                 View.GONE
         );
 
+
         calculateButton.setEnabled(
                 true
         );
+
 
         errorText.setText(
                 UiErrorMapper.quoteMessage(
@@ -371,10 +537,35 @@ public final class HomeFragment
                 )
         );
 
+
         errorText.setVisibility(
                 View.VISIBLE
         );
     }
+
+
+    @Override
+    public void onResume() {
+
+        super.onResume();
+
+
+        if (activeOrderViewModel != null) {
+
+            /*
+             * После создания заказа secure-session
+             * могла появиться уже после первого
+             * создания Activity-scoped ViewModel.
+             *
+             * Поэтому при каждом возврате на Home
+             * перечитываем session и актуальный
+             * серверный статус.
+             */
+
+            activeOrderViewModel.refresh();
+        }
+    }
+
 
     @Override
     public void onSaveInstanceState(
@@ -386,32 +577,44 @@ public final class HomeFragment
                 calculationRequested
         );
 
+
         super.onSaveInstanceState(
                 outState
         );
     }
 
+
     @Override
     public void onDestroyView() {
-
-        super.onDestroyView();
 
         fromInput =
                 null;
 
+
         toInput =
                 null;
+
 
         tariffToggleGroup =
                 null;
 
+
         calculateButton =
                 null;
+
+
+        activeOrderButton =
+                null;
+
 
         progressIndicator =
                 null;
 
+
         errorText =
                 null;
+
+
+        super.onDestroyView();
     }
 }

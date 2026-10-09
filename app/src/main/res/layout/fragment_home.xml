@@ -381,6 +381,32 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- =========================
+     ACTIVE ORDER
+========================== -->
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/activeOrderButton"
+
+            style="?attr/materialButtonOutlinedStyle"
+
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+
+            android:layout_marginTop="16dp"
+
+            android:text="@string/active_order_open"
+            android:textAllCaps="false"
+
+            android:textSize="16sp"
+            android:textStyle="bold"
+
+            android:visibility="gone"
+
+            app:cornerRadius="16dp"
+            app:strokeColor="@color/ts_primary"
+            app:strokeWidth="1dp" />
+
+        <!-- =========================
              TRUST
         ========================== -->
 
