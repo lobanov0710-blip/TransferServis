@@ -17,6 +17,8 @@ import ru.transferservis.app.data.remote.dto.CalculateRequest;
 import ru.transferservis.app.data.remote.dto.CalculateResponse;
 import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
 import ru.transferservis.app.data.remote.dto.CreateOrderResponse;
+import ru.transferservis.app.data.remote.dto.OrderStatusRequest;
+import ru.transferservis.app.data.remote.dto.OrderStatusResponse;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 
@@ -338,9 +340,21 @@ public final class OrderRepositoryValidationTest {
             );
         }
 
+
         @Override
         public Call<CreateOrderResponse> createOrder(
                 CreateOrderRequest request
+        ) {
+
+            throw new AssertionError(
+                    "Network must not be called during validation"
+            );
+        }
+
+
+        @Override
+        public Call<OrderStatusResponse> getOrderStatus(
+                OrderStatusRequest request
         ) {
 
             throw new AssertionError(
