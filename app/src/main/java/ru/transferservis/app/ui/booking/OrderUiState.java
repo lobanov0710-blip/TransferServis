@@ -22,10 +22,13 @@ public final class OrderUiState {
 
     private final ApiErrorCode errorCode;
 
+    private final boolean orderAccessSaved;
+
     private OrderUiState(
             @NonNull Status status,
             @Nullable OrderReceipt receipt,
-            @Nullable ApiErrorCode errorCode
+            @Nullable ApiErrorCode errorCode,
+            boolean orderAccessSaved
     ) {
 
         this.status =
@@ -36,6 +39,8 @@ public final class OrderUiState {
 
         this.errorCode =
                 errorCode;
+
+        this.orderAccessSaved = orderAccessSaved;
     }
 
     @NonNull
@@ -44,7 +49,8 @@ public final class OrderUiState {
         return new OrderUiState(
                 Status.IDLE,
                 null,
-                null
+                null,
+                false
         );
     }
 
@@ -54,19 +60,22 @@ public final class OrderUiState {
         return new OrderUiState(
                 Status.LOADING,
                 null,
-                null
+                null,
+                false
         );
     }
 
     @NonNull
     public static OrderUiState success(
-            @NonNull OrderReceipt receipt
+            @NonNull OrderReceipt receipt,
+            boolean orderAccessSaved
     ) {
 
         return new OrderUiState(
                 Status.SUCCESS,
                 receipt,
-                null
+                null,
+                orderAccessSaved
         );
     }
 
@@ -78,7 +87,8 @@ public final class OrderUiState {
         return new OrderUiState(
                 Status.ERROR,
                 null,
-                errorCode
+                errorCode,
+                false
         );
     }
 
@@ -111,5 +121,9 @@ public final class OrderUiState {
         return status
                 == Status.SUCCESS
                 && receipt != null;
+    }
+
+    public boolean isOrderAccessSaved() {
+        return isSuccess() && orderAccessSaved;
     }
 }

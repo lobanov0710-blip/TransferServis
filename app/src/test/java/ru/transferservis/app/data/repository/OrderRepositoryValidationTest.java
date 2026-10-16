@@ -25,17 +25,23 @@ import ru.transferservis.app.domain.model.Quote;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 
 public final class OrderRepositoryValidationTest {
 
     private OrderRepository repository;
 
+    private NoNetworkApiService apiService;
+
     @Before
     public void setUp() {
 
+        apiService =
+                new NoNetworkApiService();
+
         repository =
                 new OrderRepository(
-                        new NoNetworkApiService(),
+                        apiService,
                         new Gson()
                 );
     }
@@ -173,6 +179,40 @@ public final class OrderRepositoryValidationTest {
 
         throw new AssertionError(
                 "Valid formatted phone must pass local validation"
+        );
+    }
+
+    @Test
+    public void createOrder_trimsPassengerDetailsAndPreservesPhoneFormatting() {
+
+        String name = "А".repeat(100);
+
+        assertThrows(
+                AssertionError.class,
+                () -> repository.createOrder(
+                        createValidQuote(),
+                        "  " + name + "  ",
+                        "  +44 (20) 7123-4567  ",
+                        "2026-10-10",
+                        null,
+                        result -> {
+                        }
+                )
+        );
+
+        assertNotNull(
+                "Valid passenger details must reach the API",
+                apiService.lastOrderRequest
+        );
+
+        assertEquals(
+                name,
+                apiService.lastOrderRequest.getName()
+        );
+
+        assertEquals(
+                "+44 (20) 7123-4567",
+                apiService.lastOrderRequest.getPhone()
         );
     }
 
@@ -330,6 +370,8 @@ public final class OrderRepositoryValidationTest {
     private static final class NoNetworkApiService
             implements ApiService {
 
+        private CreateOrderRequest lastOrderRequest;
+
         @Override
         public Call<CalculateResponse> calculate(
                 CalculateRequest request
@@ -345,6 +387,9 @@ public final class OrderRepositoryValidationTest {
         public Call<CreateOrderResponse> createOrder(
                 CreateOrderRequest request
         ) {
+
+            lastOrderRequest =
+                    request;
 
             throw new AssertionError(
                     "Network must not be called during validation"

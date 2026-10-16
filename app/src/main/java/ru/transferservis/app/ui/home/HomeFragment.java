@@ -562,7 +562,9 @@ public final class HomeFragment
              * серверный статус.
              */
 
-            activeOrderViewModel.refresh();
+            // Home shows the current saved order, not a target retained from
+            // a previous confirmation screen in the activity-scoped model.
+            activeOrderViewModel.restoreActiveOrder();
         }
     }
 

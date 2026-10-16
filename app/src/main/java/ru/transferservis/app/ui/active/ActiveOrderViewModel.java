@@ -3,305 +3,255 @@ package ru.transferservis.app.ui.active;
 import android.app.Application;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 
 import ru.transferservis.app.data.local.PassengerOrderSessionStore;
+import ru.transferservis.app.data.local.PassengerOrderSessionStore.Session;
 import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.repository.OrderRepository;
+import ru.transferservis.app.data.repository.TripHistoryRepository;
 import ru.transferservis.app.domain.model.ActiveOrder;
 
-public final class ActiveOrderViewModel
-        extends AndroidViewModel {
+public final class ActiveOrderViewModel extends AndroidViewModel {
 
-    private final OrderRepository repository;
-
-    private final PassengerOrderSessionStore sessionStore;
-
-    private final ExecutorService storageExecutor;
-
-
-    private final MutableLiveData<ActiveOrderUiState> uiState =
-            new MutableLiveData<>(
-                    ActiveOrderUiState.empty()
-            );
-
-
-    private final AtomicLong requestSequence =
-            new AtomicLong(
-                    0L
-            );
-
-
-    public ActiveOrderViewModel(
-            @NonNull Application application
-    ) {
-
-        super(
-                application
-        );
-
-
-        repository =
-                new OrderRepository();
-
-
-        sessionStore =
-                new PassengerOrderSessionStore(
-                        application
-                );
-
-
-        storageExecutor =
-                Executors.newSingleThreadExecutor();
-
-
-        restoreActiveOrder();
+    interface StatusLoader {
+        void load(String accessToken, OrderRepository.ActiveOrderCallback callback);
     }
 
+    interface SessionAccess {
+        @Nullable Session load();
+        boolean isCurrent(Session expected);
+        boolean clearIfMatches(Session expected);
+    }
+
+    interface HistoryWriter {
+        void update(ActiveOrder order, BooleanSupplier stillCurrent);
+    }
+
+    private final Requests requests;
+
+    public ActiveOrderViewModel(@NonNull Application application) {
+        super(application);
+        OrderRepository repository = new OrderRepository();
+        PassengerOrderSessionStore store = new PassengerOrderSessionStore(application);
+        TripHistoryRepository history = new TripHistoryRepository(application);
+        StatusLoader statusLoader = repository::getOrderStatus;
+        SessionAccess sessions = new SessionAccess() {
+            @Override public Session load() { return store.load(); }
+            @Override public boolean isCurrent(Session expected) { return store.isCurrent(expected); }
+            @Override public boolean clearIfMatches(Session expected) {
+                return store.clearIfMatches(expected);
+            }
+        };
+        requests = new Requests(statusLoader, sessions, history::updateConfirmedStatus,
+                Executors.newSingleThreadExecutor(), ContextCompat.getMainExecutor(application));
+        requests.restoreActiveOrder();
+    }
 
     @NonNull
     public LiveData<ActiveOrderUiState> getUiState() {
-
-        return uiState;
+        return requests.getUiState();
     }
-
-
-    // ========================================
-    // RESTORE
-    // ========================================
 
     public void restoreActiveOrder() {
-
-        final long requestId =
-                requestSequence
-                        .incrementAndGet();
-
-
-        uiState.setValue(
-                ActiveOrderUiState.loading()
-        );
-
-
-        storageExecutor.execute(
-                () -> {
-
-                    PassengerOrderSessionStore.Session session =
-                            sessionStore.load();
-
-
-                    if (
-                            requestId !=
-                                    requestSequence.get()
-                    ) {
-
-                        return;
-                    }
-
-
-                    if (session == null) {
-
-                        uiState.postValue(
-                                ActiveOrderUiState.empty()
-                        );
-
-                        return;
-                    }
-
-
-                    loadRemoteOrder(
-                            requestId,
-                            session
-                    );
-                }
-        );
+        requests.restoreActiveOrder();
     }
 
-
-    // ========================================
-    // REMOTE ORDER
-    // ========================================
-
-    private void loadRemoteOrder(
-            long requestId,
-            @NonNull PassengerOrderSessionStore.Session session
-    ) {
-
-        repository.getOrderStatus(
-                session.getAccessToken(),
-                result -> {
-
-                    if (
-                            requestId !=
-                                    requestSequence.get()
-                    ) {
-
-                        return;
-                    }
-
-
-                    handleRemoteResult(
-                            result,
-                            session
-                    );
-                }
-        );
+    public void restoreActiveOrder(@Nullable String expectedOrderId) {
+        requests.restoreActiveOrder(expectedOrderId);
     }
-
-
-    // ========================================
-    // RESULT
-    // ========================================
-
-    private void handleRemoteResult(
-            @NonNull ApiResult<ActiveOrder> result,
-            @NonNull PassengerOrderSessionStore.Session session
-    ) {
-
-        if (result.isSuccess()) {
-
-            ActiveOrder order =
-                    result.getData();
-
-
-            if (order == null) {
-
-                uiState.postValue(
-                        ActiveOrderUiState.error(
-                                ApiErrorCode.INVALID_RESPONSE
-                        )
-                );
-
-                return;
-            }
-
-
-            // ========================================
-            // LOCAL / SERVER CONSISTENCY
-            // ========================================
-            //
-            // The server capability token already
-            // binds access to one order.
-            //
-            // We additionally verify that the
-            // returned order id matches the local
-            // session id.
-            // ========================================
-
-            if (
-                    !session
-                            .getOrderId()
-                            .equals(
-                                    order.getOrderId()
-                            )
-            ) {
-
-                storageExecutor.execute(
-                        sessionStore::clear
-                );
-
-
-                uiState.postValue(
-                        ActiveOrderUiState.error(
-                                ApiErrorCode.INVALID_RESPONSE
-                        )
-                );
-
-                return;
-            }
-
-
-            uiState.postValue(
-                    ActiveOrderUiState.success(
-                            order
-                    )
-            );
-
-            return;
-        }
-
-
-        ApiErrorCode errorCode =
-                result.getErrorCode();
-
-
-        if (errorCode == null) {
-
-            errorCode =
-                    ApiErrorCode.UNKNOWN;
-        }
-
-
-        // ========================================
-        // IMPORTANT
-        // ========================================
-        //
-        // Network / HTTP failure does not destroy
-        // the local capability token.
-        //
-        // This allows another refresh after a
-        // temporary network/server failure.
-        // ========================================
-
-        uiState.postValue(
-                ActiveOrderUiState.error(
-                        errorCode
-                )
-        );
-    }
-
-
-    // ========================================
-    // REFRESH
-    // ========================================
 
     public void refresh() {
-
-        restoreActiveOrder();
+        requests.refresh();
     }
-
-
-    // ========================================
-    // CLEAR
-    // ========================================
 
     public void clearActiveOrder() {
-
-        requestSequence
-                .incrementAndGet();
-
-
-        uiState.setValue(
-                ActiveOrderUiState.empty()
-        );
-
-
-        storageExecutor.execute(
-                sessionStore::clear
-        );
+        requests.clearActiveOrder();
     }
-
-
-    // ========================================
-    // CLEANUP
-    // ========================================
 
     @Override
     protected void onCleared() {
+        requests.close();
+    }
 
-        requestSequence
-                .incrementAndGet();
+    // The production request coordinator is independent of Android storage and Application.
+    static final class Requests {
+        private final StatusLoader statusLoader;
+        private final SessionAccess sessions;
+        private final HistoryWriter historyWriter;
+        private final ExecutorService storageExecutor;
+        private final Executor mainExecutor;
+        private final AtomicLong requestSequence = new AtomicLong();
+        private final MutableLiveData<ActiveOrderUiState> uiState =
+                new MutableLiveData<>(ActiveOrderUiState.empty());
 
+        // Accessed on the main thread; refresh retains the screen's requested order.
+        @Nullable private String expectedOrderId;
+        @Nullable private volatile Session requestedSession;
 
-        storageExecutor.shutdownNow();
+        // Accessed only by the serial storage executor.
+        @Nullable private Session lastConfirmedSession;
+        @Nullable private ActiveOrder lastConfirmedOrder;
 
+        Requests(StatusLoader statusLoader, SessionAccess sessions, HistoryWriter historyWriter,
+                ExecutorService storageExecutor, Executor mainExecutor) {
+            this.statusLoader = statusLoader;
+            this.sessions = sessions;
+            this.historyWriter = historyWriter;
+            this.storageExecutor = storageExecutor;
+            this.mainExecutor = mainExecutor;
+        }
 
-        super.onCleared();
+        @NonNull
+        public LiveData<ActiveOrderUiState> getUiState() {
+            return uiState;
+        }
+
+        public void restoreActiveOrder() {
+            restoreActiveOrder(null);
+        }
+
+        public void restoreActiveOrder(@Nullable String expectedOrderId) {
+            this.expectedOrderId = expectedOrderId;
+            final long requestId = requestSequence.incrementAndGet();
+            requestedSession = null;
+            uiState.setValue(ActiveOrderUiState.loading());
+            storageExecutor.execute(() -> {
+                Session session = sessions.load();
+                if (!isCurrentRequest(requestId)) {
+                    return;
+                }
+                if (session == null || (expectedOrderId != null
+                        && !expectedOrderId.equals(session.getOrderId()))) {
+                    deliver(requestId, null, ActiveOrderUiState.empty());
+                    return;
+                }
+                requestedSession = session;
+                statusLoader.load(session.getAccessToken(), result -> {
+                    if (isCurrentRequest(requestId)) {
+                        storageExecutor.execute(() -> handleResult(requestId, session, result));
+                    }
+                });
+            });
+        }
+
+        private void handleResult(long requestId, Session session, ApiResult<ActiveOrder> result) {
+            if (!isCurrentRequest(requestId)) {
+                return;
+            }
+            if (!sessions.isCurrent(session)) {
+                restartIfCurrent(requestId);
+                return;
+            }
+            if (!result.isSuccess()) {
+                ApiErrorCode error = result.getErrorCode();
+                // Temporary network/HTTP errors never discard the capability token.
+                deliver(requestId, session, ActiveOrderUiState.error(
+                        error == null ? ApiErrorCode.UNKNOWN : error));
+                return;
+            }
+
+            ActiveOrder order = result.getData();
+            if (order == null) {
+                deliver(requestId, session, ActiveOrderUiState.error(ApiErrorCode.INVALID_RESPONSE));
+                return;
+            }
+            if (!session.getOrderId().equals(order.getOrderId())) {
+                // The failed request must never remove a newly created session.
+                if (isCurrentRequest(requestId) && sessions.clearIfMatches(session)) {
+                    deliver(requestId, null, ActiveOrderUiState.error(ApiErrorCode.INVALID_RESPONSE));
+                } else {
+                    restartIfCurrent(requestId);
+                }
+                return;
+            }
+
+            if (sameSession(session, lastConfirmedSession) && lastConfirmedOrder != null
+                    && order.getUpdatedAtMillis() < lastConfirmedOrder.getUpdatedAtMillis()) {
+                // A stale replica response must not move the visible/history status backwards.
+                order = lastConfirmedOrder;
+            }
+
+            lastConfirmedSession = session;
+            lastConfirmedOrder = order;
+            historyWriter.update(order,
+                    () -> isCurrentRequest(requestId) && sessions.isCurrent(session));
+            // DONE/CANCELED remain visible; no new terminal-session policy is introduced.
+            deliver(requestId, session, ActiveOrderUiState.success(order));
+        }
+
+        private void deliver(long requestId, @Nullable Session session, ActiveOrderUiState state) {
+            mainExecutor.execute(() -> {
+                // Check at delivery, not just before posting: another refresh may be queued first.
+                if (!isCurrentRequest(requestId)) {
+                    return;
+                }
+                if (session != null && !sessions.isCurrent(session)) {
+                    restoreActiveOrder(expectedOrderId);
+                    return;
+                }
+                if (session == null) {
+                    Session current = sessions.load();
+                    if (current != null && (state.getStatus() != ActiveOrderUiState.Status.EMPTY
+                            || expectedOrderId == null
+                            || expectedOrderId.equals(current.getOrderId()))) {
+                        restoreActiveOrder(expectedOrderId);
+                        return;
+                    }
+                }
+                uiState.setValue(state);
+            });
+        }
+
+        private void restartIfCurrent(long requestId) {
+            mainExecutor.execute(() -> {
+                if (isCurrentRequest(requestId)) {
+                    restoreActiveOrder(expectedOrderId);
+                }
+            });
+        }
+
+        private boolean isCurrentRequest(long requestId) {
+            return requestId == requestSequence.get();
+        }
+
+        private static boolean sameSession(Session session, @Nullable Session other) {
+            return other != null
+                    && session.getOrderId().equals(other.getOrderId())
+                    && session.getAccessToken().equals(other.getAccessToken())
+                    && session.getAccessExpiresAtMillis() == other.getAccessExpiresAtMillis();
+        }
+
+        public void refresh() {
+            restoreActiveOrder(expectedOrderId);
+        }
+
+        public void clearActiveOrder() {
+            final Session expected = requestedSession;
+            final long requestId = requestSequence.incrementAndGet();
+            requestedSession = null;
+            uiState.setValue(ActiveOrderUiState.empty());
+            storageExecutor.execute(() -> {
+                if (expected != null && isCurrentRequest(requestId)) {
+                    sessions.clearIfMatches(expected);
+                }
+            });
+        }
+
+        void close() {
+            requestSequence.incrementAndGet();
+            storageExecutor.shutdownNow();
+        }
     }
 }

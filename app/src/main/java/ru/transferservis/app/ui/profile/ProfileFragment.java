@@ -19,6 +19,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.PassengerProfile;
+import ru.transferservis.app.domain.validation.PassengerValidator;
 
 public final class ProfileFragment
         extends Fragment {
@@ -169,7 +170,13 @@ public final class ProfileFragment
                         profilePhoneInput
                 );
 
-        if (name.isEmpty()) {
+        PassengerValidator.Error validationError =
+                PassengerValidator.validate(
+                        name,
+                        phone
+                );
+
+        if (validationError == PassengerValidator.Error.NAME_REQUIRED) {
 
             profileNameLayout.setError(
                     getString(
@@ -180,7 +187,7 @@ public final class ProfileFragment
             return;
         }
 
-        if (name.length() > 100) {
+        if (validationError == PassengerValidator.Error.NAME_TOO_LONG) {
 
             profileNameLayout.setError(
                     getString(
@@ -191,14 +198,7 @@ public final class ProfileFragment
             return;
         }
 
-        String phoneDigits =
-                phone.replaceAll(
-                        "\\D",
-                        ""
-                );
-
-        if (phoneDigits.length() < 10
-                || phoneDigits.length() > 15) {
+        if (validationError == PassengerValidator.Error.PHONE_INVALID) {
 
             profilePhoneLayout.setError(
                     getString(
@@ -234,10 +234,9 @@ public final class ProfileFragment
             return "";
         }
 
-        return input
-                .getText()
-                .toString()
-                .trim();
+        return PassengerValidator.normalize(
+                input.getText().toString()
+        );
     }
 
     private void hideKeyboard() {

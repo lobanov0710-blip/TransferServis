@@ -1,6 +1,7 @@
 package ru.transferservis.app.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,6 +13,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
+import java.util.function.BooleanSupplier;
 
 import ru.transferservis.app.data.local.TransferDatabase;
 import ru.transferservis.app.data.local.TripHistoryDao;
@@ -20,6 +23,7 @@ import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 import ru.transferservis.app.domain.model.TripHistoryItem;
+import ru.transferservis.app.domain.model.ActiveOrder;
 
 public final class TripHistoryRepository {
 
@@ -27,17 +31,25 @@ public final class TripHistoryRepository {
             Executors.newSingleThreadExecutor();
 
     private final TripHistoryDao tripHistoryDao;
+    private final Executor databaseExecutor;
+    private final Runnable persistenceFailureReporter;
 
     public TripHistoryRepository(
             @NonNull Context context
     ) {
-
-        tripHistoryDao =
-                TransferDatabase
+        this(TransferDatabase
                         .getInstance(
                                 context
                         )
-                        .tripHistoryDao();
+                        .tripHistoryDao(), DATABASE_EXECUTOR,
+                () -> Log.e("TripHistoryRepository", "Unable to persist local trip history"));
+    }
+
+    TripHistoryRepository(TripHistoryDao tripHistoryDao, Executor databaseExecutor,
+            Runnable persistenceFailureReporter) {
+        this.tripHistoryDao = tripHistoryDao;
+        this.databaseExecutor = databaseExecutor;
+        this.persistenceFailureReporter = persistenceFailureReporter;
     }
 
     @NonNull
@@ -93,12 +105,30 @@ public final class TripHistoryRepository {
                         quote.getPriceRub()
                 );
 
-        DATABASE_EXECUTOR.execute(
-                () ->
-                        tripHistoryDao.upsert(
-                                entity
-                        )
-        );
+        databaseExecutor.execute(() -> writeSafely(() -> tripHistoryDao.upsert(entity)));
+    }
+
+    public void updateConfirmedStatus(
+            @NonNull ActiveOrder order,
+            @NonNull BooleanSupplier stillCurrent
+    ) {
+        // Share the insert queue: a newly created order must be inserted before its refresh.
+        // Updating only status preserves the original trip snapshot and needs no migration.
+        databaseExecutor.execute(() -> writeSafely(() -> {
+            if (stillCurrent.getAsBoolean()) {
+                tripHistoryDao.updateStatus(order.getOrderId(), order.getStatus().getApiValue());
+            }
+        }));
+    }
+
+    private void writeSafely(Runnable mutation) {
+        try {
+            mutation.run();
+        } catch (RuntimeException error) {
+            // An optional local-history write must not crash a successfully booked trip.
+            // Do not log exception details or passenger/order data.
+            persistenceFailureReporter.run();
+        }
     }
 
     @NonNull

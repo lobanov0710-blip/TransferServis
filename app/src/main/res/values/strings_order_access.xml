@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="order_access_save_failed">Заказ создан, но доступ к его статусу не удалось сохранить на этом устройстве. Сохраните номер заказа. Повторно оформлять поездку не нужно.</string>
+    <string name="order_access_expired_after_creation">Заказ создан. Срок доступа к его статусу истёк. Сохраните номер заказа. Повторно оформлять поездку не нужно.</string>
+    <string name="order_confirmation_unavailable">Данные подтверждения недоступны. Проверьте текущую поездку на главной странице. Не отправляйте заявку повторно.</string>
+</resources>

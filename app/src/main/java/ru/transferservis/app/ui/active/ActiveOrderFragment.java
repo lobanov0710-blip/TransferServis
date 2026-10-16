@@ -194,6 +194,9 @@ public final class ActiveOrderFragment
                         ActiveOrderViewModel.class
                 );
 
+        // Reset any activity-scoped result before the observer can show a
+        // different order left over from Home or a previous confirmation.
+        viewModel.restoreActiveOrder(expectedOrderId());
 
         viewModel
                 .getUiState()
@@ -229,8 +232,14 @@ public final class ActiveOrderFragment
              * актуальный статус из D1.
              */
 
-            viewModel.refresh();
+            viewModel.restoreActiveOrder(expectedOrderId());
         }
+    }
+
+    @Nullable
+    private String expectedOrderId() {
+        Bundle arguments = getArguments();
+        return arguments == null ? null : arguments.getString("expected_order_id");
     }
 
 

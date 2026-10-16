@@ -9,6 +9,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import ru.transferservis.app.data.repository.PassengerProfileRepository;
 import ru.transferservis.app.domain.model.PassengerProfile;
+import ru.transferservis.app.domain.validation.PassengerValidator;
 
 public final class ProfileViewModel
         extends AndroidViewModel {
@@ -48,8 +49,8 @@ public final class ProfileViewModel
 
         PassengerProfile passengerProfile =
                 new PassengerProfile(
-                        name.trim(),
-                        phone.trim()
+                        PassengerValidator.normalize(name),
+                        PassengerValidator.normalize(phone)
                 );
 
         repository.save(

@@ -349,6 +349,41 @@ public final class TripHistoryDatabaseTest {
         );
     }
 
+    @Test
+    public void updateStatus_preservesTripSnapshotAndSurvivesReopen() throws Exception {
+        dao.upsert(createEntity("order-status", "new", 10_000L, "2026-10-15", 27000));
+        dao.upsert(createEntity("unrelated-order", "new", 1_000L, "2026-10-14", 10000));
+
+        assertEquals(1, dao.updateStatus("order-status", "done"));
+        closeDatabase();
+        openDatabase();
+
+        List<TripHistoryEntity> trips = getOrAwaitValue(dao.observeAll());
+        assertEquals(2, trips.size());
+        TripHistoryEntity stored = trips.get(0);
+        assertEquals("order-status", stored.getOrderId());
+        assertEquals("done", stored.getStatus());
+        assertEquals(10_000L, stored.getCreatedAtMillis());
+        assertEquals("2026-10-15", stored.getTripDate());
+        assertEquals("Нижний Новгород", stored.getFromDisplayName());
+        assertEquals("Москва", stored.getToDisplayName());
+        assertEquals("Комфорт", stored.getTariffName());
+        assertEquals(420.5, stored.getDistanceKm(), 0.001);
+        assertEquals(375, stored.getDurationMinutes());
+        assertEquals(27000, stored.getPriceRub());
+        assertEquals("new", trips.get(1).getStatus());
+    }
+
+    @Test
+    public void updateStatus_unknownOrder_doesNotCreateIncompleteHistoryRow() throws Exception {
+        dao.upsert(createEntity("known-order", "new", 10_000L, "2026-10-15", 27000));
+        assertEquals(0, dao.updateStatus("missing-order", "canceled"));
+        List<TripHistoryEntity> trips = getOrAwaitValue(dao.observeAll());
+        assertEquals(1, trips.size());
+        assertEquals("known-order", trips.get(0).getOrderId());
+        assertEquals("new", trips.get(0).getStatus());
+    }
+
     private void openDatabase() {
 
         database =

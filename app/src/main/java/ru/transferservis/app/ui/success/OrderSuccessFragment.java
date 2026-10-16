@@ -16,13 +16,19 @@ import androidx.navigation.fragment.NavHostFragment;
 import com.google.android.material.button.MaterialButton;
 
 import ru.transferservis.app.R;
-import ru.transferservis.app.domain.model.OrderReceipt;
-import ru.transferservis.app.ui.booking.OrderUiState;
+import ru.transferservis.app.ui.booking.OrderConfirmation;
 import ru.transferservis.app.ui.booking.OrderViewModel;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
 
 public final class OrderSuccessFragment
         extends Fragment {
+
+    private static final String STATE_ORDER_ID = "confirmed_order_id";
+    private static final String STATE_ORDER_STATUS = "confirmed_order_status";
+    private static final String STATE_ACCESS_EXPIRES_AT = "confirmed_access_expires_at";
+    private static final String STATE_ACCESS_SAVED = "confirmed_access_saved";
+
+    private OrderConfirmation confirmation;
 
     private TextView orderSuccessId;
 
@@ -79,6 +85,15 @@ public final class OrderSuccessFragment
 
         configureActions();
 
+        confirmation = OrderConfirmation.from(orderViewModel.getUiState().getValue());
+        if (confirmation == null && savedInstanceState != null) {
+            confirmation = OrderConfirmation.restore(
+                    savedInstanceState.getString(STATE_ORDER_ID),
+                    savedInstanceState.getString(STATE_ORDER_STATUS),
+                    savedInstanceState.getLong(STATE_ACCESS_EXPIRES_AT),
+                    savedInstanceState.getBoolean(STATE_ACCESS_SAVED)
+            );
+        }
 
         renderReceipt();
     }
@@ -152,23 +167,7 @@ public final class OrderSuccessFragment
 
 
     private void renderReceipt() {
-
-        OrderUiState state =
-                orderViewModel
-                        .getUiState()
-                        .getValue();
-
-
-        OrderReceipt receipt =
-                state == null
-                        ? null
-                        : state.getReceipt();
-
-
-        if (
-                receipt == null
-                        || !state.isSuccess()
-        ) {
+        if (confirmation == null) {
 
             orderSuccessId.setVisibility(
                     View.GONE
@@ -186,7 +185,7 @@ public final class OrderSuccessFragment
 
 
             orderSuccessError.setText(
-                    R.string.booking_unknown_error
+                    R.string.order_confirmation_unavailable
             );
 
 
@@ -199,9 +198,13 @@ public final class OrderSuccessFragment
         }
 
 
-        orderSuccessError.setVisibility(
-                View.GONE
-        );
+        boolean canOpen = confirmation.getExpectedOrderId(System.currentTimeMillis()) != null;
+        orderSuccessError.setVisibility(canOpen ? View.GONE : View.VISIBLE);
+        if (!canOpen) {
+            orderSuccessError.setText(confirmation.isAccessSaved()
+                    ? R.string.order_access_expired_after_creation
+                    : R.string.order_access_save_failed);
+        }
 
 
         orderSuccessId.setVisibility(
@@ -215,17 +218,17 @@ public final class OrderSuccessFragment
 
 
         activeOrderButton.setVisibility(
-                View.VISIBLE
+                canOpen ? View.VISIBLE : View.GONE
         );
 
 
         orderSuccessId.setText(
-                receipt.getOrderId()
+                confirmation.getOrderId()
         );
 
 
         orderSuccessStatus.setText(
-                receipt
+                confirmation
                         .getStatus()
                         .getDisplayName()
         );
@@ -233,6 +236,13 @@ public final class OrderSuccessFragment
 
 
     private void openActiveOrder() {
+
+        String expectedOrderId = confirmation == null ? null
+                : confirmation.getExpectedOrderId(System.currentTimeMillis());
+        if (expectedOrderId == null) {
+            renderReceipt();
+            return;
+        }
 
         NavController navController =
                 NavHostFragment.findNavController(
@@ -253,13 +263,18 @@ public final class OrderSuccessFragment
         }
 
 
+        Bundle arguments = new Bundle();
+        arguments.putString("expected_order_id", expectedOrderId);
         navController.navigate(
-                R.id.action_orderSuccessFragment_to_activeOrderFragment
+                R.id.action_orderSuccessFragment_to_activeOrderFragment,
+                arguments
         );
     }
 
 
     private void startNewTrip() {
+
+        confirmation = null;
 
         quoteViewModel.reset();
 
@@ -277,6 +292,24 @@ public final class OrderSuccessFragment
                 R.id.homeFragment,
                 false
         );
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        renderReceipt();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        // Never put OrderReceipt or the capability token in saved state or navigation arguments.
+        if (confirmation != null) {
+            outState.putString(STATE_ORDER_ID, confirmation.getOrderId());
+            outState.putString(STATE_ORDER_STATUS, confirmation.getStatus().getApiValue());
+            outState.putLong(STATE_ACCESS_EXPIRES_AT, confirmation.getAccessExpiresAtMillis());
+            outState.putBoolean(STATE_ACCESS_SAVED, confirmation.isAccessSaved());
+        }
+        super.onSaveInstanceState(outState);
     }
 
 

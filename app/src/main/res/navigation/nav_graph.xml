@@ -40,7 +40,16 @@
 
         android:name="ru.transferservis.app.ui.active.ActiveOrderFragment"
 
-        android:label="@string/active_order_title" />
+        android:label="@string/active_order_title">
+
+        <!-- Capability token stays in secure storage; only the target ID travels. -->
+        <argument
+            android:name="expected_order_id"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+    </fragment>
 
     <!-- =========================
          HISTORY

@@ -31,11 +31,9 @@ import ru.transferservis.app.data.remote.dto.PassengerOrderDto;
 import ru.transferservis.app.domain.model.ActiveOrder;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
+import ru.transferservis.app.domain.validation.PassengerValidator;
 
 public final class OrderRepository {
-
-    private static final int MAX_NAME_LENGTH =
-            100;
 
     private static final int MAX_COMMENT_LENGTH =
             2000;
@@ -136,11 +134,22 @@ public final class OrderRepository {
         }
 
         String cleanName =
-                cleanString(
+                PassengerValidator.normalize(
                         name
                 );
 
-        if (cleanName == null) {
+        String cleanPhone =
+                PassengerValidator.normalize(
+                        phone
+                );
+
+        PassengerValidator.Error passengerError =
+                PassengerValidator.validate(
+                        cleanName,
+                        cleanPhone
+                );
+
+        if (passengerError == PassengerValidator.Error.NAME_REQUIRED) {
 
             callback.onResult(
                     ApiResult.validationError(
@@ -151,8 +160,7 @@ public final class OrderRepository {
             return;
         }
 
-        if (cleanName.length()
-                > MAX_NAME_LENGTH) {
+        if (passengerError == PassengerValidator.Error.NAME_TOO_LONG) {
 
             callback.onResult(
                     ApiResult.validationError(
@@ -163,15 +171,7 @@ public final class OrderRepository {
             return;
         }
 
-        String cleanPhone =
-                cleanString(
-                        phone
-                );
-
-        if (cleanPhone == null
-                || !isValidPhone(
-                cleanPhone
-        )) {
+        if (passengerError == PassengerValidator.Error.PHONE_INVALID) {
 
             callback.onResult(
                     ApiResult.validationError(
@@ -692,20 +692,6 @@ public final class OrderRepository {
                 activeOrder,
                 httpCode
         );
-    }
-
-    private boolean isValidPhone(
-            @NonNull String value
-    ) {
-
-        String digits =
-                value.replaceAll(
-                        "\\D",
-                        ""
-                );
-
-        return digits.length() >= 10
-                && digits.length() <= 15;
     }
 
     @NonNull

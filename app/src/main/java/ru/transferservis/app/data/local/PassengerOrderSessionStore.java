@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.function.BooleanSupplier;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -22,6 +23,9 @@ import javax.crypto.spec.GCMParameterSpec;
 import ru.transferservis.app.domain.model.OrderReceipt;
 
 public final class PassengerOrderSessionStore {
+
+    // Booking and active-order screens use separate store instances.
+    private static final Object SESSION_LOCK = new Object();
 
     private static final String PREFS_NAME =
             "passenger_order_session";
@@ -73,9 +77,25 @@ public final class PassengerOrderSessionStore {
     // SAVE
     // ========================================
 
-    public synchronized void save(
+    public void save(
             @NonNull OrderReceipt receipt
     ) {
+        synchronized (SESSION_LOCK) {
+            saveLocked(receipt);
+        }
+    }
+
+    public boolean saveIfCurrent(@NonNull OrderReceipt receipt, @NonNull BooleanSupplier accepted) {
+        synchronized (SESSION_LOCK) {
+            if (!accepted.getAsBoolean()) {
+                return false;
+            }
+            saveLocked(receipt);
+            return true;
+        }
+    }
+
+    private void saveLocked(@NonNull OrderReceipt receipt) {
 
         String orderId =
                 receipt
@@ -198,7 +218,25 @@ public final class PassengerOrderSessionStore {
     // ========================================
 
     @Nullable
-    public synchronized Session load() {
+    public Session load() {
+        synchronized (SESSION_LOCK) {
+            return loadLocked();
+        }
+    }
+
+    @Nullable
+    private Session loadLocked() {
+        try {
+            return readLocked();
+        } catch (ClassCastException error) {
+            // Damaged preferences are not a usable authenticated session.
+            clearLocked();
+            return null;
+        }
+    }
+
+    @Nullable
+    private Session readLocked() {
 
         String orderId =
                 preferences.getString(
@@ -340,7 +378,36 @@ public final class PassengerOrderSessionStore {
     // CLEAR
     // ========================================
 
-    public synchronized void clear() {
+    public void clear() {
+        synchronized (SESSION_LOCK) {
+            clearLocked();
+        }
+    }
+
+    public boolean isCurrent(@NonNull Session expected) {
+        synchronized (SESSION_LOCK) {
+            return matches(loadLocked(), expected);
+        }
+    }
+
+    public boolean clearIfMatches(@NonNull Session expected) {
+        synchronized (SESSION_LOCK) {
+            if (!matches(loadLocked(), expected)) {
+                return false;
+            }
+            clearLocked();
+            return true;
+        }
+    }
+
+    private static boolean matches(@Nullable Session current, @NonNull Session expected) {
+        return current != null
+                && current.orderId.equals(expected.orderId)
+                && current.accessToken.equals(expected.accessToken)
+                && current.accessExpiresAtMillis == expected.accessExpiresAtMillis;
+    }
+
+    private void clearLocked() {
 
         preferences
                 .edit()
@@ -460,7 +527,7 @@ public final class PassengerOrderSessionStore {
         private final long accessExpiresAtMillis;
 
 
-        private Session(
+        public Session(
                 @NonNull String orderId,
                 @NonNull String accessToken,
                 long accessExpiresAtMillis

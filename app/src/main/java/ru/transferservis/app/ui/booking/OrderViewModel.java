@@ -1,7 +1,8 @@
 package ru.transferservis.app.ui.booking;
 
 import android.app.Application;
-import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -9,26 +10,30 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+
 import ru.transferservis.app.data.local.PassengerOrderSessionStore;
-import ru.transferservis.app.data.remote.ApiErrorCode;
-import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.repository.OrderRepository;
 import ru.transferservis.app.data.repository.TripHistoryRepository;
-import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 
 public final class OrderViewModel
         extends AndroidViewModel {
 
-    private static final String TAG =
-            "OrderViewModel";
+    // Confirmed server results must still be finalized after an Activity/ViewModel closes.
+    private static final ExecutorService COMPLETION_EXECUTOR = Executors.newSingleThreadExecutor();
 
+    private static final OrderSubmissionTracker SUBMISSIONS = new OrderSubmissionTracker();
 
     private final OrderRepository repository;
 
     private final TripHistoryRepository historyRepository;
 
     private final PassengerOrderSessionStore sessionStore;
+
+    private final Handler mainThread = new Handler(Looper.getMainLooper());
 
 
     private final MutableLiveData<OrderUiState> uiState =
@@ -37,8 +42,7 @@ public final class OrderViewModel
             );
 
 
-    private long requestSequence =
-            0L;
+    private final AtomicLong requestSequence = new AtomicLong();
 
 
     public OrderViewModel(
@@ -83,7 +87,9 @@ public final class OrderViewModel
     ) {
 
         final long requestId =
-                ++requestSequence;
+                requestSequence.incrementAndGet();
+
+        final long submission = SUBMISSIONS.beginSubmission();
 
 
         uiState.setValue(
@@ -97,123 +103,13 @@ public final class OrderViewModel
                 phone,
                 date,
                 comment,
-                result -> {
-
-                    if (
-                            requestId !=
-                                    requestSequence
-                    ) {
-
-                        return;
-                    }
-
-
-                    handleResult(
-                            result,
-                            quote,
-                            date
-                    );
-                }
-        );
-    }
-
-
-    private void handleResult(
-            @NonNull ApiResult<OrderReceipt> result,
-            @NonNull Quote quote,
-            @NonNull String tripDate
-    ) {
-
-        if (result.isSuccess()) {
-
-            OrderReceipt receipt =
-                    result.getData();
-
-
-            if (receipt == null) {
-
-                uiState.postValue(
-                        OrderUiState.error(
-                                ApiErrorCode.UNKNOWN
-                        )
-                );
-
-                return;
-            }
-
-
-            // ========================================
-            // SECURE PASSENGER SESSION
-            // ========================================
-            //
-            // Order already exists on the server.
-            //
-            // A local secure-storage failure must NOT
-            // turn successful server-side creation
-            // into an order-creation error, because
-            // that could encourage duplicate retries.
-            //
-            // We never fall back to plaintext token
-            // storage.
-            // ========================================
-
-            try {
-
-                sessionStore.save(
-                        receipt
-                );
-
-            } catch (
-                    RuntimeException error
-            ) {
-
-                Log.e(
-                        TAG,
-                        "Unable to persist passenger order session",
-                        error
-                );
-            }
-
-
-            // ========================================
-            // LOCAL HISTORY
-            // ========================================
-
-            historyRepository.save(
-                    quote,
-                    receipt,
-                    tripDate
-            );
-
-
-            // ========================================
-            // UI SUCCESS
-            // ========================================
-
-            uiState.postValue(
-                    OrderUiState.success(
-                            receipt
-                    )
-            );
-
-            return;
-        }
-
-
-        ApiErrorCode errorCode =
-                result.getErrorCode();
-
-
-        if (errorCode == null) {
-
-            errorCode =
-                    ApiErrorCode.UNKNOWN;
-        }
-
-
-        uiState.postValue(
-                OrderUiState.error(
-                        errorCode
+                result -> OrderCompletion.handleResult(
+                        result,
+                        COMPLETION_EXECUTOR,
+                        receipt -> SUBMISSIONS.saveIfEligible(submission,
+                                accepted -> sessionStore.saveIfCurrent(receipt, accepted)),
+                        receipt -> historyRepository.save(quote, receipt, date),
+                        state -> publishState(requestId, state)
                 )
         );
     }
@@ -221,11 +117,24 @@ public final class OrderViewModel
 
     public void reset() {
 
-        requestSequence++;
+        requestSequence.incrementAndGet();
 
 
         uiState.setValue(
                 OrderUiState.idle()
         );
+    }
+
+    private void publishState(long requestId, @NonNull OrderUiState state) {
+        mainThread.post(() -> {
+            if (requestId == requestSequence.get()) {
+                uiState.setValue(state);
+            }
+        });
+    }
+
+    @Override
+    protected void onCleared() {
+        requestSequence.incrementAndGet();
     }
 }
