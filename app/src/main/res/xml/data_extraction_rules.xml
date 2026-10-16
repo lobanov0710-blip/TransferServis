@@ -9,6 +9,10 @@
             path="passenger_profile.xml" />
 
         <exclude
+            domain="sharedpref"
+            path="passenger_order_session.xml" />
+
+        <exclude
             domain="database"
             path="." />
 
@@ -19,6 +23,10 @@
         <exclude
             domain="sharedpref"
             path="passenger_profile.xml" />
+
+        <exclude
+            domain="sharedpref"
+            path="passenger_order_session.xml" />
 
         <exclude
             domain="database"

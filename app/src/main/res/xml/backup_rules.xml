@@ -10,6 +10,11 @@
         domain="sharedpref"
         path="passenger_profile.xml" />
 
+    <!-- Сессия зашифрована ключом AndroidKeyStore этого устройства. -->
+    <exclude
+        domain="sharedpref"
+        path="passenger_order_session.xml" />
+
     <!--
         Локальная история поездок
         остаётся только на устройстве.
