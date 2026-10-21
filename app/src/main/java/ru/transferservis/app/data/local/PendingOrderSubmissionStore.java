@@ -7,6 +7,9 @@ import android.security.keystore.KeyProperties;
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -41,6 +44,10 @@ public final class PendingOrderSubmissionStore {
     private static final byte[] AAD =
             "transfer-servis:pending-order:v1".getBytes(StandardCharsets.UTF_8);
 
+    private static final Pattern QUOTE_ID = Pattern.compile(
+            "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            Pattern.CASE_INSENSITIVE);
+
     private final SharedPreferences preferences;
     private final Gson gson = new Gson();
 
@@ -59,6 +66,14 @@ public final class PendingOrderSubmissionStore {
     public String getPendingQuoteId() {
         synchronized (LOCK) {
             return readQuoteIdLocked();
+        }
+    }
+
+    /** Read the exact encrypted request. Never clear evidence when it cannot be read. */
+    @Nullable
+    public CreateOrderRequest loadPendingRequest() {
+        synchronized (LOCK) {
+            return readRequestLocked();
         }
     }
 
@@ -102,19 +117,20 @@ public final class PendingOrderSubmissionStore {
         }
     }
 
+    @Nullable
     private String readQuoteIdLocked() {
-        String encodedIv;
-        String encodedData;
+        CreateOrderRequest request = readRequestLocked();
+        return request == null ? null : request.getQuoteId();
+    }
+
+    @Nullable
+    private CreateOrderRequest readRequestLocked() {
         try {
-            encodedIv = preferences.getString(IV, null);
-            encodedData = preferences.getString(DATA, null);
-        } catch (ClassCastException error) {
-            return null;
-        }
-        if (encodedIv == null || encodedData == null) {
-            return null;
-        }
-        try {
+            String encodedIv = preferences.getString(IV, null);
+            String encodedData = preferences.getString(DATA, null);
+            if (encodedIv == null || encodedData == null) {
+                return null;
+            }
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(),
                     new GCMParameterSpec(128, Base64.decode(encodedIv, Base64.NO_WRAP)));
@@ -123,17 +139,40 @@ public final class PendingOrderSubmissionStore {
                     cipher.doFinal(Base64.decode(encodedData, Base64.NO_WRAP)),
                     StandardCharsets.UTF_8);
             JsonObject decoded = gson.fromJson(json, JsonObject.class);
-            if (decoded == null || !decoded.has("quoteId")
-                    || !decoded.get("quoteId").isJsonPrimitive()) {
+            if (decoded == null) {
                 return null;
             }
-            String quoteId = decoded.get("quoteId").getAsString();
-            return quoteId.isEmpty() ? null : quoteId;
-        } catch (GeneralSecurityException | IOException
-                 | IllegalArgumentException | JsonParseException error) {
-            // Preserve the evidence and block a new submission. Never silently clear it.
+            String quoteId = requiredString(decoded, "quoteId");
+            String name = requiredString(decoded, "name");
+            String phone = requiredString(decoded, "phone");
+            String date = requiredString(decoded, "date");
+            String comment = decoded.has("comment") && !decoded.get("comment").isJsonNull()
+                    ? requiredString(decoded, "comment") : null;
+            int phoneDigits = phone == null ? 0 : phone.replaceAll("\\D", "").length();
+            if (quoteId == null || !QUOTE_ID.matcher(quoteId).matches()
+                    || name == null || name.trim().isEmpty() || name.length() > 100
+                    || phone == null || phone.length() > 40
+                    || phoneDigits < 10 || phoneDigits > 15
+                    || date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}")
+                    || (decoded.has("comment") && !decoded.get("comment").isJsonNull()
+                            && comment == null)
+                    || (comment != null && comment.length() > 2000)) {
+                return null;
+            }
+            return new CreateOrderRequest(quoteId, name, phone, date, comment);
+        } catch (GeneralSecurityException | IOException | RuntimeException error) {
+            // Keep the encrypted marker and block a second new booking.
             return null;
         }
+    }
+
+    @Nullable
+    private static String requiredString(JsonObject object, String name) {
+        if (!object.has(name) || !object.get(name).isJsonPrimitive()
+                || !object.get(name).getAsJsonPrimitive().isString()) {
+            return null;
+        }
+        return object.get(name).getAsString();
     }
 
     private SecretKey getOrCreateKey() throws GeneralSecurityException, IOException {
