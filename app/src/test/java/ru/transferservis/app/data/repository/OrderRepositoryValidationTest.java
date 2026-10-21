@@ -235,6 +235,33 @@ public final class OrderRepositoryValidationTest {
     }
 
     @Test
+    public void createOrder_yesterdayRejectsBeforeNetworkOrPendingWrite() {
+        String yesterday = java.time.LocalDate.now(
+                java.time.ZoneId.of("Europe/Moscow"))
+                .minusDays(1).toString();
+        java.util.concurrent.atomic.AtomicBoolean persisted =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        AtomicReference<ApiResult<OrderReceipt>> result = new AtomicReference<>();
+        repository.createOrder(createValidQuote(), "Николай", "+79991234567",
+                yesterday, null, request -> {
+                    persisted.set(true);
+                    return true;
+                }, result::set);
+        assertNotNull(result.get());
+        assertValidationError(result.get(), ApiErrorCode.DATE_INVALID);
+        assertFalse(persisted.get());
+        assertEquals(null, apiService.lastOrderRequest);
+    }
+
+    @Test
+    public void createOrder_invalidLeapDayRejectsBeforeNetwork() {
+        ApiResult<OrderReceipt> result = createOrder(createValidQuote(),
+                "Николай", "+79991234567", "2099-02-29", null);
+        assertValidationError(result, ApiErrorCode.DATE_INVALID);
+        assertEquals(null, apiService.lastOrderRequest);
+    }
+
+    @Test
     public void createOrder_commentOver2000Characters_returnsCommentTooLong() {
 
         String comment =
