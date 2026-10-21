@@ -13,6 +13,10 @@
             path="passenger_order_session.xml" />
 
         <exclude
+            domain="sharedpref"
+            path="passenger_pending_order.xml" />
+
+        <exclude
             domain="database"
             path="." />
 
@@ -27,6 +31,10 @@
         <exclude
             domain="sharedpref"
             path="passenger_order_session.xml" />
+
+        <exclude
+            domain="sharedpref"
+            path="passenger_pending_order.xml" />
 
         <exclude
             domain="database"
