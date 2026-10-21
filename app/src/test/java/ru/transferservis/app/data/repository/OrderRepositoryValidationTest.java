@@ -61,7 +61,7 @@ public final class OrderRepositoryValidationTest {
                         expiredQuote,
                         "Николай",
                         "+7 999 123-45-67",
-                        "2026-10-10",
+                        "2099-10-10",
                         null
                 );
 
@@ -81,7 +81,7 @@ public final class OrderRepositoryValidationTest {
                         ),
                         "Николай",
                         "+7 999 123-45-67",
-                        "2026-10-10",
+                        "2099-10-10",
                         null
                 );
 
@@ -99,7 +99,7 @@ public final class OrderRepositoryValidationTest {
                         createValidQuote(),
                         "   ",
                         "+7 999 123-45-67",
-                        "2026-10-10",
+                        "2099-10-10",
                         null
                 );
 
@@ -123,7 +123,7 @@ public final class OrderRepositoryValidationTest {
                         createValidQuote(),
                         name,
                         "+7 999 123-45-67",
-                        "2026-10-10",
+                        "2099-10-10",
                         null
                 );
 
@@ -141,7 +141,7 @@ public final class OrderRepositoryValidationTest {
                         createValidQuote(),
                         "Николай",
                         "12345",
-                        "2026-10-10",
+                        "2099-10-10",
                         null
                 );
 
@@ -163,7 +163,7 @@ public final class OrderRepositoryValidationTest {
                     createValidQuote(),
                     "Николай",
                     "+7 (999) 123-45-67",
-                    "2026-10-10",
+                    "2099-10-10",
                     null,
                     reference::set
             );
@@ -193,7 +193,7 @@ public final class OrderRepositoryValidationTest {
                         createValidQuote(),
                         "  " + name + "  ",
                         "  +44 (20) 7123-4567  ",
-                        "2026-10-10",
+                        "2099-10-10",
                         null,
                         result -> {
                         }
@@ -248,7 +248,7 @@ public final class OrderRepositoryValidationTest {
                         createValidQuote(),
                         "Николай",
                         "+7 999 123-45-67",
-                        "2026-10-10",
+                        "2099-10-10",
                         comment
                 );
 
