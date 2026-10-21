@@ -133,9 +133,13 @@ public final class OrderViewModel
                             }
 
                             if (!result.isSuccess() && persisted.get()) {
-                                // A definitive rejection did not create a booking.
-                                // Never clear a different, newer pending submission.
-                                pendingStore.clearIfQuoteId(quote.getQuoteId());
+                                // The server gave a definitive rejection. Retain a
+                                // damaged marker rather than allowing a duplicate.
+                                try {
+                                    pendingStore.clearIfQuoteId(quote.getQuoteId());
+                                } catch (RuntimeException ignored) {
+                                    // A storage failure must not crash the UI callback.
+                                }
                             }
 
                             OrderCompletion.handleResult(
