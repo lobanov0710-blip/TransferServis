@@ -18,6 +18,9 @@ public interface TripHistoryDao {
             TripHistoryEntity entity
     );
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    long insertIfAbsent(TripHistoryEntity entity);
+
     @Query("UPDATE trip_history SET status = :status WHERE order_id = :orderId")
     int updateStatus(String orderId, String status);
 

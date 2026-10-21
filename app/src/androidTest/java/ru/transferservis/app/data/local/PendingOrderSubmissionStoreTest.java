@@ -67,6 +67,33 @@ public final class PendingOrderSubmissionStoreTest {
         assertFalse(first.begin(request("quote-one", "test-phone-12345")));
     }
 
+    @Test
+    public void recoveryPayload_preservesAllOriginalFieldsAfterStoreRecreation() {
+        String quoteId = "123e4567-e89b-42d3-a456-426614174000";
+        CreateOrderRequest request = new CreateOrderRequest(
+                quoteId, "Тестовый пассажир", "+7 999 123-45-67",
+                "2026-12-10", "Детское кресло");
+        assertTrue(first.begin(request));
+        CreateOrderRequest restored = second.loadPendingRequest();
+        assertNotNull(restored);
+        assertEquals(request.getQuoteId(), restored.getQuoteId());
+        assertEquals(request.getName(), restored.getName());
+        assertEquals(request.getPhone(), restored.getPhone());
+        assertEquals(request.getDate(), restored.getDate());
+        assertEquals(request.getComment(), restored.getComment());
+        assertTrue(second.hasPending()); // reading NEVER triggers replay or removal
+    }
+
+    @Test
+    public void invalidOrTamperedPayload_cannotBeReplayedAndKeepsMarker() {
+        assertTrue(first.begin(request("quote-one", "test-phone-12345")));
+        assertNull(second.loadPendingRequest()); // Synthetic fixture is not a valid POST.
+        assertEquals("quote-one", second.getPendingQuoteId());
+        preferences.edit().putString("ciphertext", "tampered").commit();
+        assertNull(second.loadPendingRequest());
+        assertTrue(second.hasPending());
+    }
+
     private static CreateOrderRequest request(String quoteId, String phone) {
         return new CreateOrderRequest(quoteId, "Тестовый пассажир",
                 phone, "2026-12-10", "Проверка");

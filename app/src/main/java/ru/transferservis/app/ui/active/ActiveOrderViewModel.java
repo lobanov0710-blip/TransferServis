@@ -54,7 +54,11 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
                 return store.clearIfMatches(expected);
             }
         };
-        requests = new Requests(statusLoader, sessions, history::updateConfirmedStatus,
+        HistoryWriter historyWriter = (order, stillCurrent) -> {
+            history.saveServerSnapshotIfMissing(order, stillCurrent);
+            history.updateConfirmedStatus(order, stillCurrent);
+        };
+        requests = new Requests(statusLoader, sessions, historyWriter,
                 Executors.newSingleThreadExecutor(), ContextCompat.getMainExecutor(application));
         requests.restoreActiveOrder();
     }

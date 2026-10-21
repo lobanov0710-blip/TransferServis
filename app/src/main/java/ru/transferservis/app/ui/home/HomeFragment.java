@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
@@ -55,6 +56,8 @@ public final class HomeFragment
     private MaterialCardView pendingOrderNoticeCard;
     private TextView pendingOrderReference;
     private MaterialButton pendingOrderCopyButton;
+    private MaterialButton pendingOrderRecoverButton;
+    private TextView pendingOrderRecoveryStatus;
 
 
     private CircularProgressIndicator progressIndicator;
@@ -69,6 +72,7 @@ public final class HomeFragment
 
     private ActiveOrderViewModel activeOrderViewModel;
     private PendingOrderNoticeViewModel pendingOrderNoticeViewModel;
+    private PendingOrderRecoveryViewModel pendingOrderRecoveryViewModel;
 
 
     private boolean calculationRequested;
@@ -163,6 +167,8 @@ public final class HomeFragment
         pendingOrderNoticeCard = root.findViewById(R.id.pendingOrderNoticeCard);
         pendingOrderReference = root.findViewById(R.id.pendingOrderReference);
         pendingOrderCopyButton = root.findViewById(R.id.pendingOrderCopyButton);
+        pendingOrderRecoverButton = root.findViewById(R.id.pendingOrderRecoverButton);
+        pendingOrderRecoveryStatus = root.findViewById(R.id.pendingOrderRecoveryStatus);
 
 
         progressIndicator =
@@ -213,6 +219,8 @@ public final class HomeFragment
 
         pendingOrderNoticeViewModel = new ViewModelProvider(this)
                 .get(PendingOrderNoticeViewModel.class);
+        pendingOrderRecoveryViewModel = new ViewModelProvider(this)
+                .get(PendingOrderRecoveryViewModel.class);
 
 
         quoteViewModel
@@ -232,6 +240,8 @@ public final class HomeFragment
 
         pendingOrderNoticeViewModel.getNotice().observe(
                 getViewLifecycleOwner(), this::renderPendingOrderNotice);
+        pendingOrderRecoveryViewModel.getState().observe(
+                getViewLifecycleOwner(), this::renderPendingRecoveryState);
     }
 
 
@@ -247,6 +257,7 @@ public final class HomeFragment
         );
 
         pendingOrderCopyButton.setOnClickListener(view -> copyPendingOrderReference());
+        pendingOrderRecoverButton.setOnClickListener(view -> confirmPendingRecovery());
     }
 
 
@@ -451,6 +462,12 @@ public final class HomeFragment
         boolean hasReference = notice.canCopyReference();
         pendingOrderReference.setVisibility(hasReference ? View.VISIBLE : View.GONE);
         pendingOrderCopyButton.setVisibility(hasReference ? View.VISIBLE : View.GONE);
+        PendingOrderRecoveryViewModel.State recoveryState =
+                pendingOrderRecoveryViewModel.getState().getValue();
+        pendingOrderRecoverButton.setVisibility(pending && hasReference
+                ? View.VISIBLE : View.GONE);
+        pendingOrderRecoverButton.setEnabled(
+                pending && hasReference && recoveryState != PendingOrderRecoveryViewModel.State.CHECKING);
         if (hasReference) {
             pendingOrderReference.setText(getString(
                     R.string.pending_order_home_reference, notice.getQuoteId()));
@@ -461,6 +478,73 @@ public final class HomeFragment
         } else if (quoteViewModel != null) {
             QuoteUiState current = quoteViewModel.getUiState().getValue();
             calculateButton.setEnabled(current == null || !current.isLoading());
+        }
+    }
+
+    private void confirmPendingRecovery() {
+        if (!pendingOrderNoticeViewModel.hasPending()) {
+            pendingOrderNoticeViewModel.refresh();
+            return;
+        }
+        PendingOrderRecoveryViewModel.State current =
+                pendingOrderRecoveryViewModel.getState().getValue();
+        if (current == PendingOrderRecoveryViewModel.State.CHECKING) {
+            return;
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.pending_order_recover_dialog_title)
+                .setMessage(R.string.pending_order_recover_dialog_message)
+                .setNegativeButton(R.string.pending_order_recover_cancel, null)
+                .setPositiveButton(R.string.pending_order_recover_confirm,
+                        (dialog, which) -> pendingOrderRecoveryViewModel.startRecovery())
+                .show();
+    }
+
+    private void renderPendingRecoveryState(
+            @NonNull PendingOrderRecoveryViewModel.State state
+    ) {
+        final int message;
+        switch (state) {
+            case CHECKING:
+                message = R.string.pending_order_recover_checking;
+                break;
+            case RECOVERED:
+                message = R.string.pending_order_recover_success;
+                pendingOrderNoticeViewModel.refresh();
+                activeOrderViewModel.restoreActiveOrder();
+                break;
+            case ACCESS_SAVED_LOCKED:
+                message = R.string.pending_order_recover_access_locked;
+                activeOrderViewModel.restoreActiveOrder();
+                break;
+            case CONFLICT:
+                message = R.string.pending_order_recover_conflict;
+                break;
+            case CORRUPTED:
+                message = R.string.pending_order_recover_corrupted;
+                break;
+            case OTHER_SESSION:
+                message = R.string.pending_order_recover_other_session;
+                break;
+            case STORAGE_ERROR:
+                message = R.string.pending_order_recover_storage_error;
+                break;
+            case UNRESOLVED:
+                message = R.string.pending_order_recover_unresolved;
+                break;
+            case NOT_PENDING:
+                pendingOrderNoticeViewModel.refresh();
+            case IDLE:
+            default:
+                pendingOrderRecoveryStatus.setVisibility(View.GONE);
+                return;
+        }
+        pendingOrderRecoveryStatus.setText(message);
+        pendingOrderRecoveryStatus.setVisibility(View.VISIBLE);
+        PendingOrderNoticeViewModel.Notice current =
+                pendingOrderNoticeViewModel.getNotice().getValue();
+        if (current != null) {
+            renderPendingOrderNotice(current);
         }
     }
 
@@ -686,6 +770,8 @@ public final class HomeFragment
         pendingOrderNoticeCard = null;
         pendingOrderReference = null;
         pendingOrderCopyButton = null;
+        pendingOrderRecoverButton = null;
+        pendingOrderRecoveryStatus = null;
 
 
         progressIndicator =

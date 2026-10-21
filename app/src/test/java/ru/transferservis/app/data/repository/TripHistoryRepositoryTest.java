@@ -79,6 +79,36 @@ public final class TripHistoryRepositoryTest {
         assertTrue(dao.events.isEmpty());
     }
 
+    @Test
+    public void serverSnapshotInsertsOnlyCompleteDataAndKeepsServerFields() {
+        FakeDao dao = new FakeDao();
+        TripHistoryRepository repository = new TripHistoryRepository(
+                dao, Runnable::run, () -> fail("Unexpected failure"));
+        ActiveOrder valid = new ActiveOrder(
+                "order-from-server", OrderStatus.NEW, "A → B", "A", "B",
+                "2026-10-25", TariffType.COMFORT, 50.5, 65.0,
+                4500, 5000L, 6000L);
+        repository.saveServerSnapshotIfMissing(valid, () -> true);
+        assertEquals(Arrays.asList("missing:order-from-server"), dao.events);
+        assertEquals("2026-10-25", dao.inserted.getTripDate());
+        assertEquals(4500, dao.inserted.getPriceRub());
+        assertEquals("Комфорт", dao.inserted.getTariffName());
+    }
+
+    @Test
+    public void incompleteServerSnapshotOrSupersededSessionIsNotInserted() {
+        FakeDao dao = new FakeDao();
+        TripHistoryRepository repository = new TripHistoryRepository(
+                dao, Runnable::run, () -> fail("Unexpected failure"));
+        repository.saveServerSnapshotIfMissing(order(), () -> true); // tariff missing
+        ActiveOrder valid = new ActiveOrder(
+                "order-from-server", OrderStatus.NEW, "A → B", "A", "B",
+                "2026-10-25", TariffType.COMFORT, 50.5, 65.0,
+                4500, 5000L, 6000L);
+        repository.saveServerSnapshotIfMissing(valid, () -> false);
+        assertTrue(dao.events.isEmpty());
+    }
+
     private static Quote quote() {
         return new Quote("quote-id", 9_000_000_000_000L, "A", "B", TariffType.COMFORT,
                 "Комфорт", 20.0, 30, 1000);
@@ -103,6 +133,13 @@ public final class TripHistoryRepositoryTest {
             if (failWrites) { throw new IllegalStateException("Simulated database failure"); }
             inserted = entity;
             events.add("insert:" + entity.getOrderId());
+        }
+
+        @Override public long insertIfAbsent(TripHistoryEntity entity) {
+            if (failWrites) { throw new IllegalStateException("Simulated database failure"); }
+            inserted = entity;
+            events.add("missing:" + entity.getOrderId());
+            return 1L;
         }
 
         @Override public int updateStatus(String orderId, String status) {
