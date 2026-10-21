@@ -119,29 +119,18 @@ public final class PendingOrderSubmissionStore {
 
     @Nullable
     private String readQuoteIdLocked() {
-        CreateOrderRequest request = readRequestLocked();
-        return request == null ? null : request.getQuoteId();
+        JsonObject decoded = readJsonLocked();
+        String quoteId = decoded == null ? null : requiredString(decoded, "quoteId");
+        return quoteId == null || quoteId.isEmpty() ? null : quoteId;
     }
 
     @Nullable
     private CreateOrderRequest readRequestLocked() {
+        JsonObject decoded = readJsonLocked();
+        if (decoded == null) {
+            return null;
+        }
         try {
-            String encodedIv = preferences.getString(IV, null);
-            String encodedData = preferences.getString(DATA, null);
-            if (encodedIv == null || encodedData == null) {
-                return null;
-            }
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(),
-                    new GCMParameterSpec(128, Base64.decode(encodedIv, Base64.NO_WRAP)));
-            cipher.updateAAD(AAD);
-            String json = new String(
-                    cipher.doFinal(Base64.decode(encodedData, Base64.NO_WRAP)),
-                    StandardCharsets.UTF_8);
-            JsonObject decoded = gson.fromJson(json, JsonObject.class);
-            if (decoded == null) {
-                return null;
-            }
             String quoteId = requiredString(decoded, "quoteId");
             String name = requiredString(decoded, "name");
             String phone = requiredString(decoded, "phone");
@@ -160,6 +149,28 @@ public final class PendingOrderSubmissionStore {
                 return null;
             }
             return new CreateOrderRequest(quoteId, name, phone, date, comment);
+        } catch (RuntimeException error) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private JsonObject readJsonLocked() {
+        try {
+            String encodedIv = preferences.getString(IV, null);
+            String encodedData = preferences.getString(DATA, null);
+            if (encodedIv == null || encodedData == null) {
+                return null;
+            }
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(),
+                    new GCMParameterSpec(128, Base64.decode(encodedIv, Base64.NO_WRAP)));
+            cipher.updateAAD(AAD);
+            String json = new String(
+                    cipher.doFinal(Base64.decode(encodedData, Base64.NO_WRAP)),
+                    StandardCharsets.UTF_8);
+            JsonObject decoded = gson.fromJson(json, JsonObject.class);
+            return decoded;
         } catch (GeneralSecurityException | IOException | RuntimeException error) {
             // Keep the encrypted marker and block a second new booking.
             return null;
