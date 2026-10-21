@@ -15,6 +15,11 @@
         domain="sharedpref"
         path="passenger_order_session.xml" />
 
+    <!-- Contains an encrypted in-flight booking, bound to a device Keystore key. -->
+    <exclude
+        domain="sharedpref"
+        path="passenger_pending_order.xml" />
+
     <!--
         Локальная история поездок
         остаётся только на устройстве.
