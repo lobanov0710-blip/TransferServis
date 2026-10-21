@@ -263,6 +263,25 @@ public final class OrderRepository {
             return;
         }
 
+        sendExistingPayload(request, callback);
+    }
+
+    /**
+     * The caller must obtain this exact payload from PendingOrderSubmissionStore.
+     * No quote expiry check: an existing D1 order can be recovered after quote expiry.
+     * This method must never be scheduled automatically on app startup.
+     */
+    public void recoverOrder(
+            @NonNull CreateOrderRequest savedRequest,
+            @NonNull OrderCallback callback
+    ) {
+        sendExistingPayload(savedRequest, callback);
+    }
+
+    private void sendExistingPayload(
+            @NonNull CreateOrderRequest request,
+            @NonNull OrderCallback callback
+    ) {
         apiService
                 .createOrder(
                         request
