@@ -24,6 +24,12 @@ import ru.transferservis.app.data.local.PendingOrderSubmissionStore;
 import ru.transferservis.app.data.local.PassengerOrderSessionStore;
 import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
 
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+
 import static org.junit.Assert.*;
 
 /** Pending booking can be found on Home without recreating its expired in-memory Quote. */
@@ -106,6 +112,35 @@ public final class PendingBookingHomeScreenTest {
             });
         }
         assertTrue(new PendingOrderSubmissionStore(context).hasPending());
+    }
+
+    @Test
+    public void manualRecoveryDialog_canBeCancelledWithoutSendingOrClearingRequest() {
+        PendingOrderSubmissionStore store = new PendingOrderSubmissionStore(context);
+        assertTrue(store.begin(new CreateOrderRequest(
+                QUOTE_ID, "Тестовый пассажир", "+79990000000",
+                "2026-12-10", "Проверка")));
+
+        try (ActivityScenario<MainActivity> scenario =
+                     ActivityScenario.launch(MainActivity.class)) {
+            awaitNotice(scenario);
+            scenario.onActivity(activity -> {
+                assertEquals(View.VISIBLE,
+                        activity.findViewById(R.id.pendingOrderRecoverButton).getVisibility());
+                activity.findViewById(R.id.pendingOrderRecoverButton).performClick();
+            });
+            onView(withText(R.string.pending_order_recover_dialog_title))
+                    .check(matches(isDisplayed()));
+            onView(withText(R.string.pending_order_recover_cancel)).perform(click());
+            scenario.onActivity(activity -> {
+                assertTrue(store.hasPending());
+                assertFalse(activity.findViewById(R.id.calculateButton).isEnabled());
+                assertEquals(View.VISIBLE,
+                        activity.findViewById(R.id.pendingOrderRecoverButton).getVisibility());
+            });
+        }
+        assertNull(new PassengerOrderSessionStore(context).load());
+        assertTrue(store.hasPending());
     }
 
     private static void awaitNotice(ActivityScenario<MainActivity> scenario) {
