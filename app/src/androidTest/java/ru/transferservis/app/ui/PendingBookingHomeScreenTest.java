@@ -2,6 +2,8 @@ package ru.transferservis.app.ui;
 
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.app.UiAutomation;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.view.View;
@@ -17,18 +19,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.List;
 
 import ru.transferservis.app.MainActivity;
 import ru.transferservis.app.R;
 import ru.transferservis.app.data.local.PendingOrderSubmissionStore;
 import ru.transferservis.app.data.local.PassengerOrderSessionStore;
 import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
-
-import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.click;
-import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
-import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 import static org.junit.Assert.*;
 
@@ -129,9 +126,7 @@ public final class PendingBookingHomeScreenTest {
                         activity.findViewById(R.id.pendingOrderRecoverButton).getVisibility());
                 activity.findViewById(R.id.pendingOrderRecoverButton).performClick();
             });
-            onView(withText(R.string.pending_order_recover_dialog_title))
-                    .check(matches(isDisplayed()));
-            onView(withText(R.string.pending_order_recover_cancel)).perform(click());
+            cancelRecoveryDialogThroughAccessibility();
             scenario.onActivity(activity -> {
                 assertTrue(store.hasPending());
                 assertFalse(activity.findViewById(R.id.calculateButton).isEnabled());
@@ -141,6 +136,48 @@ public final class PendingBookingHomeScreenTest {
         }
         assertNull(new PassengerOrderSessionStore(context).load());
         assertTrue(store.hasPending());
+    }
+
+    /**
+     * Use public Android accessibility APIs instead of Espresso's reflection-based
+     * InputManager injection, which fails on the Android 16 test emulator.
+     * Never clicks the positive button: no production booking POST is issued.
+     */
+    private void cancelRecoveryDialogThroughAccessibility() {
+        UiAutomation automation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        String dialogTitle = context.getString(R.string.pending_order_recover_dialog_title);
+        String cancelText = context.getString(R.string.pending_order_recover_cancel);
+        long deadline = SystemClock.uptimeMillis() + 8000L;
+        while (SystemClock.uptimeMillis() < deadline) {
+            AccessibilityNodeInfo root = automation.getRootInActiveWindow();
+            if (root != null
+                    && containsExactText(root, dialogTitle)) {
+                List<AccessibilityNodeInfo> buttons =
+                        root.findAccessibilityNodeInfosByText(cancelText);
+                for (AccessibilityNodeInfo button : buttons) {
+                    if (cancelText.contentEquals(button.getText())
+                            && button.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+                        return;
+                    }
+                }
+            }
+            SystemClock.sleep(80L);
+        }
+        fail("Recovery confirmation dialog or Cancel button not accessible");
+    }
+
+    private static boolean containsExactText(
+            AccessibilityNodeInfo root, String expectedText) {
+        List<AccessibilityNodeInfo> nodes =
+                root.findAccessibilityNodeInfosByText(expectedText);
+        for (AccessibilityNodeInfo node : nodes) {
+            if (expectedText.contentEquals(node.getText())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void awaitNotice(ActivityScenario<MainActivity> scenario) {
