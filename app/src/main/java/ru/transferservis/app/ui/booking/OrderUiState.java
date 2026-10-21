@@ -13,6 +13,7 @@ public final class OrderUiState {
         IDLE,
         LOADING,
         SUCCESS,
+        RESULT_UNKNOWN,
         ERROR
     }
 
@@ -77,6 +78,11 @@ public final class OrderUiState {
                 null,
                 orderAccessSaved
         );
+    }
+
+    @NonNull
+    public static OrderUiState resultUnknown() {
+        return new OrderUiState(Status.RESULT_UNKNOWN, null, null, false);
     }
 
     @NonNull
