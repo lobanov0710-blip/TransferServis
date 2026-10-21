@@ -92,12 +92,29 @@ public final class OrderRepository {
         );
     }
 
+    public interface BeforeSend {
+        boolean savePending(@NonNull CreateOrderRequest request);
+    }
+
     public void createOrder(
             @NonNull Quote quote,
             @NonNull String name,
             @NonNull String phone,
             @NonNull String date,
             @Nullable String comment,
+            @NonNull OrderCallback callback
+    ) {
+        // Existing callers (including isolated HTTP tests) keep their API.
+        createOrder(quote, name, phone, date, comment, request -> true, callback);
+    }
+
+    public void createOrder(
+            @NonNull Quote quote,
+            @NonNull String name,
+            @NonNull String phone,
+            @NonNull String date,
+            @Nullable String comment,
+            @NonNull BeforeSend beforeSend,
             @NonNull OrderCallback callback
     ) {
 
@@ -229,6 +246,22 @@ public final class OrderRepository {
                         cleanDate,
                         cleanComment
                 );
+
+        // Persist the exact validated payload BEFORE any bytes reach the server.
+        // Failure is fail-closed: no POST is attempted.
+        final boolean allowed;
+        try {
+            allowed = beforeSend.savePending(request);
+        } catch (RuntimeException error) {
+            callback.onResult(ApiResult.validationError(
+                    ApiErrorCode.PENDING_SAVE_FAILED));
+            return;
+        }
+        if (!allowed) {
+            callback.onResult(ApiResult.validationError(
+                    ApiErrorCode.PENDING_SUBMISSION));
+            return;
+        }
 
         apiService
                 .createOrder(

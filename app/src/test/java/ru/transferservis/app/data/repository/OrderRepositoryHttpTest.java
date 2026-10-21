@@ -299,6 +299,46 @@ public final class OrderRepositoryHttpTest {
         );
     }
 
+    @Test
+    public void rejectedPendingGateNeverSendsBookingPost() {
+        AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
+        repository.createOrder(createValidQuote(), "Николай", "+7 999 123-45-67",
+                "2026-10-10", null, request -> false, response::set);
+        assertNotNull(response.get());
+        assertError(response.get(), ApiResult.Status.VALIDATION_ERROR,
+                ApiErrorCode.PENDING_SUBMISSION, 0);
+        assertEquals(0, server.getRequestCount());
+    }
+
+    @Test
+    public void durableStoreFailureNeverSendsBookingPost() {
+        AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
+        repository.createOrder(createValidQuote(), "Николай", "+7 999 123-45-67",
+                "2026-10-10", null, request -> {
+                    throw new IllegalStateException("Keystore unavailable");
+                }, response::set);
+        assertNotNull(response.get());
+        assertError(response.get(), ApiResult.Status.VALIDATION_ERROR,
+                ApiErrorCode.PENDING_SAVE_FAILED, 0);
+        assertEquals(0, server.getRequestCount());
+    }
+
+    @Test
+    public void validationRunsBeforeWritingPendingSubmission() {
+        java.util.concurrent.atomic.AtomicBoolean stored =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
+        repository.createOrder(createValidQuote(), "", "+7 999 123-45-67",
+                "2026-10-10", null, request -> {
+                    stored.set(true);
+                    return true;
+                }, response::set);
+        assertNotNull(response.get());
+        assertEquals(ApiResult.Status.VALIDATION_ERROR, response.get().getStatus());
+        assertFalse(stored.get());
+        assertEquals(0, server.getRequestCount());
+    }
+
     private ApiResult<OrderReceipt> createOrder()
             throws Exception {
 

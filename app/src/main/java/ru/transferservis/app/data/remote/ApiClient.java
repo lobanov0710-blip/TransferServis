@@ -46,7 +46,9 @@ public final class ApiClient {
                             TimeUnit.SECONDS
                     )
 
-                    .retryOnConnectionFailure(true)
+                    // All API endpoints use POST. In particular, booking creation
+                    // must not be transparently retried while its outcome is unknown.
+                    .retryOnConnectionFailure(false)
 
                     .build();
 

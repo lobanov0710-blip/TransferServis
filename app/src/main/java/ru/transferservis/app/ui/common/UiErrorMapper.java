@@ -145,6 +145,14 @@ public final class UiErrorMapper {
 
                 return R.string.error_invalid_response;
 
+            case PENDING_SUBMISSION:
+
+                return R.string.booking_pending_submission;
+
+            case PENDING_SAVE_FAILED:
+
+                return R.string.booking_pending_save_failed;
+
             case ORDER_CREATE_FAILED:
 
             case REQUEST_FAILED:

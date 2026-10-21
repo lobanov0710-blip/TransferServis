@@ -107,6 +107,13 @@ public final class BookingFragment
         renderQuoteSummary();
 
         applySavedProfile();
+
+        // The initial LiveData emission may precede renderQuoteSummary().
+        // Apply the durable pending warning last so a fresh quote cannot re-enable POST.
+        OrderUiState initial = orderViewModel.getUiState().getValue();
+        if (initial != null) {
+            renderOrderState(initial);
+        }
     }
 
     private void bindViews(
@@ -332,11 +339,16 @@ public final class BookingFragment
         );
 
         orderButton.setEnabled(
-                true
+                !orderViewModel.hasPendingSubmission()
         );
     }
 
     private void submitOrder() {
+        if (orderViewModel.hasPendingSubmission()) {
+            renderOrderUnknown();
+            return;
+        }
+
 
         Quote quote =
                 getCurrentQuote();
@@ -595,6 +607,12 @@ public final class BookingFragment
 
                 break;
 
+            case RESULT_UNKNOWN:
+
+                renderOrderUnknown();
+
+                break;
+
             case ERROR:
 
                 renderOrderError(
@@ -621,6 +639,7 @@ public final class BookingFragment
         orderButton.setEnabled(
                 quote != null
                         && !quote.isExpired()
+                        && !orderViewModel.hasPendingSubmission()
         );
     }
 
@@ -665,6 +684,17 @@ public final class BookingFragment
                 );
     }
 
+    private void renderOrderUnknown() {
+        orderRequested = false;
+        orderProgressIndicator.setVisibility(View.GONE);
+        orderButton.setEnabled(false);
+        String pendingReference = orderViewModel.getPendingQuoteId();
+        orderErrorText.setText(pendingReference == null
+                ? getString(R.string.booking_result_unknown)
+                : getString(R.string.booking_result_unknown_with_reference, pendingReference));
+        orderErrorText.setVisibility(View.VISIBLE);
+    }
+
     private void renderOrderError(
             @Nullable ApiErrorCode errorCode
     ) {
@@ -682,6 +712,7 @@ public final class BookingFragment
         orderButton.setEnabled(
                 quote != null
                         && !quote.isExpired()
+                        && !orderViewModel.hasPendingSubmission()
         );
 
         orderErrorText.setText(
