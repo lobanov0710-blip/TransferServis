@@ -41,6 +41,7 @@ public final class PendingOrderSubmissionStoreTest {
     public void originalPayload_isEncryptedAndSurvivesNewStoreInstance() {
         assertTrue(first.begin(request("quote-one", "test-phone-12345")));
         assertTrue(second.hasPending());
+        assertEquals("quote-one", second.getPendingQuoteId());
         assertNotNull(preferences.getString("ciphertext", null));
         assertFalse(preferences.getAll().toString().contains("test-phone-12345"));
         assertFalse(second.begin(request("quote-two", "test-phone-23456")));
