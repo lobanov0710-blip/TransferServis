@@ -350,7 +350,7 @@ public final class OrderRepositoryHttpTest {
                 + "\"accessExpiresAt\":1793834567000}");
         CreateOrderRequest original = new CreateOrderRequest(
                 "123e4567-e89b-42d3-a456-426614174000",
-                "Николай", "+7 999 123-45-67", "2099-10-10", "Без багажа");
+                "Николай", "+7 999 123-45-67", "2020-01-01", "Без багажа");
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
         repository.recoverOrder(original, result -> {
