@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pending_order_home_title">Есть заявка с неподтверждённым результатом</string>
+    <string name="pending_order_home_message">Сервер мог принять предыдущую заявку. Пока её статус не уточнён у диспетчера, не отправляйте новую заявку. Это защищает от дублирования.</string>
+    <string name="pending_order_home_reference">Код расчёта: %1$s</string>
+    <string name="pending_order_copy_reference">Скопировать код расчёта</string>
+    <string name="pending_order_reference_copied">Код расчёта скопирован</string>
+</resources>

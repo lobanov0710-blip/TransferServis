@@ -1,10 +1,14 @@
 package ru.transferservis.app.ui.home;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,6 +19,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -47,6 +52,10 @@ public final class HomeFragment
 
     private MaterialButton activeOrderButton;
 
+    private MaterialCardView pendingOrderNoticeCard;
+    private TextView pendingOrderReference;
+    private MaterialButton pendingOrderCopyButton;
+
 
     private CircularProgressIndicator progressIndicator;
 
@@ -59,6 +68,7 @@ public final class HomeFragment
     private OrderViewModel orderViewModel;
 
     private ActiveOrderViewModel activeOrderViewModel;
+    private PendingOrderNoticeViewModel pendingOrderNoticeViewModel;
 
 
     private boolean calculationRequested;
@@ -150,6 +160,10 @@ public final class HomeFragment
                         R.id.activeOrderButton
                 );
 
+        pendingOrderNoticeCard = root.findViewById(R.id.pendingOrderNoticeCard);
+        pendingOrderReference = root.findViewById(R.id.pendingOrderReference);
+        pendingOrderCopyButton = root.findViewById(R.id.pendingOrderCopyButton);
+
 
         progressIndicator =
                 root.findViewById(
@@ -197,6 +211,9 @@ public final class HomeFragment
                         ActiveOrderViewModel.class
                 );
 
+        pendingOrderNoticeViewModel = new ViewModelProvider(this)
+                .get(PendingOrderNoticeViewModel.class);
+
 
         quoteViewModel
                 .getUiState()
@@ -212,6 +229,9 @@ public final class HomeFragment
                         getViewLifecycleOwner(),
                         this::renderActiveOrderEntry
                 );
+
+        pendingOrderNoticeViewModel.getNotice().observe(
+                getViewLifecycleOwner(), this::renderPendingOrderNotice);
     }
 
 
@@ -225,10 +245,17 @@ public final class HomeFragment
         activeOrderButton.setOnClickListener(
                 view -> openActiveOrder()
         );
+
+        pendingOrderCopyButton.setOnClickListener(view -> copyPendingOrderReference());
     }
 
 
     private void calculateQuote() {
+        // A recreated Home cannot bypass the durable booking lock.
+        if (pendingOrderNoticeViewModel.hasPending()) {
+            pendingOrderNoticeViewModel.refresh();
+            return;
+        }
 
         String from =
                 getInputText(
@@ -415,6 +442,47 @@ public final class HomeFragment
     }
 
 
+    private void renderPendingOrderNotice(
+            @NonNull PendingOrderNoticeViewModel.Notice notice
+    ) {
+        boolean pending = notice.isPending();
+        pendingOrderNoticeCard.setVisibility(pending ? View.VISIBLE : View.GONE);
+
+        boolean hasReference = notice.canCopyReference();
+        pendingOrderReference.setVisibility(hasReference ? View.VISIBLE : View.GONE);
+        pendingOrderCopyButton.setVisibility(hasReference ? View.VISIBLE : View.GONE);
+        if (hasReference) {
+            pendingOrderReference.setText(getString(
+                    R.string.pending_order_home_reference, notice.getQuoteId()));
+        }
+
+        if (pending) {
+            calculateButton.setEnabled(false);
+        } else if (quoteViewModel != null) {
+            QuoteUiState current = quoteViewModel.getUiState().getValue();
+            calculateButton.setEnabled(current == null || !current.isLoading());
+        }
+    }
+
+    private void copyPendingOrderReference() {
+        PendingOrderNoticeViewModel.Notice notice =
+                pendingOrderNoticeViewModel.getNotice().getValue();
+        if (notice == null || !notice.canCopyReference()
+                || !pendingOrderNoticeViewModel.hasPending()) {
+            return;
+        }
+        ClipboardManager clipboard = (ClipboardManager)
+                requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard == null) {
+            return;
+        }
+        clipboard.setPrimaryClip(ClipData.newPlainText(
+                getString(R.string.pending_order_copy_reference),
+                notice.getQuoteId()));
+        Toast.makeText(requireContext(),
+                R.string.pending_order_reference_copied, Toast.LENGTH_SHORT).show();
+    }
+
     private void renderIdle() {
 
         progressIndicator.setVisibility(
@@ -428,7 +496,7 @@ public final class HomeFragment
 
 
         calculateButton.setEnabled(
-                true
+                !pendingOrderNoticeViewModel.hasPending()
         );
     }
 
@@ -464,7 +532,7 @@ public final class HomeFragment
 
 
         calculateButton.setEnabled(
-                true
+                !pendingOrderNoticeViewModel.hasPending()
         );
 
 
@@ -527,7 +595,7 @@ public final class HomeFragment
 
 
         calculateButton.setEnabled(
-                true
+                !pendingOrderNoticeViewModel.hasPending()
         );
 
 
@@ -548,6 +616,13 @@ public final class HomeFragment
     public void onResume() {
 
         super.onResume();
+
+        if (pendingOrderNoticeViewModel != null) {
+            pendingOrderNoticeViewModel.refresh();
+            if (pendingOrderNoticeViewModel.hasPending()) {
+                calculateButton.setEnabled(false);
+            }
+        }
 
 
         if (activeOrderViewModel != null) {
@@ -607,6 +682,10 @@ public final class HomeFragment
 
         activeOrderButton =
                 null;
+
+        pendingOrderNoticeCard = null;
+        pendingOrderReference = null;
+        pendingOrderCopyButton = null;
 
 
         progressIndicator =

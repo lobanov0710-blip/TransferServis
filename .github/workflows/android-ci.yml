@@ -47,6 +47,9 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      - name: Compile Android instrumentation tests
+        run: ./gradlew :app:assembleDebugAndroidTest --stacktrace
+
       - name: Upload test and lint reports
         if: always()
         uses: actions/upload-artifact@v6
