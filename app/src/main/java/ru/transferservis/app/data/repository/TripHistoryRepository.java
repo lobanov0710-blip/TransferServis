@@ -108,6 +108,40 @@ public final class TripHistoryRepository {
         databaseExecutor.execute(() -> writeSafely(() -> tripHistoryDao.upsert(entity)));
     }
 
+    /**
+     * A recovery after process death has no in-memory Quote. Use only a complete,
+     * server-verified snapshot and never replace the existing original local row.
+     */
+    public void saveServerSnapshotIfMissing(
+            @NonNull ActiveOrder order,
+            @NonNull BooleanSupplier stillCurrent
+    ) {
+        if (order.getTariff() == null
+                || order.getFrom().trim().isEmpty()
+                || order.getTo().trim().isEmpty()
+                || !order.getDate().matches("\\d{4}-\\d{2}-\\d{2}")
+                || order.getDistanceKm() == null || order.getDistanceKm() <= 0
+                || !Double.isFinite(order.getDistanceKm())
+                || order.getDurationMinutes() == null || order.getDurationMinutes() <= 0
+                || !Double.isFinite(order.getDurationMinutes())
+                || order.getDurationMinutes() > Integer.MAX_VALUE
+                || order.getPriceRub() == null || order.getPriceRub() <= 0
+                || order.getCreatedAtMillis() <= 0) {
+            return;
+        }
+        TripHistoryEntity entity = new TripHistoryEntity(
+                order.getOrderId(), order.getStatus().getApiValue(),
+                order.getCreatedAtMillis(), order.getDate(),
+                order.getFrom(), order.getTo(), order.getTariff().getDisplayName(),
+                order.getDistanceKm(), (int) Math.round(order.getDurationMinutes()),
+                order.getPriceRub());
+        databaseExecutor.execute(() -> writeSafely(() -> {
+            if (stillCurrent.getAsBoolean()) {
+                tripHistoryDao.insertIfAbsent(entity);
+            }
+        }));
+    }
+
     public void updateConfirmedStatus(
             @NonNull ActiveOrder order,
             @NonNull BooleanSupplier stillCurrent
