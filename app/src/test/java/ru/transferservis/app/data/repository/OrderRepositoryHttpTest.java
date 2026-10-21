@@ -16,6 +16,7 @@ import mockwebserver3.MockWebServer;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
 import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiErrorCode;
@@ -337,6 +338,55 @@ public final class OrderRepositoryHttpTest {
         assertEquals(ApiResult.Status.VALIDATION_ERROR, response.get().getStatus());
         assertFalse(stored.get());
         assertEquals(0, server.getRequestCount());
+    }
+
+    @Test
+    public void recoverOrder_postsExactOriginalPayloadWithoutQuoteExpiryCheck()
+            throws Exception {
+        enqueueJson(201, "{"
+                + "\"ok\":true,\"order\":{\"id\":\"old-order\",\"status\":\"new\","
+                + "\"createdAt\":1791234567000},"
+                + "\"accessToken\":\"existing-token\","
+                + "\"accessExpiresAt\":1793834567000}");
+        CreateOrderRequest original = new CreateOrderRequest(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "Николай", "+7 999 123-45-67", "2026-10-10", "Без багажа");
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
+        repository.recoverOrder(original, result -> {
+            response.set(result);
+            latch.countDown();
+        });
+        assertTrue(latch.await(3, TimeUnit.SECONDS));
+        assertTrue(response.get().isSuccess());
+        assertEquals("old-order", response.get().getData().getOrderId());
+        assertEquals(1, server.getRequestCount());
+        String body = server.takeRequest().getBody().readUtf8();
+        com.google.gson.JsonObject actual = new Gson().fromJson(
+                body, com.google.gson.JsonObject.class);
+        assertEquals(original.getQuoteId(), actual.get("quoteId").getAsString());
+        assertEquals(original.getName(), actual.get("name").getAsString());
+        assertEquals(original.getPhone(), actual.get("phone").getAsString());
+        assertEquals(original.getDate(), actual.get("date").getAsString());
+        assertEquals(original.getComment(), actual.get("comment").getAsString());
+    }
+
+    @Test
+    public void recoverOrder_conflictDoesNotBecomeConfirmedReceipt()
+            throws Exception {
+        enqueueJson(409, "{\"ok\":false,\"error\":\"quote already used\"}");
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
+        repository.recoverOrder(new CreateOrderRequest(
+                "123e4567-e89b-42d3-a456-426614174000",
+                "Николай", "+79991234567", "2026-10-10", null), result -> {
+            response.set(result);
+            latch.countDown();
+        });
+        assertTrue(latch.await(3, TimeUnit.SECONDS));
+        assertFalse(response.get().isSuccess());
+        assertEquals(409, response.get().getHttpCode());
+        assertEquals(1, server.getRequestCount());
     }
 
     private ApiResult<OrderReceipt> createOrder()
