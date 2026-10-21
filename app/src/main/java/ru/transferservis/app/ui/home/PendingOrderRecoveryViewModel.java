@@ -69,25 +69,24 @@ public final class PendingOrderRecoveryViewModel extends AndroidViewModel {
                     finish(State.CORRUPTED);
                     return;
                 }
-                // Never let a stale pending marker replace access to a different order.
-                if (sessionStore.load() != null) {
-                    finish(State.OTHER_SESSION);
-                    return;
-                }
+                // Preserve the exact current session until a confirmed recovery.
+                PassengerOrderSessionStore.Session priorSession = sessionStore.load();
                 if (!saved.getQuoteId().equals(pendingStore.getPendingQuoteId())) {
                     finish(State.CORRUPTED);
                     return;
                 }
                 // Only the originally validated body goes over the wire; no new Quote.
                 orders.recoverOrder(saved, result -> EXECUTOR.execute(
-                        () -> handleResult(saved, result)));
+                        () -> handleResult(saved, priorSession, result)));
             } catch (RuntimeException error) {
                 finish(State.STORAGE_ERROR);
             }
         });
     }
 
-    private void handleResult(CreateOrderRequest saved, ApiResult<OrderReceipt> result) {
+    private void handleResult(CreateOrderRequest saved,
+                              PassengerOrderSessionStore.Session priorSession,
+                              ApiResult<OrderReceipt> result) {
         try {
             if (!result.isSuccess() || result.getData() == null) {
                 // Even 409 or an HTTP 5xx may follow a committed order.
@@ -103,8 +102,11 @@ public final class PendingOrderRecoveryViewModel extends AndroidViewModel {
             // Save authenticated order access BEFORE removing pending evidence.
             // The check runs under the session-store lock.
             boolean savedAccess = sessionStore.saveIfCurrent(receipt, () -> {
-                PassengerOrderSessionStore.Session previous = sessionStore.load();
-                return previous == null || receipt.getOrderId().equals(previous.getOrderId());
+                PassengerOrderSessionStore.Session current = sessionStore.load();
+                if (current == null || receipt.getOrderId().equals(current.getOrderId())) {
+                    return true;
+                }
+                return priorSession != null && sameSession(priorSession, current);
             });
             if (!savedAccess) {
                 finish(State.OTHER_SESSION);
@@ -116,6 +118,15 @@ public final class PendingOrderRecoveryViewModel extends AndroidViewModel {
         } catch (RuntimeException error) {
             finish(State.STORAGE_ERROR);
         }
+    }
+
+    private static boolean sameSession(
+            PassengerOrderSessionStore.Session before,
+            PassengerOrderSessionStore.Session current
+    ) {
+        return before.getOrderId().equals(current.getOrderId())
+                && before.getAccessToken().equals(current.getAccessToken())
+                && before.getAccessExpiresAtMillis() == current.getAccessExpiresAtMillis();
     }
 
     private void finish(State result) {
