@@ -361,7 +361,7 @@ public final class OrderRepositoryHttpTest {
         assertTrue(response.get().isSuccess());
         assertEquals("old-order", response.get().getData().getOrderId());
         assertEquals(1, server.getRequestCount());
-        String body = server.takeRequest().getBody().readUtf8();
+        String body = server.takeRequest().getBody().utf8();
         com.google.gson.JsonObject actual = new Gson().fromJson(
                 body, com.google.gson.JsonObject.class);
         assertEquals(original.getQuoteId(), actual.get("quoteId").getAsString());
