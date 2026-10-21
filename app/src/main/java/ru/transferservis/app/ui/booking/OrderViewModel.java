@@ -94,6 +94,11 @@ public final class OrderViewModel
         return pendingStore.hasPending();
     }
 
+    @Nullable
+    public String getPendingQuoteId() {
+        return pendingStore.getPendingQuoteId();
+    }
+
     public void createOrder(
             @NonNull Quote quote,
             @NonNull String name,
@@ -110,6 +115,11 @@ public final class OrderViewModel
         // No booking POST may start until its exact payload is durably encrypted.
         COMPLETION_EXECUTOR.execute(() -> {
             try {
+                // Never submit a new quote while the previous outcome is unresolved.
+                if (pendingStore.hasPending()) {
+                    publishState(requestId, OrderUiState.resultUnknown());
+                    return;
+                }
                 repository.createOrder(quote, name, phone, date, comment,
                         request -> {
                             boolean saved = pendingStore.begin(request);
