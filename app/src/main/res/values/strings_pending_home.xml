@@ -5,4 +5,16 @@
     <string name="pending_order_home_reference">Код расчёта: %1$s</string>
     <string name="pending_order_copy_reference">Скопировать код расчёта</string>
     <string name="pending_order_reference_copied">Код расчёта скопирован</string>
+    <string name="pending_order_recover">Проверить заявку</string>
+    <string name="pending_order_recover_dialog_title">Проверить результат заявки?</string>
+    <string name="pending_order_recover_dialog_message">Приложение повторно отправит точно такой же запрос с прежним кодом расчёта. Если первая попытка не дошла до сервера и расчёт ещё действителен, заявка может быть создана сейчас. Продолжить?</string>
+    <string name="pending_order_recover_confirm">Проверить</string>
+    <string name="pending_order_recover_cancel">Отмена</string>
+    <string name="pending_order_recover_checking">Проверяем заявку…</string>
+    <string name="pending_order_recover_success">Заявка подтверждена. Доступ к поездке сохранён. Откройте «Текущая поездка».</string>
+    <string name="pending_order_recover_unresolved">Не удалось подтвердить результат. Не создавайте новую заявку. Уточните статус у диспетчера по коду расчёта.</string>
+    <string name="pending_order_recover_conflict">Сервер не подтвердил заявку (HTTP 409). Код расчёта остаётся заблокированным. Обратитесь к диспетчеру.</string>
+    <string name="pending_order_recover_corrupted">Не удалось прочитать сохранённые данные. Повторный запрос запрещён. Обратитесь к диспетчеру.</string>
+    <string name="pending_order_recover_other_session">Уже сохранена другая поездка. Чтобы избежать замены доступа, обратитесь к диспетчеру.</string>
+    <string name="pending_order_recover_storage_error">Не удалось безопасно сохранить результат. Не оформляйте новую заявку; обратитесь к диспетчеру.</string>
 </resources>
