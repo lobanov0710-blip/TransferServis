@@ -32,6 +32,7 @@ import ru.transferservis.app.domain.model.ActiveOrder;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 import ru.transferservis.app.domain.validation.PassengerValidator;
+import ru.transferservis.app.domain.validation.TripDateValidator;
 
 public final class OrderRepository {
 
@@ -204,12 +205,7 @@ public final class OrderRepository {
                         date
                 );
 
-        if (cleanDate == null
-                || !DATE_PATTERN
-                .matcher(
-                        cleanDate
-                )
-                .matches()) {
+        if (!TripDateValidator.isBookableDate(cleanDate, System.currentTimeMillis())) {
 
             callback.onResult(
                     ApiResult.validationError(
