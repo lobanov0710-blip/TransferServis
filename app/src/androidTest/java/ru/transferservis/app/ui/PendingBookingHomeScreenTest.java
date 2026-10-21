@@ -61,6 +61,8 @@ public final class PendingBookingHomeScreenTest {
                 TextView reference = activity.findViewById(R.id.pendingOrderReference);
                 assertTrue(reference.getText().toString().contains(QUOTE_ID));
                 assertFalse(activity.findViewById(R.id.calculateButton).isEnabled());
+                assertEquals(View.VISIBLE,
+                        activity.findViewById(R.id.pendingOrderRecoverButton).getVisibility());
                 activity.findViewById(R.id.pendingOrderCopyButton).performClick();
                 ClipboardManager clipboard = (ClipboardManager)
                         activity.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -98,6 +100,8 @@ public final class PendingBookingHomeScreenTest {
             scenario.onActivity(activity -> {
                 assertEquals(View.GONE,
                         activity.findViewById(R.id.pendingOrderCopyButton).getVisibility());
+                assertEquals(View.GONE,
+                        activity.findViewById(R.id.pendingOrderRecoverButton).getVisibility());
                 assertFalse(activity.findViewById(R.id.calculateButton).isEnabled());
             });
         }
