@@ -11,6 +11,7 @@
     <string name="pending_order_recover_confirm">Проверить</string>
     <string name="pending_order_recover_cancel">Отмена</string>
     <string name="pending_order_recover_checking">Проверяем заявку…</string>
+    <string name="pending_order_recover_access_locked">Сервер подтвердил заявку и доступ сохранён, но приложение не смогло снять локальную блокировку. Поездку можно посмотреть в разделе «Текущая поездка». Не отправляйте заявку повторно, уточните ситуацию у диспетчера.</string>
     <string name="pending_order_recover_success">Заявка подтверждена. Доступ к поездке сохранён. Откройте «Текущая поездка».</string>
     <string name="pending_order_recover_unresolved">Не удалось подтвердить результат. Не создавайте новую заявку. Уточните статус у диспетчера по коду расчёта.</string>
     <string name="pending_order_recover_conflict">Сервер не подтвердил заявку (HTTP 409). Код расчёта остаётся заблокированным. Обратитесь к диспетчеру.</string>
