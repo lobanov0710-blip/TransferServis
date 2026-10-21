@@ -55,6 +55,13 @@ public final class PendingOrderSubmissionStore {
         }
     }
 
+    /** Non-secret reference for the dispatcher, or null when the record is damaged. */
+    public String getPendingQuoteId() {
+        synchronized (LOCK) {
+            return readQuoteIdLocked();
+        }
+    }
+
     /**
      * @return false if another attempt exists; never overwrites unresolved work.
      * @throws IllegalStateException when a durable encrypted write is impossible.
