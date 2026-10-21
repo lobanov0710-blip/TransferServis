@@ -513,6 +513,10 @@ public final class HomeFragment
                 pendingOrderNoticeViewModel.refresh();
                 activeOrderViewModel.restoreActiveOrder();
                 break;
+            case ACCESS_SAVED_LOCKED:
+                message = R.string.pending_order_recover_access_locked;
+                activeOrderViewModel.restoreActiveOrder();
+                break;
             case CONFLICT:
                 message = R.string.pending_order_recover_conflict;
                 break;
