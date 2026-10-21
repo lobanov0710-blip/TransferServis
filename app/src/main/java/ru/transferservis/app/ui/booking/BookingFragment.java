@@ -688,7 +688,10 @@ public final class BookingFragment
         orderRequested = false;
         orderProgressIndicator.setVisibility(View.GONE);
         orderButton.setEnabled(false);
-        orderErrorText.setText(R.string.booking_result_unknown);
+        String pendingReference = orderViewModel.getPendingQuoteId();
+        orderErrorText.setText(pendingReference == null
+                ? getString(R.string.booking_result_unknown)
+                : getString(R.string.booking_result_unknown_with_reference, pendingReference));
         orderErrorText.setVisibility(View.VISIBLE);
     }
 
