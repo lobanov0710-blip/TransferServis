@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -122,7 +123,7 @@ public final class PendingOrderSubmissionStore {
             String quoteId = decoded.get("quoteId").getAsString();
             return quoteId.isEmpty() ? null : quoteId;
         } catch (GeneralSecurityException | IOException
-                 | IllegalArgumentException error) {
+                 | IllegalArgumentException | JsonParseException error) {
             // Preserve the evidence and block a new submission. Never silently clear it.
             return null;
         }
