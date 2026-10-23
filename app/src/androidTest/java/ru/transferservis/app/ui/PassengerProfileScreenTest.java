@@ -28,6 +28,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(AndroidJUnit4.class)
 public final class PassengerProfileScreenTest {
 
+    // A valid Russian phone is required by the current shared passenger validator.
+    private static final String VALID_PHONE = "+7 (999) 123-45-67";
+
     private Context context;
     private SharedPreferences profile;
 
@@ -51,11 +54,11 @@ public final class PassengerProfileScreenTest {
             openProfile(scenario);
             scenario.onActivity(activity -> {
                 ((EditText) activity.findViewById(R.id.profileNameInput)).setText("  Анна  ");
-                ((EditText) activity.findViewById(R.id.profilePhoneInput)).setText("  +44 (20) 7946-0958  ");
+                ((EditText) activity.findViewById(R.id.profilePhoneInput)).setText("  " + VALID_PHONE + "  ");
                 activity.findViewById(R.id.profileSaveButton).performClick();
             });
             assertEquals("Анна", profile.getString("name", ""));
-            assertEquals("+44 (20) 7946-0958", profile.getString("phone", ""));
+            assertEquals(VALID_PHONE, profile.getString("phone", ""));
 
             scenario.recreate();
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
@@ -99,7 +102,7 @@ public final class PassengerProfileScreenTest {
             EditText name = activity.findViewById(R.id.profileNameInput);
             EditText phone = activity.findViewById(R.id.profilePhoneInput);
             assertEquals("Анна", name.getText().toString());
-            assertEquals("+44 (20) 7946-0958", phone.getText().toString());
+            assertEquals(VALID_PHONE, phone.getText().toString());
         });
     }
 }
