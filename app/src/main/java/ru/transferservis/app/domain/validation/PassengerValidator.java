@@ -4,8 +4,7 @@ package ru.transferservis.app.domain.validation;
 public final class PassengerValidator {
 
     private static final int MAX_NAME_LENGTH = 100;
-    private static final int MIN_PHONE_DIGITS = 10;
-    private static final int MAX_PHONE_DIGITS = 15;
+    private static final int RUSSIAN_PHONE_DIGITS = 11;
 
     public enum Error {
         NONE,
@@ -37,7 +36,7 @@ public final class PassengerValidator {
 
     /**
      * Format validation only: no SMS confirmation or telephone number allocation lookup.
-     * Accepts +7, 8 and international numbers with normal separators.
+     * Requires a Russian +7 or 8 prefix and 11 digits in total.
      * Disallows letters, repeated + signs, malformed parentheses and obvious placeholders.
      */
     public static boolean isValidPhone(String phone) {
@@ -70,31 +69,22 @@ public final class PassengerValidator {
                 openParenthesis = false;
             }
         }
-        if (openParenthesis || digits.length() < MIN_PHONE_DIGITS
-                || digits.length() > MAX_PHONE_DIGITS) {
+        if (openParenthesis || digits.length() != RUSSIAN_PHONE_DIGITS) {
             return false;
         }
 
+        // The national number must follow exactly +7 or 8. A local ten-digit
+        // number (or bare 7...) is not accepted as a new booking contact.
+        if (!input.startsWith("+7") && !input.startsWith("8")) {
+            return false;
+        }
         String normalizedDigits = digits.toString();
-        // Recognize Russian/Kazakh +7 and Russian 8/7 trunk formats.
-        boolean russianStyle = normalizedDigits.length() > 0
-                && (normalizedDigits.charAt(0) == '7'
-                || normalizedDigits.charAt(0) == '8');
-        if (input.startsWith("+7") && normalizedDigits.length() != 11) {
-            return false;
-        }
-        if (russianStyle && normalizedDigits.length() == 11
-                && normalizedDigits.charAt(1) < '2') {
-            return false;
-        }
-        if (input.startsWith("+") && normalizedDigits.charAt(0) == '0') {
+        if (normalizedDigits.charAt(1) < '2') {
             return false;
         }
 
-        // Reject obvious test placeholders, without rejecting ordinary
-        // mixed-digit phone numbers.
-        String national = russianStyle && normalizedDigits.length() == 11
-                ? normalizedDigits.substring(1) : normalizedDigits;
+        // Reject obvious placeholders without rejecting normal mixed digits.
+        String national = normalizedDigits.substring(1);
         if (national.equals("0123456789") || national.equals("1234567890")
                 || national.equals("9876543210")) {
             return false;
