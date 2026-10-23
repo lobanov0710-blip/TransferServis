@@ -20,12 +20,14 @@ import androidx.navigation.fragment.NavHostFragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import ru.transferservis.app.domain.validation.TripDateValidator;
+import ru.transferservis.app.domain.validation.PassengerValidator;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.PassengerProfile;
@@ -49,6 +51,7 @@ public final class BookingFragment
     private TextView bookingPrice;
 
     private TextInputEditText bookingNameInput;
+    private TextInputLayout bookingPhoneLayout;
     private TextInputEditText bookingPhoneInput;
     private TextInputEditText bookingDateInput;
     private TextInputEditText bookingCommentInput;
@@ -152,6 +155,9 @@ public final class BookingFragment
                 root.findViewById(
                         R.id.bookingNameInput
                 );
+
+        bookingPhoneLayout =
+                root.findViewById(R.id.bookingPhoneLayout);
 
         bookingPhoneInput =
                 root.findViewById(
@@ -375,6 +381,13 @@ public final class BookingFragment
                 getInputText(
                         bookingPhoneInput
                 );
+
+        if (!PassengerValidator.isValidPhone(phone)) {
+            bookingPhoneLayout.setError(getString(R.string.error_phone_invalid));
+            bookingPhoneInput.requestFocus();
+            return;
+        }
+        bookingPhoneLayout.setError(null);
 
         String displayDate =
                 getInputText(
@@ -731,6 +744,8 @@ public final class BookingFragment
                 null;
 
         bookingPhoneInput =
+                null;
+        bookingPhoneLayout =
                 null;
 
         bookingDateInput =
