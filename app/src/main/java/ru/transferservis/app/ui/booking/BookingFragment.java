@@ -23,6 +23,9 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.TimeZone;
+
+import ru.transferservis.app.domain.validation.TripDateValidator;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.PassengerProfile;
@@ -383,7 +386,8 @@ public final class BookingFragment
                         displayDate
                 );
 
-        if (apiDate == null) {
+        if (!TripDateValidator.isBookableDate(
+                apiDate, System.currentTimeMillis())) {
 
             renderOrderError(
                     ApiErrorCode.DATE_INVALID
@@ -427,73 +431,37 @@ public final class BookingFragment
     }
 
     private void showDatePicker() {
+        // Use dispatcher's civil day, not the emulator/device timezone.
+        Calendar moscowToday = Calendar.getInstance(
+                TimeZone.getTimeZone("Europe/Moscow"), Locale.ROOT);
+        int year = moscowToday.get(Calendar.YEAR);
+        int month = moscowToday.get(Calendar.MONTH);
+        int day = moscowToday.get(Calendar.DAY_OF_MONTH);
 
-        Calendar today =
-                Calendar.getInstance();
+        // Android DatePicker minDate uses milliseconds in the device's local
+        // timezone. Construct that instant for Moscow's calendar day.
+        Calendar localMin = Calendar.getInstance();
+        localMin.clear();
+        localMin.set(year, month, day, 0, 0, 0);
 
-        Calendar minDate =
-                Calendar.getInstance();
+        DatePickerDialog dialog = new DatePickerDialog(
+                requireContext(),
+                (picker, selectedYear, selectedMonth, selectedDay) -> {
+                    String isoDate = String.format(Locale.ROOT, "%04d-%02d-%02d",
+                            selectedYear, selectedMonth + 1, selectedDay);
+                    // Revalidate on selection: a dialog might remain open past midnight.
+                    if (!TripDateValidator.isBookableDate(
+                            isoDate, System.currentTimeMillis())) {
+                        bookingDateInput.setText("");
+                        renderOrderError(ApiErrorCode.DATE_INVALID);
+                        return;
+                    }
+                    bookingDateInput.setText(String.format(Locale.ROOT, "%02d.%02d.%04d",
+                            selectedDay, selectedMonth + 1, selectedYear));
+                },
+                year, month, day);
 
-        minDate.set(
-                Calendar.HOUR_OF_DAY,
-                0
-        );
-
-        minDate.set(
-                Calendar.MINUTE,
-                0
-        );
-
-        minDate.set(
-                Calendar.SECOND,
-                0
-        );
-
-        minDate.set(
-                Calendar.MILLISECOND,
-                0
-        );
-
-        DatePickerDialog dialog =
-                new DatePickerDialog(
-                        requireContext(),
-                        (
-                                datePicker,
-                                year,
-                                month,
-                                dayOfMonth
-                        ) -> {
-
-                            String displayDate =
-                                    String.format(
-                                            Locale.ROOT,
-                                            "%02d.%02d.%04d",
-                                            dayOfMonth,
-                                            month + 1,
-                                            year
-                                    );
-
-                            bookingDateInput.setText(
-                                    displayDate
-                            );
-                        },
-                        today.get(
-                                Calendar.YEAR
-                        ),
-                        today.get(
-                                Calendar.MONTH
-                        ),
-                        today.get(
-                                Calendar.DAY_OF_MONTH
-                        )
-                );
-
-        dialog
-                .getDatePicker()
-                .setMinDate(
-                        minDate.getTimeInMillis()
-                );
-
+        dialog.getDatePicker().setMinDate(localMin.getTimeInMillis());
         dialog.show();
     }
 

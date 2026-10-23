@@ -304,7 +304,7 @@ public final class OrderRepositoryHttpTest {
     public void rejectedPendingGateNeverSendsBookingPost() {
         AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
         repository.createOrder(createValidQuote(), "Николай", "+7 999 123-45-67",
-                "2026-10-10", null, request -> false, response::set);
+                "2099-10-10", null, request -> false, response::set);
         assertNotNull(response.get());
         assertError(response.get(), ApiResult.Status.VALIDATION_ERROR,
                 ApiErrorCode.PENDING_SUBMISSION, 0);
@@ -315,7 +315,7 @@ public final class OrderRepositoryHttpTest {
     public void durableStoreFailureNeverSendsBookingPost() {
         AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
         repository.createOrder(createValidQuote(), "Николай", "+7 999 123-45-67",
-                "2026-10-10", null, request -> {
+                "2099-10-10", null, request -> {
                     throw new IllegalStateException("Keystore unavailable");
                 }, response::set);
         assertNotNull(response.get());
@@ -330,7 +330,7 @@ public final class OrderRepositoryHttpTest {
                 new java.util.concurrent.atomic.AtomicBoolean(false);
         AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
         repository.createOrder(createValidQuote(), "", "+7 999 123-45-67",
-                "2026-10-10", null, request -> {
+                "2099-10-10", null, request -> {
                     stored.set(true);
                     return true;
                 }, response::set);
@@ -350,7 +350,7 @@ public final class OrderRepositoryHttpTest {
                 + "\"accessExpiresAt\":1793834567000}");
         CreateOrderRequest original = new CreateOrderRequest(
                 "123e4567-e89b-42d3-a456-426614174000",
-                "Николай", "+7 999 123-45-67", "2026-10-10", "Без багажа");
+                "Николай", "+7 999 123-45-67", "2020-01-01", "Без багажа");
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
         repository.recoverOrder(original, result -> {
@@ -379,7 +379,7 @@ public final class OrderRepositoryHttpTest {
         AtomicReference<ApiResult<OrderReceipt>> response = new AtomicReference<>();
         repository.recoverOrder(new CreateOrderRequest(
                 "123e4567-e89b-42d3-a456-426614174000",
-                "Николай", "+79991234567", "2026-10-10", null), result -> {
+                "Николай", "+79991234567", "2099-10-10", null), result -> {
             response.set(result);
             latch.countDown();
         });
@@ -404,7 +404,7 @@ public final class OrderRepositoryHttpTest {
                 createValidQuote(),
                 "Николай",
                 "+7 999 123-45-67",
-                "2026-10-10",
+                "2099-10-10",
                 null,
                 result -> {
 

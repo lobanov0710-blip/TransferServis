@@ -149,6 +149,16 @@ public final class QuoteRepository {
                                     return;
                                 }
 
+                                // Debug builds only. No request body, passenger details,
+                                // or response tokens are logged.
+                                if (ru.transferservis.app.BuildConfig.DEBUG) {
+                                    android.util.Log.e(
+                                            "TS_CALC_NET",
+                                            "Quote calculation transport failure",
+                                            throwable
+                                    );
+                                }
+
                                 callback.onResult(
                                         ApiResult.networkError(
                                                 ApiErrorCode.NETWORK,

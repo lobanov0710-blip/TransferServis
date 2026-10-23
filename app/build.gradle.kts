@@ -22,6 +22,11 @@ android {
             "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Generate BuildConfig.DEBUG for debug-only network diagnostics.
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
             optimization {
