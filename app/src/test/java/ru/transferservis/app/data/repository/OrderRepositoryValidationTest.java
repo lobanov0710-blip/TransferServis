@@ -152,6 +152,30 @@ public final class OrderRepositoryValidationTest {
     }
 
     @Test
+    public void createOrder_phoneWithoutPrefixRejectedBeforePendingSaveOrNetwork() {
+        java.util.concurrent.atomic.AtomicBoolean saved =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        AtomicReference<ApiResult<OrderReceipt>> result = new AtomicReference<>();
+        repository.createOrder(createValidQuote(), "Николай", "9991234567",
+                "2099-10-10", null, request -> {
+                    saved.set(true);
+                    return true;
+                }, result::set);
+        assertNotNull(result.get());
+        assertValidationError(result.get(), ApiErrorCode.PHONE_INVALID);
+        assertFalse(saved.get());
+        assertEquals(null, apiService.lastOrderRequest);
+    }
+
+    @Test
+    public void createOrder_bareSevenPrefixRejected() {
+        ApiResult<OrderReceipt> result = createOrder(
+                createValidQuote(), "Николай", "79991234567", "2099-10-10", null);
+        assertValidationError(result, ApiErrorCode.PHONE_INVALID);
+        assertEquals(null, apiService.lastOrderRequest);
+    }
+
+    @Test
     public void createOrder_phoneWithFormatting_isAcceptedByLocalValidation() {
 
         AtomicReference<ApiResult<OrderReceipt>> reference =
@@ -192,7 +216,7 @@ public final class OrderRepositoryValidationTest {
                 () -> repository.createOrder(
                         createValidQuote(),
                         "  " + name + "  ",
-                        "  +44 (20) 7123-4567  ",
+                        "  +7 (999) 123-45-67  ",
                         "2099-10-10",
                         null,
                         result -> {
@@ -211,7 +235,7 @@ public final class OrderRepositoryValidationTest {
         );
 
         assertEquals(
-                "+44 (20) 7123-4567",
+                "+7 (999) 123-45-67",
                 apiService.lastOrderRequest.getPhone()
         );
     }

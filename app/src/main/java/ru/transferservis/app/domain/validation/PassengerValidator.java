@@ -4,8 +4,7 @@ package ru.transferservis.app.domain.validation;
 public final class PassengerValidator {
 
     private static final int MAX_NAME_LENGTH = 100;
-    private static final int MIN_PHONE_DIGITS = 10;
-    private static final int MAX_PHONE_DIGITS = 15;
+    private static final int RUSSIAN_PHONE_DIGITS = 11;
 
     public enum Error {
         NONE,
@@ -28,14 +27,76 @@ public final class PassengerValidator {
             return Error.NAME_TOO_LONG;
         }
 
-        String phoneDigits = normalize(phone).replaceAll("\\D", "");
-
-        if (phoneDigits.length() < MIN_PHONE_DIGITS
-                || phoneDigits.length() > MAX_PHONE_DIGITS) {
+        if (!isValidPhone(phone)) {
             return Error.PHONE_INVALID;
         }
 
         return Error.NONE;
+    }
+
+    /**
+     * Format validation only: no SMS confirmation or telephone number allocation lookup.
+     * Requires a Russian +7 or 8 prefix and 11 digits in total.
+     * Disallows letters, repeated + signs, malformed parentheses and obvious placeholders.
+     */
+    public static boolean isValidPhone(String phone) {
+        String input = normalize(phone);
+        if (input.isEmpty() || input.length() > 40
+                || !input.matches("^\\+?[0-9 ()\\-.]+$")) {
+            return false;
+        }
+
+        StringBuilder digits = new StringBuilder();
+        boolean openParenthesis = false;
+        int digitsInsideParentheses = 0;
+        for (int i = 0; i < input.length(); i++) {
+            char current = input.charAt(i);
+            if (current >= '0' && current <= '9') {
+                digits.append(current);
+                if (openParenthesis) {
+                    digitsInsideParentheses++;
+                }
+            } else if (current == '(') {
+                if (openParenthesis) {
+                    return false;
+                }
+                openParenthesis = true;
+                digitsInsideParentheses = 0;
+            } else if (current == ')') {
+                if (!openParenthesis || digitsInsideParentheses == 0) {
+                    return false;
+                }
+                openParenthesis = false;
+            }
+        }
+        if (openParenthesis || digits.length() != RUSSIAN_PHONE_DIGITS) {
+            return false;
+        }
+
+        // The national number must follow exactly +7 or 8. A local ten-digit
+        // number (or bare 7...) is not accepted as a new booking contact.
+        if (!input.startsWith("+7") && !input.startsWith("8")) {
+            return false;
+        }
+        String normalizedDigits = digits.toString();
+        if (normalizedDigits.charAt(1) < '2') {
+            return false;
+        }
+
+        // Reject obvious placeholders without rejecting normal mixed digits.
+        String national = normalizedDigits.substring(1);
+        if (national.equals("0123456789") || national.equals("1234567890")
+                || national.equals("9876543210")) {
+            return false;
+        }
+        boolean allSame = true;
+        for (int i = 1; i < national.length(); i++) {
+            if (national.charAt(i) != national.charAt(0)) {
+                allSame = false;
+                break;
+            }
+        }
+        return !allSame;
     }
 
     /** Keeps the entered phone formatting; only surrounding whitespace is removed. */

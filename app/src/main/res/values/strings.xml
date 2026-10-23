@@ -209,7 +209,7 @@
     </string>
 
     <string name="booking_phone_hint">
-        Телефон
+        Телефон (+7 или 8)
     </string>
 
     <string name="booking_date_hint">
@@ -373,7 +373,7 @@
     </string>
 
     <string name="profile_phone_hint">
-        Телефон
+        Телефон (+7 или 8)
     </string>
 
     <string name="profile_save">
@@ -393,7 +393,7 @@
     </string>
 
     <string name="profile_phone_invalid">
-        Укажите корректный номер телефона.
+        Укажите номер с +7 или 8 (всего 11 цифр).
     </string>
 
     <string name="profile_privacy_note">
@@ -467,7 +467,7 @@
     </string>
 
     <string name="error_phone_invalid">
-        Проверьте номер телефона.
+        Укажите номер с +7 или 8 (всего 11 цифр).
     </string>
 
     <string name="error_comment_too_long">
