@@ -17,46 +17,18 @@ public final class PassengerValidatorTest {
     @Test
     public void validate_nameLengthLimitUsesTrimmedName() {
         String maximumName = "А".repeat(100);
-
         assertEquals(PassengerValidator.Error.NONE,
-                PassengerValidator.validate("  " + maximumName + "  ", "9123456789"));
+                PassengerValidator.validate("  " + maximumName + "  ", "+79991234567"));
         assertEquals(PassengerValidator.Error.NAME_TOO_LONG,
-                PassengerValidator.validate(maximumName + "А", "9123456789"));
+                PassengerValidator.validate(maximumName + "А", "+79991234567"));
     }
 
     @Test
-    public void validate_phoneDigitLimitsIncludeTenAndFifteenDigits() {
-        assertEquals(PassengerValidator.Error.PHONE_INVALID,
-                PassengerValidator.validate("Николай", "123456789"));
-        assertEquals(PassengerValidator.Error.NONE,
-                PassengerValidator.validate("Николай", "9123456789"));
-        assertEquals(PassengerValidator.Error.NONE,
-                PassengerValidator.validate("Николай", "123456789012345"));
-        assertEquals(PassengerValidator.Error.PHONE_INVALID,
-                PassengerValidator.validate("Николай", "1234567890123456"));
-    }
-
-    @Test
-    public void validate_phoneWithoutDigitsIsInvalid() {
-        assertEquals(PassengerValidator.Error.PHONE_INVALID,
-                PassengerValidator.validate("Николай", null));
-        assertEquals(PassengerValidator.Error.PHONE_INVALID,
-                PassengerValidator.validate("Николай", "  + ( ) -  "));
-    }
-
-    @Test
-    public void validate_acceptsExistingPhoneFormattingWithoutCountryRestriction() {
-        assertEquals(PassengerValidator.Error.NONE,
-                PassengerValidator.validate("Анна-Мария", " +44 (20) 7123-4567 "));
-        assertEquals(PassengerValidator.Error.PHONE_INVALID,
-                PassengerValidator.validate("Николай", "тел. +7 (999) 123-45-67"));
-    }
-
-    @Test
-    public void validate_acceptsRussianAndInternationalFormats() {
+    public void validate_acceptsElevenDigitsWithRussianPrefixOnly() {
         for (String phone : new String[]{
-                "+7 (999) 123-45-67", "8 (999) 123-45-67",
-                "9991234567", "+44 (20) 7123-4567", "+1 (415) 555-2671"
+                "+7 (999) 123-45-67", "+79991234567",
+                "8 (999) 123-45-67", "89991234567",
+                "+7 831 412-34-56"
         }) {
             assertEquals(phone, PassengerValidator.Error.NONE,
                     PassengerValidator.validate("Иван", phone));
@@ -64,15 +36,11 @@ public final class PassengerValidatorTest {
     }
 
     @Test
-    public void validate_rejectsInvalidSymbolsCountryLengthAndDummyNumbers() {
+    public void validate_rejectsNumbersWithoutPlus7Or8() {
         for (String phone : new String[]{
-                "тел. +7 (999) 123-45-67", "abc79991234567",
-                "++79991234567", "8999+1234567",
-                "+7 999 123 45", "+7 012 123-45-67",
-                "+7 ((999)) 123-45-67", "+7 (999 123-45-67",
-                "+7 () 999 123-45-67", "+70000000000",
-                "0000000000", "1234567890", "9876543210",
-                "+7;9991234567", "+7\\n9991234567"
+                "9991234567", "9123456789", "79991234567",
+                "+44 (20) 7123-4567", "+1 (415) 555-2671",
+                "123456789012345", "123456789"
         }) {
             assertEquals(phone, PassengerValidator.Error.PHONE_INVALID,
                     PassengerValidator.validate("Иван", phone));
@@ -80,7 +48,25 @@ public final class PassengerValidatorTest {
     }
 
     @Test
-    public void normalize_trimsOnlyOuterWhitespaceAndPreservesPhoneFormatting() {
+    public void validate_rejectsInvalidSymbolsLengthAndPlaceholders() {
+        for (String phone : new String[]{
+                "", "тел. +7 (999) 123-45-67", "abc79991234567",
+                "++79991234567", "8999+1234567",
+                "+7 999 123 45", "8 999 123 45",
+                "+7 012 123-45-67", "+7 ((999)) 123-45-67",
+                "+7 (999 123-45-67", "+7 () 999 123-45-67",
+                "+70000000000", "80000000000", "81111111111",
+                "+7;9991234567", "+7\n9991234567"
+        }) {
+            assertEquals(phone, PassengerValidator.Error.PHONE_INVALID,
+                    PassengerValidator.validate("Иван", phone));
+        }
+        assertEquals(PassengerValidator.Error.PHONE_INVALID,
+                PassengerValidator.validate("Иван", null));
+    }
+
+    @Test
+    public void normalize_preservesPhoneFormattingAndTrimsOuterWhitespace() {
         assertEquals("", PassengerValidator.normalize(null));
         assertEquals("Анна Мария", PassengerValidator.normalize(" \tАнна Мария\n"));
         assertEquals("+7 (999) 123-45-67",
