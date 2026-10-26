@@ -55,7 +55,7 @@ public final class DebugGatewayConfigurationTest {
     @Test
     public void debugClientWithoutTokenDoesNotSendStagingHeader() throws Exception {
         RecordedRequest request = requestWithToken("");
-        assertNull(request.getHeader("X-Staging-Access-Token"));
+        assertNull(request.getHeaders().get("X-Staging-Access-Token"));
     }
 
     private static RecordedRequest requestWithToken(String token)
