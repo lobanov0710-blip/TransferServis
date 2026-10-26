@@ -2,6 +2,23 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+// Local-only staging settings. Missing configuration must NEVER fall back to production.
+val transferStagingBaseUrl = providers.gradleProperty("transferStagingBaseUrl")
+    .orNull?.trim()?.takeIf { it.isNotEmpty() }
+    ?: "https://staging-not-configured.invalid/"
+require(transferStagingBaseUrl.startsWith("https://") &&
+    transferStagingBaseUrl.endsWith("/") &&
+    transferStagingBaseUrl != "https://transfer-servis52.ru/" &&
+    !transferStagingBaseUrl.contains('"') &&
+    !transferStagingBaseUrl.contains('\\')) {
+    "Debug API URL must be a separate HTTPS staging gateway, ending with /"
+}
+val transferStagingAccessToken = providers.gradleProperty("transferStagingAccessToken")
+    .orNull?.trim() ?: ""
+require(transferStagingAccessToken.none { it == '"' || it == '\\' || it == '\n' || it == '\r' }) {
+    "Invalid staging tester token"
+}
+
 android {
     namespace = "ru.transferservis.app"
 
@@ -28,7 +45,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"$transferStagingBaseUrl\"")
+            buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
+        }
         release {
+            buildConfigField("String", "API_BASE_URL", "\"https://transfer-servis52.ru/\"")
+            buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"\"")
             optimization {
                 enable = true
 
