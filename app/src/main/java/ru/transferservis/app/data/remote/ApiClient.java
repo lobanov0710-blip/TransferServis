@@ -25,27 +25,30 @@ public final class ApiClient {
                     .create();
 
     private static final OkHttpClient HTTP_CLIENT =
-            createHttpClient();
+            createHttpClient(BuildConfig.STAGING_ACCESS_TOKEN);
 
-    private static OkHttpClient createHttpClient() {
+    // Открыто в пределах package для локальных HTTP-тестов без настоящего staging.
+    static OkHttpClient createHttpClient(String stagingAccessToken) {
         OkHttpClient.Builder builder =
                 new OkHttpClient.Builder()
                         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                        // Unknown booking outcome must not trigger automatic POST retry.
+                        // Не повторяем POST автоматически: при потере ответа заказ
+                        // мог уже сохраниться на сервере.
                         .retryOnConnectionFailure(false);
 
-        // Only the temporary, revocable staging tester token is included in Debug.
-        // The Worker HMAC secret must remain server-side in the PHP staging gateway.
-        if (BuildConfig.DEBUG && !BuildConfig.STAGING_ACCESS_TOKEN.isEmpty()) {
+        // Только Debug получает временный токен тестового PHP-шлюза.
+        // HMAC-секрет Worker никогда не хранится в Android-приложении.
+        if (BuildConfig.DEBUG && stagingAccessToken != null &&
+                !stagingAccessToken.isEmpty()) {
             builder.addInterceptor(chain ->
                     chain.proceed(
                             chain.request().newBuilder()
                                     .header(
                                             "X-Staging-Access-Token",
-                                            BuildConfig.STAGING_ACCESS_TOKEN
+                                            stagingAccessToken
                                     )
                                     .build()
                     )
