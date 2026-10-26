@@ -1,5 +1,7 @@
 package ru.transferservis.app.constants;
 
+import ru.transferservis.app.BuildConfig;
+
 public final class AppConstants {
 
     private AppConstants() {
@@ -8,7 +10,7 @@ public final class AppConstants {
 
 
     public static final String API_BASE_URL =
-            "https://transfer-servis52.ru/";
+            BuildConfig.API_BASE_URL;
 
 
     public static final String API_CALCULATE =
