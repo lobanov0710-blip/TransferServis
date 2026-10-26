@@ -2,17 +2,30 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-// Local-only staging settings. Missing configuration must NEVER fall back to production.
+// У Debug свой HTTPS-шлюз. При отсутствии настройки используем
+// несуществующий адрес, чтобы тестовый APK не обращался к production.
 val transferStagingBaseUrl = providers.gradleProperty("transferStagingBaseUrl")
     .orNull?.trim()?.takeIf { it.isNotEmpty() }
     ?: "https://staging-not-configured.invalid/"
-require(transferStagingBaseUrl.startsWith("https://") &&
-    transferStagingBaseUrl.endsWith("/") &&
-    transferStagingBaseUrl != "https://transfer-servis52.ru/" &&
-    !transferStagingBaseUrl.contains('"') &&
-    !transferStagingBaseUrl.contains('\\')) {
-    "Debug API URL must be a separate HTTPS staging gateway, ending with /"
+val stagingUri = java.net.URI(transferStagingBaseUrl)
+val stagingHost = stagingUri.host?.lowercase()
+require(
+    stagingUri.scheme == "https" &&
+    stagingHost != null &&
+    stagingHost.contains("staging") &&
+    stagingUri.path == "/" &&
+    stagingUri.rawQuery == null &&
+    stagingUri.rawFragment == null &&
+    stagingUri.rawUserInfo == null &&
+    stagingHost != "transfer-servis52.ru" &&
+    stagingHost != "www.transfer-servis52.ru" &&
+    stagingHost != "uber-v3.lobanov0710.workers.dev"
+) {
+    "Debug API must use a separate HTTPS staging host with a root URL ending in /"
 }
+
+// Это только временный токен доступа к staging PHP, НЕ HMAC-секрет Worker.
+// Он компилируется в Debug APK, поэтому APK не подлежит распространению.
 val transferStagingAccessToken = providers.gradleProperty("transferStagingAccessToken")
     .orNull?.trim() ?: ""
 require(transferStagingAccessToken.none { it == '"' || it == '\\' || it == '\n' || it == '\r' }) {
