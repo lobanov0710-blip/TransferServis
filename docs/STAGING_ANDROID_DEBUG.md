@@ -1,34 +1,50 @@
-# Android Transfer Servis — staging Debug configuration
+# Android Transfer Servis — тестовое окружение (Debug)
 
-Status: source only, no staging host or device test was provisioned as part of this change.
+**Статус:** изменения подготовлены в черновике PR. Staging-хост ещё не развёрнут. Это не проверка устройства.
 
-## Existing architecture
+## Архитектура
 
-The PHP gateway remains responsible for Worker HMAC signing. Never embed the Worker PROXY_HMAC_SECRET or passenger signing secret in Android. Existing API endpoints are unchanged:
+Пассажирское Android-приложение по-прежнему написано на **Java + XML** с архитектурой MVVM. Для запросов сохраняются Retrofit и OkHttp.
 
-- api/calculate.php
-- api/order.php
-- api/order-status.php
+```text
+Android Debug
+  → отдельный HTTPS PHP-шлюз staging
+  → uber-v3-staging (подпись HMAC проверяется здесь)
+  → transfer-servis52-staging (D1)
+```
 
-Release base URL remains https://transfer-servis52.ru/. Only Debug is configurable.
+PHP-шлюз подписывает запросы к Worker. HMAC-секрет Worker хранится **только на PHP-сервере**, не в APK. API-маршруты не меняются: `api/calculate.php`, `api/order.php`, `api/order-status.php`.
 
-## Local setup, after separate staging PHP vhost is approved and deployed
+Android Release, как и раньше, обращается к `https://transfer-servis52.ru/`. Только Debug может использовать тестовый адрес.
 
-Put these properties **only** in a developer's untracked user Gradle properties file (Windows: %USERPROFILE%\.gradle\gradle.properties). Never commit or send the values to chat:
+## Локальная конфигурация разработчика
 
-    transferStagingBaseUrl=https://YOUR-APPROVED-STAGING-HOST/
-    transferStagingAccessToken=YOUR-TEMPORARY-STAGING-TESTER-TOKEN
+**Только после** отдельного согласования и публикации защищённого staging PHP-хоста поместить в непубликуемый файл `%USERPROFILE%\.gradle\gradle.properties` на Windows:
 
-The hosting administrator provides the actual HTTPS vhost URL after deployment; it is deliberately NOT guessed in source code. The token is an independent, revocable, staging-only tester credential. It will be compiled into a Debug APK, therefore do not distribute the APK; rotate/revoke the token when QA ends. Do not use real passenger data.
+```properties
+transferStagingBaseUrl=https://staging.example.invalid/
+transferStagingAccessToken=TEMPORARY_STAGING_ONLY_TOKEN
+```
 
-If transferStagingBaseUrl is not supplied, Debug uses the deliberately non-routable https://staging-not-configured.invalid/ and cannot accidentally create orders in production. The Debug build rejects plain HTTP and the exact production URL. Release does not use the staging token.
+Это **пример формата, не рабочий адрес и не действующий токен**. Адрес выдаётся администратором после настройки отдельного staging HTTPS-хоста. Путь должен оканчиваться `/`, а имя хоста должно содержать `staging`.
 
-## Validate
+Тестовый токен является временным: он попадёт в собранный Debug APK. Debug APK **нельзя публиковать или передавать посторонним**. После E2E-испытаний тестовый токен перевыпускаем. Никогда не помещаем секрет Worker или персональные данные клиентов в `gradle.properties`.
 
-1. Check that production Android methods, DTOs, repositories, pending order recovery and AES-GCM storage were left intact.
-2. Run Gradle unit tests and connected Android instrumentation against local/mocked services first.
-3. After owner approval for staging-vhost deployment, configure HTTPS, access control, staging-only PHP secret files and temporary tester token.
-4. On Debug, validate calculate -> createOrder -> persisted session -> force-stop/relaunch -> order status. Ensure no actual Telegram or FCM delivery.
-5. Test failed replies/manual recovery and idempotency, then rotate staging tester token.
+Если `transferStagingBaseUrl` не задан, Debug использует заведомо неработающий `https://staging-not-configured.invalid/`. Это исключает случайную отправку тестового заказа в production при запуске Debug без настроек. Release не содержит тестового токена.
 
-This change is intentionally draft and depends on the staging PHP gateway in public_html. No merge or production release is authorized by this document.
+## Что проверяется без реального сервера
+
+- Код Android не переводился с Java на Kotlin.
+- Retrofit-контракт, модель заказа, защищённое хранилище Keystore/AES-GCM и механизм восстановления заявки не переписаны.
+- HTTP-тест с MockWebServer проверяет заголовок `X-Staging-Access-Token` и отсутствие HMAC-заголовков Worker.
+- CI выполняет unit-тесты, Lint, сборку debug APK и компиляцию Android instrumentation APK. Сам эмулятор CI не запускает.
+
+## После отдельного разрешения на развёртывание
+
+1. Администратор развёртывает отдельный PHP staging-хост согласно PR №5 репозитория `public_html`; production-шлюз не меняется.
+2. Проверить HTTPS, ACL, лимиты запросов, отдельные серверные HMAC-файлы и временный токен.
+3. Выполнить на Android Debug расчёт → создание заказа → локальное сохранение сессии → принудительный перезапуск → `/order-status`.
+4. Проверить восстановление при потере сетевого ответа, отсутствие дубликатов в staging D1 и отсутствие Telegram/FCM уведомлений.
+5. После тестов отозвать тестовый токен. Слияния в основные ветки — только после приёмки.
+
+**Работающий production-сайт, сервер, БД, заявки клиентов и Telegram/FCM в этом PR не изменяются.**
