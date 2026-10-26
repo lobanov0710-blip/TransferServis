@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -7,7 +9,7 @@ plugins {
 val transferStagingBaseUrl = providers.gradleProperty("transferStagingBaseUrl")
     .orNull?.trim()?.takeIf { it.isNotEmpty() }
     ?: "https://staging-not-configured.invalid/"
-val stagingUri = java.net.URI(transferStagingBaseUrl)
+val stagingUri = URI(transferStagingBaseUrl)
 val stagingHost = stagingUri.host?.lowercase()
 require(
     stagingUri.scheme == "https" &&
