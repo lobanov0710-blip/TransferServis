@@ -11,6 +11,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import ru.transferservis.app.constants.AppConstants;
+import ru.transferservis.app.BuildConfig;
 
 public final class ApiClient {
 
@@ -24,33 +25,35 @@ public final class ApiClient {
                     .create();
 
     private static final OkHttpClient HTTP_CLIENT =
-            new OkHttpClient.Builder()
+            createHttpClient();
 
-                    .connectTimeout(
-                            CONNECT_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
+    private static OkHttpClient createHttpClient() {
+        OkHttpClient.Builder builder =
+                new OkHttpClient.Builder()
+                        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        // Unknown booking outcome must not trigger automatic POST retry.
+                        .retryOnConnectionFailure(false);
+
+        // Only the temporary, revocable staging tester token is included in Debug.
+        // The Worker HMAC secret must remain server-side in the PHP staging gateway.
+        if (BuildConfig.DEBUG && !BuildConfig.STAGING_ACCESS_TOKEN.isEmpty()) {
+            builder.addInterceptor(chain ->
+                    chain.proceed(
+                            chain.request().newBuilder()
+                                    .header(
+                                            "X-Staging-Access-Token",
+                                            BuildConfig.STAGING_ACCESS_TOKEN
+                                    )
+                                    .build()
                     )
+            );
+        }
 
-                    .readTimeout(
-                            READ_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
-                    )
-
-                    .writeTimeout(
-                            WRITE_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
-                    )
-
-                    .callTimeout(
-                            CALL_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
-                    )
-
-                    // All API endpoints use POST. In particular, booking creation
-                    // must not be transparently retried while its outcome is unknown.
-                    .retryOnConnectionFailure(false)
-
-                    .build();
+        return builder.build();
+    }
 
     private static final Retrofit RETROFIT =
             new Retrofit.Builder()
