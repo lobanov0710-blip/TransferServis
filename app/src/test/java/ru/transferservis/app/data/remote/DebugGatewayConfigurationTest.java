@@ -13,9 +13,9 @@ import java.io.IOException;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
+import mockwebserver3.MockResponse;
+import mockwebserver3.MockWebServer;
+import mockwebserver3.RecordedRequest;
 
 import ru.transferservis.app.BuildConfig;
 import ru.transferservis.app.constants.AppConstants;
@@ -47,9 +47,9 @@ public final class DebugGatewayConfigurationTest {
         // Токен фиктивный: он не используется в staging и не попадает в рабочие логи.
         RecordedRequest request = requestWithToken("unit-test-staging-token");
         assertEquals("unit-test-staging-token",
-                request.getHeader("X-Staging-Access-Token"));
-        assertNull(request.getHeader("X-Proxy-Signature"));
-        assertNull(request.getHeader("X-Proxy-Timestamp"));
+                request.getHeaders().get("X-Staging-Access-Token"));
+        assertNull(request.getHeaders().get("X-Proxy-Signature"));
+        assertNull(request.getHeaders().get("X-Proxy-Timestamp"));
     }
 
     @Test
@@ -61,7 +61,7 @@ public final class DebugGatewayConfigurationTest {
     private static RecordedRequest requestWithToken(String token)
             throws IOException, InterruptedException {
         MockWebServer server = new MockWebServer();
-        server.enqueue(new MockResponse().setResponseCode(200).setBody("{}"));
+        server.enqueue(new MockResponse.Builder().code(200).body("{}").build());
         server.start();
         try {
             OkHttpClient client = ApiClient.createHttpClient(token);
@@ -77,7 +77,7 @@ public final class DebugGatewayConfigurationTest {
             RecordedRequest result = server.takeRequest();
             return result;
         } finally {
-            server.shutdown();
+            server.close();
         }
     }
 }
