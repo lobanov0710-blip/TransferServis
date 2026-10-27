@@ -90,7 +90,7 @@ try {
     $err = Join-Path $reportDir ($avdName + '-emulator-errors.log')
     Start-Process -FilePath $emulator -ArgumentList @(
         '-avd', $avdName, '-port', '5556', '-no-window', '-no-audio',
-        '-no-snapshot-load', '-no-snapshot-save', '-partition-size', '2048',
+        '-no-snapshot-load', '-no-snapshot-save', '-partition-size', '2047',
         '-gpu', 'swiftshader_indirect'
     ) -RedirectStandardOutput $out -RedirectStandardError $err | Out-Null
     $started = $true
