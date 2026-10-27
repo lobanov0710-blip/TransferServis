@@ -51,6 +51,28 @@ transferStagingAccessToken=TEMPORARY_STAGING_ONLY_TOKEN
 - CI `40564712684`: unit-тесты, Lint, сборка Debug APK, компиляция instrumentation APK — успешно. Включён JVM-регрессионный тест `confirmedOrder_survivesOfflineRefresh_andRecoversOnReconnect`.
 - **Остаётся:** запуск instrumentation-тестов на отдельном чистом эмуляторе, проверка настройки ACL/rate limiting staging, контроль отсутствия уведомлений и плановая ротация тестового токена после приёмки. Общее число строк D1 отдельно не проверялось.
 
+## Безопасный запуск инструментальных тестов Android (QA AVD)
+
+Обычный GitHub Actions проверяет JVM-тесты, Lint, сборку и компиляцию androidTest APK, но **не выполняет** инструментальные тесты на устройстве. Существующие androidTest очищают `passenger_profile`, `passenger_order_session` и другие тестовые данные. **Не запускать** `:app:connectedDebugAndroidTest` на общем наборе ADB-устройств: это затронет эмулятор с тестовой заявкой.
+
+Для Windows предусмотрен сценарий `scripts/run-staging-instrumentation.ps1`. Он:
+
+1. Собирает оба Debug APK с заведомо несуществующим `https://staging-not-configured.invalid/` и **пустым** `transferStagingAccessToken`, не обращаясь к staging или production API.
+2. Создаёт новый временный Android AVD с установленным x86_64 system image API 36+, выделяет ему `emulator-5556` и проверяет, что этот номер не занят.
+3. Устанавливает оба APK **только** на новый временный эмулятор, выполняет все `am instrument -w` тесты; сохраняет лог в `%TEMP%\TransferServis_Instrumentation\`.
+4. Завершает и удаляет только созданный им AVD; пересобирает обычный Debug APK согласно локальным Gradle-настройкам. Установленный ранее `emulator-5554` не перезапускает, данные заказа не очищает.
+
+Нужны Android SDK Command-line Tools (latest) и установленный x86_64 Android 36+ system image. Скрипт не обновляет remote/GitHub/Timeweb, не передаёт токены в сеть и **не запускается автоматически при получении PR**.
+
+Из корня репозитория на правильной ветке:
+
+~~~powershell
+git pull --ff-only origin feature/android-staging-debug-gateway-v1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-staging-instrumentation.ps1
+~~~
+
+Итогом должен стать `QA_INSTRUMENTATION_PASSED=True` и сохранённый локальный отчёт. Если возникнет ошибка, приложить только диагностическую строку и имя отчёта, не копировать токены. **Запуск и результат на реальном QA AVD ещё не подтверждены.**
+
 ## После отдельного разрешения на развёртывание
 
 1. Администратор развёртывает отдельный PHP staging-хост согласно PR №5 репозитория `public_html`; production-шлюз не меняется.
