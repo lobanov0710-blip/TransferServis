@@ -17,6 +17,8 @@ PHP-шлюз подписывает запросы к Worker. HMAC-секрет 
 
 Android Release, как и раньше, обращается к `https://transfer-servis52.ru/`. Только Debug может использовать тестовый адрес.
 
+Debug имеет отдельный `applicationId` (`ru.transferservis.app.staging`), поэтому устанавливается отдельно от Release (`ru.transferservis.app`) и не использует его хранилище данных. Не переносить тестовые токены или данные в Release.
+
 ## Локальная конфигурация разработчика
 
 **Только после** отдельного согласования и публикации защищённого staging PHP-хоста поместить в непубликуемый файл `%USERPROFILE%\.gradle\gradle.properties` на Windows:
