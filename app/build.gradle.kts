@@ -61,6 +61,8 @@ android {
 
     buildTypes {
         debug {
+            // Отдельный package ID и хранилище: staging APK не заменяет рабочее приложение.
+            applicationIdSuffix = ".staging"
             buildConfigField("String", "API_BASE_URL", "\"$transferStagingBaseUrl\"")
             buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
         }
