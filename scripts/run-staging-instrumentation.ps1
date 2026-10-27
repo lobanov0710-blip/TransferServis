@@ -39,7 +39,25 @@ $images = @(
     }
 )
 if ($images.Count -eq 0) { throw 'Install an Android 36+ x86_64 system image via SDK Manager.' }
-$image = @($images | Sort-Object { if ($_ -match ';google_apis;') { 0 } else { 1 } })[0]
+# Prefer the previously verified Android 36.1 image, not Android 37 ps16k.
+$preferred = @($images | Where-Object { $_ -match '^system-images;android-36\.1;' })
+if ($preferred.Count -gt 0) {
+    $image = $preferred[0]
+} else {
+    $image = @($images | Sort-Object)[0]
+}
+Write-Host "QA system image: $image"
+
+# The Android emulator reserves user-data disk space at first boot.
+# Fail before AVD creation when the host has too little room for a 2 GiB
+# temporary data partition, AVD metadata, and emulator cache.
+$systemDrive = [System.IO.Path]::GetPathRoot($env:USERPROFILE)
+$drive = New-Object System.IO.DriveInfo($systemDrive)
+$freeBytes = $drive.AvailableFreeSpace
+Write-Host ("Free space on QA AVD drive: {0:N0} MB" -f ($freeBytes / 1MB))
+if ($freeBytes -lt 4GB) {
+    throw 'At least 4 GB free is required on the QA AVD drive. No files will be deleted.'
+}
 
 # The QA port must be free. Never reuse or overwrite an existing Android device.
 $devices = (& $adb devices) -join [Environment]::NewLine
@@ -72,7 +90,8 @@ try {
     $err = Join-Path $reportDir ($avdName + '-emulator-errors.log')
     Start-Process -FilePath $emulator -ArgumentList @(
         '-avd', $avdName, '-port', '5556', '-no-window', '-no-audio',
-        '-no-snapshot-load', '-no-snapshot-save', '-gpu', 'swiftshader_indirect'
+        '-no-snapshot-load', '-no-snapshot-save', '-partition-size', '2048',
+        '-gpu', 'swiftshader_indirect'
     ) -RedirectStandardOutput $out -RedirectStandardError $err | Out-Null
     $started = $true
 
