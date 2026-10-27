@@ -36,6 +36,11 @@ public final class DebugGatewayConfigurationTest {
     }
 
     @Test
+    public void debugUsesSeparatePackageFromProduction() {
+        assertEquals("ru.transferservis.app.staging", BuildConfig.APPLICATION_ID);
+    }
+
+    @Test
     public void debugGatewayUsesHttpsAndTrailingSlash() {
         assertTrue(AppConstants.API_BASE_URL.startsWith("https://"));
         assertTrue(AppConstants.API_BASE_URL.endsWith("/"));
