@@ -25,8 +25,7 @@ if (-not (Test-Path -LiteralPath $avdManager)) {
 }
 $imagesRoot = Join-Path $sdk 'system-images'
 if (-not (Test-Path -LiteralPath $imagesRoot)) { throw 'Install an Android 36+ x86_64 system image.' }
-# The SDK does not reliably put Pkg.Path into source.properties.
-# Derive the package ID from its installed folder structure instead.
+# Discover image IDs from SDK directory names; Pkg.Path is often absent.
 $images = @(
     Get-ChildItem -LiteralPath $imagesRoot -Recurse -Filter source.properties -File |
     ForEach-Object {
@@ -81,7 +80,10 @@ try {
     for ($i = 0; $i -lt 100; $i++) {
         Start-Sleep -Seconds 3
         $detected = (& $adb devices) -join [Environment]::NewLine
-        if ($detected -match '(?m)^emulator-5556\s+device\s*
+        if ($detected -match '(?m)^emulator-5556\s+device\s*$') {
+            $boot = (& $adb -s $serial shell getprop sys.boot_completed | Out-String).Trim()
+            if ($boot -eq '1') { $booted = $true; break }
+        }
     }
     if (-not $booted) { throw "QA emulator boot failed. See $err" }
     $actualAvd = (& $adb -s $serial emu avd name 2>$null | Out-String)
@@ -115,75 +117,7 @@ try {
 finally {
     if ($started) {
         $connected = (& $adb devices) -join [Environment]::NewLine
-        if ($connected -match '(?m)^emulator-5556\s+device\s*
-    # Restore locally configured Debug APK for developer convenience.
-    # Never echo or upload private Gradle properties or resulting APKs.
-    Write-Host 'Restoring local Debug build configuration'
-    & $gradle ':app:assembleDebug' '--console=plain' | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning 'APK restore failed; the already installed emulator-5554 app is unaffected.'
-    }
-    Pop-Location
-    Write-Host "QA report path: $report"
-}
-) {
-            $boot = (& $adb -s $serial shell getprop sys.boot_completed | Out-String).Trim()
-            if ($boot -eq '1') { $booted = $true; break }
-        }
-    }
-    if (-not $booted) { throw "QA emulator boot failed. See $err" }
-    $actualAvd = (& $adb -s $serial emu avd name 2>$null | Out-String)
-    if (-not $actualAvd.Contains($avdName)) { throw 'QA serial is not our temporary AVD; aborting' }
-
-    Write-Host '[4/5] Installing on the disposable QA emulator ONLY'
-    & $adb -s $serial install -r $apk
-    if ($LASTEXITCODE -ne 0) { throw 'QA app install failed' }
-    & $adb -s $serial install -r $testsApk
-    if ($LASTEXITCODE -ne 0) { throw 'QA test package install failed' }
-    $lines = @(& $adb -s $serial shell pm list instrumentation)
-    $runnerLine = @($lines | Where-Object { $_ -match 'target=ru\.transferservis\.app\.staging\)' } | Select-Object -First 1)
-    if ($runnerLine.Count -ne 1 -or $runnerLine[0] -notmatch '^instrumentation:([^\s]+)') {
-        throw 'Instrumentation runner for staging app not found'
-    }
-    $runner = $Matches[1]
-
-    Write-Host '[5/5] Running ALL Android instrumentation tests'
-    $result = @(& $adb -s $serial shell am instrument -w $runner 2>&1)
-    $exitCode = $LASTEXITCODE
-    $result | Out-File -LiteralPath $report -Encoding UTF8
-    $text = $result -join [Environment]::NewLine
-    @($result | Where-Object { $_ -match 'OK \(\d+ tests?\)|FAILURES!!!|INSTRUMENTATION_CODE:' }) |
-        ForEach-Object { Write-Host $_ }
-    if ($exitCode -ne 0 -or $text -notmatch 'OK \(\d+ tests?\)' -or
-        $text -match 'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=Process crashed') {
-        throw "Tests failed; see report at $report"
-    }
-    Write-Host 'QA_INSTRUMENTATION_PASSED=True'
-}
-finally {
-    if ($started) {
-        $actualAvd = (& $adb -s $serial emu avd name 2>$null | Out-String)
-        if ($actualAvd.Contains($avdName)) {
-            & $adb -s $serial emu kill | Out-Null
-        }
-        for ($i = 0; $i -lt 20; $i++) {
-            Start-Sleep -Seconds 2
-            $remaining = (& $adb devices) -join [Environment]::NewLine
-            if ($remaining -notmatch '(?m)^emulator-5556\s') { break }
-        }
-    }
-    if ($created) { & $avdManager delete avd --name $avdName | Out-Null }
-    # Restore locally configured Debug APK for developer convenience.
-    # Never echo or upload private Gradle properties or resulting APKs.
-    Write-Host 'Restoring local Debug build configuration'
-    & $gradle ':app:assembleDebug' '--console=plain' | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning 'APK restore failed; the already installed emulator-5554 app is unaffected.'
-    }
-    Pop-Location
-    Write-Host "QA report path: $report"
-}
-) {
+        if ($connected -match '(?m)^emulator-5556\s+device\s*$') {
             $currentName = (& $adb -s $serial emu avd name | Out-String)
             if ($currentName.Contains($avdName)) {
                 & $adb -s $serial emu kill | Out-Null
@@ -201,63 +135,6 @@ finally {
     } elseif ($created) {
         Write-Warning "QA emulator is still connected. AVD $avdName retained rather than deleting a running device."
     }
-    # Restore locally configured Debug APK for developer convenience.
-    # Never echo or upload private Gradle properties or resulting APKs.
-    Write-Host 'Restoring local Debug build configuration'
-    & $gradle ':app:assembleDebug' '--console=plain' | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning 'APK restore failed; the already installed emulator-5554 app is unaffected.'
-    }
-    Pop-Location
-    Write-Host "QA report path: $report"
-}
-) {
-            $boot = (& $adb -s $serial shell getprop sys.boot_completed | Out-String).Trim()
-            if ($boot -eq '1') { $booted = $true; break }
-        }
-    }
-    if (-not $booted) { throw "QA emulator boot failed. See $err" }
-    $actualAvd = (& $adb -s $serial emu avd name 2>$null | Out-String)
-    if (-not $actualAvd.Contains($avdName)) { throw 'QA serial is not our temporary AVD; aborting' }
-
-    Write-Host '[4/5] Installing on the disposable QA emulator ONLY'
-    & $adb -s $serial install -r $apk
-    if ($LASTEXITCODE -ne 0) { throw 'QA app install failed' }
-    & $adb -s $serial install -r $testsApk
-    if ($LASTEXITCODE -ne 0) { throw 'QA test package install failed' }
-    $lines = @(& $adb -s $serial shell pm list instrumentation)
-    $runnerLine = @($lines | Where-Object { $_ -match 'target=ru\.transferservis\.app\.staging\)' } | Select-Object -First 1)
-    if ($runnerLine.Count -ne 1 -or $runnerLine[0] -notmatch '^instrumentation:([^\s]+)') {
-        throw 'Instrumentation runner for staging app not found'
-    }
-    $runner = $Matches[1]
-
-    Write-Host '[5/5] Running ALL Android instrumentation tests'
-    $result = @(& $adb -s $serial shell am instrument -w $runner 2>&1)
-    $exitCode = $LASTEXITCODE
-    $result | Out-File -LiteralPath $report -Encoding UTF8
-    $text = $result -join [Environment]::NewLine
-    @($result | Where-Object { $_ -match 'OK \(\d+ tests?\)|FAILURES!!!|INSTRUMENTATION_CODE:' }) |
-        ForEach-Object { Write-Host $_ }
-    if ($exitCode -ne 0 -or $text -notmatch 'OK \(\d+ tests?\)' -or
-        $text -match 'FAILURES!!!|INSTRUMENTATION_FAILED|shortMsg=Process crashed') {
-        throw "Tests failed; see report at $report"
-    }
-    Write-Host 'QA_INSTRUMENTATION_PASSED=True'
-}
-finally {
-    if ($started) {
-        $actualAvd = (& $adb -s $serial emu avd name 2>$null | Out-String)
-        if ($actualAvd.Contains($avdName)) {
-            & $adb -s $serial emu kill | Out-Null
-        }
-        for ($i = 0; $i -lt 20; $i++) {
-            Start-Sleep -Seconds 2
-            $remaining = (& $adb devices) -join [Environment]::NewLine
-            if ($remaining -notmatch '(?m)^emulator-5556\s') { break }
-        }
-    }
-    if ($created) { & $avdManager delete avd --name $avdName | Out-Null }
     # Restore locally configured Debug APK for developer convenience.
     # Never echo or upload private Gradle properties or resulting APKs.
     Write-Host 'Restoring local Debug build configuration'
