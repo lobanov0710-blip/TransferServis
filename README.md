@@ -2,7 +2,7 @@
 
 Приложение на **Java + XML** с архитектурой MVVM: расчёт стоимости трансфера, отправка заявки, активный заказ, локальная история поездок и профиль.
 
-**Состояние на 28.10.2026.** Основная ветка `master` ещё содержит первоначальную основу проекта. Проверенная функциональная реализация находится в `fix/passenger-profile-instrumentation-v1` (после слияния STAGING-06). Перенос в `master` подготовлен в **Draft PR №9** и не разрешён к слиянию без отдельной приёмки. Изолированный CI для Release и проверка Debug находятся в **Draft PR №10**, ветка `ci/release-gate-v1`.
+**Состояние на 28.10.2026.** Функциональная Android-реализация перенесена из `fix/passenger-profile-instrumentation-v1` в `master` через [PR №9](https://github.com/lobanov0710-blip/TransferServis/pull/9), merge-коммит [`67b1e1b`](https://github.com/lobanov0710-blip/TransferServis/commit/67b1e1b95ff243b936cd96c6d5de4a1a7bf24dbc). Ранее в рабочую ветку вошли [PR №10](https://github.com/lobanov0710-blip/TransferServis/pull/10) (автоматизированные Debug/Release-проверки) и [PR №11](https://github.com/lobanov0710-blip/TransferServis/pull/11) (очистка локальных артефактов). [GitHub Actions №40765068343](https://github.com/lobanov0710-blip/TransferServis/actions/runs/40765068343) на merge-коммите `master` завершился успешно в обоих заданиях. Это **не означает выпуск или приёмку production Release**.
 
 [План разработки](docs/DEVELOPMENT_PLAN.md) · [STAGING Android Debug](docs/STAGING_ANDROID_DEBUG.md) · [Результаты проверок](docs/VALIDATION.md)
 
@@ -15,13 +15,13 @@
 
 ## Автоматические проверки
 
-Обычный GitHub Actions выполняет Debug unit-тесты, Lint, сборку Debug APK и **компиляцию** Android instrumentation (не запуск тестов на устройстве). Новый Release Gate из PR №10 выполняет:
+GitHub Actions в `master` выполняет Debug unit-тесты, Lint, сборку Debug APK и **компиляцию** Android instrumentation (без запуска на устройстве). Отдельное задание Release Gate выполняет:
 
 ```bash
 ./gradlew :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
 ```
 
-Проверяется наличие `app/build/outputs/apk/release/app-release-unsigned.apk` и отсутствие действительной подписи. Этот APK **не подписывается, не загружается в CI artifacts и не публикуется**. В artifacts хранятся только отчёты Release тестов и Lint. Из CI №40760694570 оба задания завершились **success** на коммите `41300c8`, до последующих обновлений документации.
+Проверяется наличие `app/build/outputs/apk/release/app-release-unsigned.apk` и отсутствие действительной подписи. Этот APK **не подписывается, не загружается в CI artifacts и не публикуется**. В artifacts хранятся только отчёты Release тестов и Lint. На merge-коммите [`67b1e1b`](https://github.com/lobanov0710-blip/TransferServis/commit/67b1e1b95ff243b936cd96c6d5de4a1a7bf24dbc) оба задания [GitHub Actions №40765068343](https://github.com/lobanov0710-blip/TransferServis/actions/runs/40765068343) завершились **success**; Debug APK и отчёты опубликованы в артефактах CI.
 
 Debug unit/Lint и сборка локально:
 
@@ -59,4 +59,4 @@ Debug через отдельный HTTPS PHP Gateway обращается то�
 
 Токен доступа к конкретному заказу хранится с использованием AndroidKeyStore/AES-GCM. Не добавляйте реальные токены, HMAC-секреты и приватные Gradle-свойства в Git, журналы, URL или резервные копии.
 
-**До публикации Release:** согласовать подпись владельца, проверить подписанную сборку и обновление приложения на физическом устройстве, версию приложения и пользовательские сценарии. Успешный CI — не разрешение на публикацию или слияние в `master`.
+**До публикации Release:** согласовать ключ подписи владельца и параметры `versionCode`/`versionName` (сейчас `1`/`1.0`), проверить подписанную сборку, установку/обновление на физическом устройстве и пользовательские сценарии с production-сервером. Успешный CI не означает разрешение на публикацию. Слияние в `master` уже выполнено; выпуск не выполнялся.
