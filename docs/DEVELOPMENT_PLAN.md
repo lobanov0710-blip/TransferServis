@@ -1,8 +1,8 @@
 # План пассажирского приложения
 
-**Актуальное состояние (28.10.2026):** функциональная рабочая ветка — `fix/passenger-profile-instrumentation-v1`. STAGING-06 завершён, изменения Android PR №7 уже в этой ветке, PHP Gateway PR №5 — в `public_html/main`. Подготовлены **Draft PR №9** (рабочая Android-ветка → `master`) и **Draft PR №10** (`ci/release-gate-v1` → рабочая ветка). Слияние любого из них не согласовано.
+**Актуальное состояние (28.10.2026):** STAGING-06 завершён. Android [PR №7](https://github.com/lobanov0710-blip/TransferServis/pull/7), Release Gate [PR №10](https://github.com/lobanov0710-blip/TransferServis/pull/10) и очистка локальных артефактов [PR №11](https://github.com/lobanov0710-blip/TransferServis/pull/11) включены в функциональную ветку. Через [PR №9](https://github.com/lobanov0710-blip/TransferServis/pull/9) она объединена с `master` (merge-коммит [`67b1e1b`](https://github.com/lobanov0710-blip/TransferServis/commit/67b1e1b95ff243b936cd96c6d5de4a1a7bf24dbc)). GitHub Actions №40765068343 на этом коммите: **Debug success, Release Gate success**. PHP Gateway PR №5 ранее объединён в `public_html/main`. Production-выпуск Android APK не выполнялся.
 
-**Историческая основа этапов 1–6:** `feature/passenger-completion` от `feature/foundation-v1`, `3fa4900f354692dc51e07334c73899ce889fe0a1`. Основная ветка `master` не переписывалась.
+**Историческая основа этапов 1–6:** `feature/passenger-completion` от `feature/foundation-v1`, `3fa4900f354692dc51e07334c73899ce889fe0a1`. Перенос функциональной ветки в `master` выполнен через merge без переписывания истории.
 
 ## Существующая основа
 
@@ -55,9 +55,9 @@ Retrofit либо Room/SharedPreferences. Уже реализованы проф
 - Реальный серверный сценарий проверяется отдельно; его результат не подменяется
   успешной сборкой или тестами MockWebServer.
 
-## Выполнено в рабочей ветке
+## Выполнено и перенесено в `master`
 
-Этапы 1–6 выполнены для текущего пассажирского сценария. Результаты и точные
+Этапы 1–6 выполнены для текущего пассажирского сценария и перенесены в `master` через PR №9. Результаты и точные
 границы проверки записаны в [VALIDATION.md](VALIDATION.md): 86 unit-тестов,
 19 Android-тестов, успешные Lint и debug APK. Сохранение сессии и её проверка
 идентичности выполняются согласованно между экземплярами; старые подтверждения
@@ -65,8 +65,8 @@ Retrofit либо Room/SharedPreferences. Уже реализованы проф
 
 **Актуализация этапа 7 (STAGING-06, 27–28.10.2026):** согласованный изолированный HTTPS PHP Gateway и `uber-v3-staging` использованы для реального тестового оформления заявки в отдельной staging D1; подтверждены идемпотентность, сохранение сессии, повторное чтение статуса после перезапуска, восстановления сети и ротации токена. Инструментальные тесты — **27/27 на отдельном Android 36.1 AVD**. Отозванный серверный токен и локальные резервные копии очищены по подтверждению владельца. Этап **не означает** приёмку production Release на физическом устройстве.
 
-**Автоматизированная проверка Release (INTEGRATION-01, PR №10):** GitHub Actions workflow №40760694570 завершил Release unit-тесты, Release Lint, сборку **неподписанного** APK и проверку отсутствия подписи успешно; отдельное Debug CI также успешно. В AGP 9 создание Release unit-test задачи включено свойством `android.onlyEnableUnitTestForTheTestedBuildType=false`. Нет подписанного APK, нет production-заявок и нет публикации.
+**Автоматизированная проверка Release (INTEGRATION-01, PR №10):** на `master` [GitHub Actions №40765068343](https://github.com/lobanov0710-blip/TransferServis/actions/runs/40765068343) успешно завершил Debug unit-тесты/Lint/сборку/компиляцию instrumentation и Release unit-тесты/Lint/сборку **неподписанного** APK с проверкой отсутствия подписи. В AGP 9 создание Release unit-test задачи включено свойством `android.onlyEnableUnitTestForTheTestedBuildType=false`. CI не запускает instrumentation на устройстве, не отправляет production-заявки, не подписывает и не публикует Release APK.
 
-**Остаётся до выпуска:** ревизия объёма PR №9 (порядка 152 коммитов и 127 файлов относительно `master` на момент открытия), проверка подписанной сборки, запуск на физическом Android-устройстве, согласование `versionCode`/`versionName`, выпускной план и отдельное разрешение владельца на слияние/публикацию. Сетевой IP allowlist для staging отложен решением владельца; независимая проверка внешних Telegram/FCM отправок не проводилась.
+**Остаётся до выпуска:** согласовать параметры `versionCode=1`/`versionName=1.0` и ключ подписи владельца; проверить подписанный Release APK, установку/обновление на физическом Android-устройстве и реальные пользовательские сценарии с production-сервером по отдельному безопасному плану; получить разрешение владельца на публикацию. Слияние PR №9 уже выполнено. Сетевой IP allowlist для staging отложен решением владельца; независимая проверка внешних Telegram/FCM отправок не проводилась.
 
-**Безопасность проверок:** `connectedDebugAndroidTest` не запускать на общем списке устройств/основном AVD, где хранится заявка; использовать изолированный сценарий `scripts/run-staging-instrumentation.ps1`. Старые числа тестов ниже относятся к исторической проверке на более ранней стадии, а не к финальной приёмке.
+**Безопасность проверок:** `connectedDebugAndroidTest` не запускать на общем списке устройств/основном AVD, где хранится заявка; использовать изолированный сценарий `scripts/run-staging-instrumentation.ps1`. Показатели 86 unit- и 19 Android-тестов выше относятся к исторической проверке; актуальные CI и STAGING-06 описаны отдельно.
