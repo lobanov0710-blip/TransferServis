@@ -62,3 +62,12 @@ test -s "$out/app-info-icon.png"
 test -s "$out/launch.mp4"
 echo "UI01_VISUAL_SMOKE_ARTIFACTS_READY=true"
 echo "No booking or production network calls were made by this script."
+
+# UI-02: Execute only the two view-only tests on this disposable AVD.
+# The class does not click Calculate or submit orders.
+./gradlew :app:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.ui.home.HomeRouteSwapUiTest \
+    --stacktrace
+mkdir -p "$out/ui02-test-results"
+cp -a app/build/outputs/androidTest-results/connected/. "$out/ui02-test-results/" 2>/dev/null || true
+echo "UI02_VIEW_ONLY_TESTS_COMPLETED=true"
