@@ -396,7 +396,7 @@
             android:textSize="16sp"
             android:textStyle="bold"
 
-            app:backgroundTint="@color/ts_primary"
+            app:backgroundTint="@color/ts_action_primary"
             app:cornerRadius="16dp" />
 
         <com.google.android.material.button.MaterialButton
