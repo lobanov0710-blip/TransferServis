@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+
+    android:id="@+id/nav_graph"
+
+    app:startDestination="@id/homeFragment">
+
+    <!-- =========================
+         HOME
+    ========================== -->
+
+    <fragment
+        android:id="@+id/homeFragment"
+
+        android:name="ru.transferservis.app.ui.home.HomeFragment"
+
+        android:label="@string/bottom_home">
+
+        <action
+            android:id="@+id/action_homeFragment_to_quoteFragment"
+
+            app:destination="@id/quoteFragment" />
+
+        <action
+            android:id="@+id/action_homeFragment_to_activeOrderFragment"
+
+            app:destination="@id/activeOrderFragment" />
+
+    </fragment>
+
+    <!-- =========================
+         ACTIVE ORDER
+    ========================== -->
+
+    <fragment
+        android:id="@+id/activeOrderFragment"
+
+        android:name="ru.transferservis.app.ui.active.ActiveOrderFragment"
+
+        android:label="@string/active_order_title">
+
+        <!-- Capability token stays in secure storage; only the target ID travels. -->
+        <argument
+            android:name="expected_order_id"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+    </fragment>
+
+    <!-- =========================
+         HISTORY
+    ========================== -->
+
+    <fragment
+        android:id="@+id/historyFragment"
+
+        android:name="ru.transferservis.app.ui.history.HistoryFragment"
+
+        android:label="@string/bottom_trips" />
+
+    <!-- =========================
+         PROFILE
+    ========================== -->
+
+    <fragment
+        android:id="@+id/profileFragment"
+
+        android:name="ru.transferservis.app.ui.profile.ProfileFragment"
+
+        android:label="@string/bottom_profile" />
+
+    <!-- =========================
+         QUOTE
+    ========================== -->
+
+    <fragment
+        android:id="@+id/quoteFragment"
+
+        android:name="ru.transferservis.app.ui.quote.QuoteFragment"
+
+        android:label="@string/quote_result_title">
+
+        <action
+            android:id="@+id/action_quoteFragment_to_bookingFragment"
+
+            app:destination="@id/bookingFragment" />
+
+    </fragment>
+
+    <!-- =========================
+         BOOKING
+    ========================== -->
+
+    <fragment
+        android:id="@+id/bookingFragment"
+
+        android:name="ru.transferservis.app.ui.booking.BookingFragment"
+
+        android:label="@string/booking_title">
+
+        <action
+            android:id="@+id/action_bookingFragment_to_orderSuccessFragment"
+
+            app:destination="@id/orderSuccessFragment"
+
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+
+    </fragment>
+
+    <!-- =========================
+         SUCCESS
+    ========================== -->
+
+    <fragment
+        android:id="@+id/orderSuccessFragment"
+
+        android:name="ru.transferservis.app.ui.success.OrderSuccessFragment"
+
+        android:label="@string/order_success_title">
+
+        <action
+            android:id="@+id/action_orderSuccessFragment_to_activeOrderFragment"
+
+            app:destination="@id/activeOrderFragment"
+
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+
+    </fragment>
+
+</navigation>

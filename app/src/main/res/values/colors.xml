@@ -1,5 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <resources>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Transfer Servis -->
+
+    <color name="ts_background">#05080C</color>
+
+    <color name="ts_surface">#0E141C</color>
+    <color name="ts_surface_high">#151D27</color>
+
+    <color name="ts_primary">#2B7CFF</color>
+    <color name="ts_primary_pressed">#1D62D5</color>
+    <color name="ts_primary_container">#12345F</color>
+
+    <color name="ts_secondary">#D5B06F</color>
+
+    <color name="ts_text_primary">#F5F7FA</color>
+    <color name="ts_text_secondary">#A7B0BC</color>
+    <color name="ts_text_muted">#778290</color>
+
+    <color name="ts_outline">#283442</color>
+    <color name="ts_divider">#1C2632</color>
+
+    <color name="ts_success">#35C77A</color>
+    <color name="ts_error">#FF6B6B</color>
+
 </resources>

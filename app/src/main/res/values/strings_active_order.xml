@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <string name="active_order_overline">
+        АКТИВНАЯ ПОЕЗДКА
+    </string>
+
+    <string name="active_order_title">
+        Ваша поездка
+    </string>
+
+    <string name="active_order_subtitle">
+        Здесь отображается актуальный статус заявки
+    </string>
+
+    <string name="active_order_open">
+        Открыть активную поездку
+    </string>
+
+    <string name="active_order_status_label">
+        Текущий статус
+    </string>
+
+    <string name="active_order_route_label">
+        Маршрут
+    </string>
+
+    <string name="active_order_from_label">
+        Откуда
+    </string>
+
+    <string name="active_order_to_label">
+        Куда
+    </string>
+
+    <string name="active_order_date_label">
+        Дата поездки
+    </string>
+
+    <string name="active_order_tariff_label">
+        Тариф
+    </string>
+
+    <string name="active_order_distance_label">
+        Расстояние
+    </string>
+
+    <string name="active_order_duration_label">
+        В пути
+    </string>
+
+    <string name="active_order_price_label">
+        Стоимость
+    </string>
+
+    <string name="active_order_id_label">
+        Номер заявки
+    </string>
+
+    <string name="active_order_refresh">
+        Обновить статус
+    </string>
+
+    <string name="active_order_empty_title">
+        Активной поездки нет
+    </string>
+
+    <string name="active_order_empty_message">
+        После оформления заявки её актуальный статус появится здесь.
+    </string>
+
+    <string name="active_order_unknown_value">
+        Не указано
+    </string>
+
+    <string name="active_order_distance_value">
+        %1$.1f км
+    </string>
+
+    <string name="active_order_price_value">
+        %1$d ₽
+    </string>
+
+    <string name="active_order_duration_minutes">
+        %1$d мин
+    </string>
+
+    <string name="active_order_duration_hours">
+        %1$d ч
+    </string>
+
+    <string name="active_order_duration_hours_minutes">
+        %1$d ч %2$d мин
+    </string>
+
+    <string name="active_order_unknown_error">
+        Не удалось получить данные поездки.
+    </string>
+
+</resources>

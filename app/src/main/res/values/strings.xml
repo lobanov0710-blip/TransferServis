@@ -1,3 +1,489 @@
 <resources>
-    <string name="app_name">TransferServis</string>
+
+    <string name="app_name">Transfer Servis</string>
+
+    <string name="home_title">Transfer Servis</string>
+
+    <string name="home_overline">
+        МЕЖДУГОРОДНИЙ ТРАНСФЕР
+    </string>
+
+    <string name="home_slogan">
+        Ваш проводник в мир комфортных междугородних поездок
+    </string>
+
+    <string name="home_feature_24_7">
+        24/7
+    </string>
+
+    <string name="home_feature_direct">
+        Без пересадок
+    </string>
+
+    <string name="home_feature_private">
+        Конфиденциально
+    </string>
+
+    <string name="home_route_title">
+        Куда едем?
+    </string>
+
+    <string name="home_route_subtitle">
+        Укажите полный адрес отправления и назначения
+    </string>
+
+    <string name="home_tariff_subtitle">
+        Выберите подходящий класс автомобиля
+    </string>
+
+    <string name="home_service_title">
+        Поездка без лишних сложностей
+    </string>
+
+    <string name="home_service_fixed_price">
+        • Стоимость рассчитывается и фиксируется заранее
+    </string>
+
+    <string name="home_service_no_transfer">
+        • Прямая поездка без пересадок и попутчиков
+    </string>
+
+    <string name="home_service_private">
+        • Индивидуальный сервис и конфиденциальность
+    </string>
+
+    <!-- QUOTE -->
+
+    <string name="quote_screen_title">
+        Расчёт поездки
+    </string>
+
+    <string name="quote_screen_subtitle">
+        Укажите полный адрес отправления и назначения
+    </string>
+
+    <string name="quote_from_hint">
+        Откуда
+    </string>
+
+    <string name="quote_to_hint">
+        Куда
+    </string>
+
+    <string name="quote_tariff_title">
+        Тариф
+    </string>
+
+    <string name="tariff_comfort">
+        Комфорт
+    </string>
+
+    <string name="tariff_business">
+        Бизнес
+    </string>
+
+    <string name="tariff_minivan">
+        Минивэн
+    </string>
+
+    <string name="quote_calculate">
+        Рассчитать стоимость
+    </string>
+
+    <string name="quote_result_overline">
+        РАСЧЁТ ГОТОВ
+    </string>
+
+    <string name="quote_result_title">
+        Ваш маршрут
+    </string>
+
+    <string name="quote_result_subtitle">
+        Проверьте детали поездки перед оформлением
+    </string>
+
+    <string name="quote_price_label">
+        Стоимость поездки
+    </string>
+
+    <string name="quote_price_note">
+        Рассчитано сервером по выбранному маршруту и тарифу
+    </string>
+
+    <string name="quote_route_label">
+        МАРШРУТ
+    </string>
+
+    <string name="quote_details_title">
+        Детали поездки
+    </string>
+
+    <string name="quote_tariff_label">
+        Тариф
+    </string>
+
+    <string name="quote_distance_label">
+        Расстояние
+    </string>
+
+    <string name="quote_duration_label">
+        В пути
+    </string>
+
+    <string name="quote_from_value">
+        Откуда: %1$s
+    </string>
+
+    <string name="quote_to_value">
+        Куда: %1$s
+    </string>
+
+    <string name="quote_tariff_value">
+        Тариф: %1$s
+    </string>
+
+    <string name="quote_distance_value">
+        Расстояние: %1$.1f км
+    </string>
+
+    <string name="quote_distance_short_value">
+        %1$.1f км
+    </string>
+
+    <string name="quote_duration_value">
+        Время в пути: %1$d мин
+    </string>
+
+    <string name="quote_duration_unknown">
+        Не определено
+    </string>
+
+    <string name="quote_price_value">
+        %1$d ₽
+    </string>
+
+    <string name="quote_server_price_note">
+        Итоговая стоимость формируется сервером Transfer Servis
+    </string>
+
+    <string name="quote_unknown_error">
+        Не удалось выполнить расчёт.
+    </string>
+
+    <string name="quote_continue">
+        Оформить поездку
+    </string>
+
+    <string name="quote_change_route">
+        Изменить маршрут
+    </string>
+
+    <!-- BOOKING -->
+
+    <string name="booking_overline">
+        ОФОРМЛЕНИЕ ЗАЯВКИ
+    </string>
+
+    <string name="booking_title">
+        Оформление поездки
+    </string>
+
+    <string name="booking_subtitle">
+        Укажите контактные данные и дату поездки
+    </string>
+
+    <string name="booking_trip_summary_title">
+        Ваша поездка
+    </string>
+
+    <string name="booking_passenger_title">
+        Данные пассажира
+    </string>
+
+    <string name="booking_price_label">
+        Стоимость
+    </string>
+
+    <string name="booking_name_hint">
+        Имя
+    </string>
+
+    <string name="booking_phone_hint">
+        Телефон (+7 или 8)
+    </string>
+
+    <string name="booking_date_hint">
+        Дата поездки
+    </string>
+
+    <string name="booking_comment_hint">
+        Комментарий
+    </string>
+
+    <string name="booking_submit">
+        Заказать поездку
+    </string>
+
+    <string name="booking_submit_note">
+        После отправки заявки мы свяжемся с вами для подтверждения поездки
+    </string>
+
+    <string name="booking_no_quote">
+        Расчёт стоимости отсутствует или устарел. Выполните расчёт повторно.
+    </string>
+
+    <string name="booking_invalid_date">
+        Выберите корректную дату поездки.
+    </string>
+
+    <string name="booking_unknown_error">
+        Не удалось создать заявку.
+    </string>
+
+    <!-- SUCCESS -->
+
+    <string name="order_success_overline">
+        ЗАЯВКА ОТПРАВЛЕНА
+    </string>
+
+    <string name="order_success_check">
+        ✓
+    </string>
+
+    <string name="order_success_title">
+        Заявка принята
+    </string>
+
+    <string name="order_success_message">
+        Мы получили вашу заявку на поездку. Диспетчер Transfer Servis свяжется с вами для подтверждения.
+    </string>
+
+    <string name="order_success_details_title">
+        Данные заявки
+    </string>
+
+    <string name="order_success_id_label">
+        Номер заявки
+    </string>
+
+    <string name="order_success_status_label">
+        Статус
+    </string>
+
+    <string name="order_id_value">
+        ID заявки: %1$s
+    </string>
+
+    <string name="order_status_value">
+        Статус: %1$s
+    </string>
+
+    <string name="order_next_title">
+        Что дальше?
+    </string>
+
+    <string name="order_next_message">
+        Заявка уже передана в обработку. После подтверждения диспетчер согласует с вами детали поездки.
+    </string>
+
+    <string name="order_new_trip">
+        Рассчитать новую поездку
+    </string>
+
+    <!-- MAIN NAVIGATION -->
+
+    <string name="bottom_home">
+        Главная
+    </string>
+
+    <string name="bottom_trips">
+        Поездки
+    </string>
+
+    <string name="bottom_profile">
+        Профиль
+    </string>
+
+    <!-- HISTORY -->
+
+    <string name="history_overline">
+        МОИ ПОЕЗДКИ
+    </string>
+
+    <string name="history_title">
+        Поездки
+    </string>
+
+    <string name="history_subtitle">
+        История заявок, оформленных в приложении
+    </string>
+
+    <string name="history_empty_title">
+        Поездок пока нет
+    </string>
+
+    <string name="history_empty_message">
+        После оформления первой поездки она появится здесь автоматически.
+    </string>
+
+    <string name="history_item_meta">
+        %1$s • %2$.1f км • %3$s
+    </string>
+
+    <string name="history_order_id_value">
+        Заявка: %1$s
+    </string>
+
+    <string name="history_duration_minutes">
+        %1$d мин
+    </string>
+
+    <string name="history_duration_hours">
+        %1$d ч
+    </string>
+
+    <string name="history_duration_hours_minutes">
+        %1$d ч %2$d мин
+    </string>
+
+    <!-- PROFILE -->
+
+    <string name="profile_overline">
+        TRANSFER SERVIS
+    </string>
+
+    <string name="profile_title">
+        Профиль
+    </string>
+
+    <string name="profile_subtitle">
+        Данные пассажира и настройки приложения
+    </string>
+
+    <string name="profile_passenger_title">
+        Данные пассажира
+    </string>
+
+    <string name="profile_passenger_message">
+        Сохраните имя и телефон — они будут автоматически подставляться при оформлении следующих поездок.
+    </string>
+
+    <string name="profile_name_hint">
+        Имя
+    </string>
+
+    <string name="profile_phone_hint">
+        Телефон (+7 или 8)
+    </string>
+
+    <string name="profile_save">
+        Сохранить данные
+    </string>
+
+    <string name="profile_saved">
+        Данные сохранены
+    </string>
+
+    <string name="profile_name_required">
+        Укажите имя.
+    </string>
+
+    <string name="profile_name_too_long">
+        Имя слишком длинное.
+    </string>
+
+    <string name="profile_phone_invalid">
+        Укажите номер с +7 или 8 (всего 11 цифр).
+    </string>
+
+    <string name="profile_privacy_note">
+        Имя и телефон сохраняются локально в данных приложения и используются для автозаполнения формы поездки.
+    </string>
+
+    <string name="profile_service_title">
+        Transfer Servis
+    </string>
+
+    <string name="profile_service_message">
+        Междугородние поездки 24/7 без пересадок с индивидуальным обслуживанием и конфиденциальностью.
+    </string>
+
+    <!-- API / VALIDATION ERRORS -->
+
+    <string name="error_from_required">
+        Укажите адрес отправления.
+    </string>
+
+    <string name="error_to_required">
+        Укажите адрес назначения.
+    </string>
+
+    <string name="error_invalid_input">
+        Проверьте введённые данные.
+    </string>
+
+    <string name="error_route_not_found">
+        Не удалось построить маршрут.
+    </string>
+
+    <string name="error_quote_expired">
+        Расчёт стоимости устарел. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_rate_limited">
+        Слишком много запросов. Попробуйте немного позже.
+    </string>
+
+    <string name="error_network">
+        Не удалось связаться с сервером. Проверьте интернет-соединение.
+    </string>
+
+    <string name="error_service_unavailable">
+        Сервис временно недоступен. Попробуйте позже.
+    </string>
+
+    <string name="error_invalid_response">
+        Сервер вернул некорректные данные.
+    </string>
+
+    <string name="error_tariff_mismatch">
+        Не удалось подтвердить выбранный тариф. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_request_failed">
+        Не удалось выполнить запрос.
+    </string>
+
+    <string name="error_invalid_quote">
+        Расчёт повреждён. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_name_required">
+        Укажите имя.
+    </string>
+
+    <string name="error_name_too_long">
+        Имя слишком длинное.
+    </string>
+
+    <string name="error_phone_invalid">
+        Укажите номер с +7 или 8 (всего 11 цифр).
+    </string>
+
+    <string name="error_comment_too_long">
+        Комментарий слишком длинный.
+    </string>
+
+    <string name="error_quote_already_used">
+        Этот расчёт уже использован для другой заявки. Выполните расчёт повторно.
+    </string>
+
+    <string name="error_invalid_order_data">
+        Проверьте данные заявки.
+    </string>
+
+    <string name="error_request_too_large">
+        Данные заявки слишком большие.
+    </string>
+
 </resources>

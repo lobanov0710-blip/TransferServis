@@ -13,3 +13,18 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Per-developer Android Studio device selections; never commit machine paths.
+/.idea/deviceHardwareInput.xml
+/.idea/deviceManager.xml
+
+# Local diagnostic output and signing material.
+/unit-test-errors.txt
+*.log
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+.env
+.env.*
