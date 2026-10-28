@@ -318,14 +318,18 @@
                         style="?attr/materialButtonOutlinedStyle"
 
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
+                        android:layout_height="52dp"
 
                         android:layout_weight="1"
 
                         android:text="@string/tariff_comfort"
                         android:textAllCaps="false"
 
-                        android:textSize="12sp" />
+                        android:textSize="13sp"
+                        android:textColor="@color/ts_tariff_button_text"
+                        app:backgroundTint="@color/ts_tariff_button_bg"
+                        app:strokeColor="@color/ts_tariff_button_stroke"
+                        app:strokeWidth="1dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonBusiness"
@@ -333,14 +337,18 @@
                         style="?attr/materialButtonOutlinedStyle"
 
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
+                        android:layout_height="52dp"
 
                         android:layout_weight="1"
 
                         android:text="@string/tariff_business"
                         android:textAllCaps="false"
 
-                        android:textSize="12sp" />
+                        android:textSize="13sp"
+                        android:textColor="@color/ts_tariff_button_text"
+                        app:backgroundTint="@color/ts_tariff_button_bg"
+                        app:strokeColor="@color/ts_tariff_button_stroke"
+                        app:strokeWidth="1dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonMinivan"
@@ -348,14 +356,18 @@
                         style="?attr/materialButtonOutlinedStyle"
 
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
+                        android:layout_height="52dp"
 
                         android:layout_weight="1"
 
                         android:text="@string/tariff_minivan"
                         android:textAllCaps="false"
 
-                        android:textSize="12sp" />
+                        android:textSize="13sp"
+                        android:textColor="@color/ts_tariff_button_text"
+                        app:backgroundTint="@color/ts_tariff_button_bg"
+                        app:strokeColor="@color/ts_tariff_button_stroke"
+                        app:strokeWidth="1dp" />
 
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 
