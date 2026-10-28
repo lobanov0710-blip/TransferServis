@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Базовые типографические токены для UI-02 — UI-04. -->
+    <style name="TextAppearance.TransferServis.ScreenTitle" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:textColor">@color/ts_text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.TransferServis.SectionTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textColor">@color/ts_text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.TransferServis.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/ts_text_secondary</item>
+    </style>
+    <style name="TextAppearance.TransferServis.Overline" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textColor">@color/ts_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.12</item>
+    </style>
+</resources>
