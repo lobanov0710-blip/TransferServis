@@ -6,7 +6,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.IOException;
 
@@ -25,6 +27,11 @@ import ru.transferservis.app.constants.AppConstants;
  * Сетевые запросы отправляются исключительно в локальный MockWebServer.
  */
 public final class DebugGatewayConfigurationTest {
+
+    @Before
+    public void debugBuildOnly() {
+        assumeTrue("Debug gateway tests run only for Debug", BuildConfig.DEBUG);
+    }
 
     @Test
     public void debugNeverDefaultsToProductionGateway() {
