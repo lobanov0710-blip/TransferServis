@@ -11,6 +11,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import ru.transferservis.app.constants.AppConstants;
+import ru.transferservis.app.BuildConfig;
 
 public final class ApiClient {
 
@@ -24,33 +25,38 @@ public final class ApiClient {
                     .create();
 
     private static final OkHttpClient HTTP_CLIENT =
-            new OkHttpClient.Builder()
+            createHttpClient(BuildConfig.STAGING_ACCESS_TOKEN);
 
-                    .connectTimeout(
-                            CONNECT_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
+    // Открыто в пределах package для локальных HTTP-тестов без настоящего staging.
+    static OkHttpClient createHttpClient(String stagingAccessToken) {
+        OkHttpClient.Builder builder =
+                new OkHttpClient.Builder()
+                        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        // Не повторяем POST автоматически: при потере ответа заказ
+                        // мог уже сохраниться на сервере.
+                        .retryOnConnectionFailure(false);
+
+        // Только Debug получает временный токен тестового PHP-шлюза.
+        // HMAC-секрет Worker никогда не хранится в Android-приложении.
+        if (BuildConfig.DEBUG && stagingAccessToken != null &&
+                !stagingAccessToken.isEmpty()) {
+            builder.addInterceptor(chain ->
+                    chain.proceed(
+                            chain.request().newBuilder()
+                                    .header(
+                                            "X-Staging-Access-Token",
+                                            stagingAccessToken
+                                    )
+                                    .build()
                     )
+            );
+        }
 
-                    .readTimeout(
-                            READ_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
-                    )
-
-                    .writeTimeout(
-                            WRITE_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
-                    )
-
-                    .callTimeout(
-                            CALL_TIMEOUT_SECONDS,
-                            TimeUnit.SECONDS
-                    )
-
-                    // All API endpoints use POST. In particular, booking creation
-                    // must not be transparently retried while its outcome is unknown.
-                    .retryOnConnectionFailure(false)
-
-                    .build();
+        return builder.build();
+    }
 
     private static final Retrofit RETROFIT =
             new Retrofit.Builder()

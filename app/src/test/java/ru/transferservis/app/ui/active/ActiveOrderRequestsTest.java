@@ -247,6 +247,42 @@ public final class ActiveOrderRequestsTest {
     }
 
     @Test
+    public void confirmedOrder_survivesOfflineRefresh_andRecoversOnReconnect() {
+        requests.restoreActiveOrder();
+        storage.runAll();
+        loader.reply(0, success("order-a", OrderStatus.NEW, 100L));
+        flush();
+        assertEquals(ActiveOrderUiState.Status.SUCCESS, state().getStatus());
+        assertEquals(1, history.size());
+
+        // Network goes away after an already confirmed order was persisted.
+        requests.refresh();
+        storage.runAll();
+        loader.reply(1, ApiResult.networkError(ApiErrorCode.NETWORK, null));
+        flush();
+        assertEquals(ActiveOrderUiState.Status.ERROR, state().getStatus());
+        assertEquals(ApiErrorCode.NETWORK, state().getErrorCode());
+        assertNotNull(sessions.current);
+        assertEquals("order-a", sessions.current.getOrderId());
+        assertEquals("token-a", sessions.current.getAccessToken());
+        assertEquals(1, history.size());
+        assertEquals(OrderStatus.NEW, history.get(0).getStatus());
+        assertEquals(0, sessions.clearAttempts);
+
+        // Connectivity returns: the same passenger token is reused safely.
+        requests.refresh();
+        storage.runAll();
+        loader.reply(2, success("order-a", OrderStatus.TAKEN, 200L));
+        flush();
+        assertEquals(ActiveOrderUiState.Status.SUCCESS, state().getStatus());
+        assertEquals("order-a", state().getOrder().getOrderId());
+        assertEquals(OrderStatus.TAKEN, state().getOrder().getStatus());
+        assertEquals(Arrays.asList("token-a", "token-a", "token-a"), loader.tokens);
+        assertEquals(2, history.size());
+        assertEquals(0, sessions.clearAttempts);
+    }
+
+    @Test
     public void olderServerTimestamp_keepsLastConfirmedStatus() {
         requests.restoreActiveOrder();
         storage.runAll();

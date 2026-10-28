@@ -1,5 +1,37 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
+}
+
+// У Debug свой HTTPS-шлюз. При отсутствии настройки используем
+// несуществующий адрес, чтобы тестовый APK не обращался к production.
+val transferStagingBaseUrl = providers.gradleProperty("transferStagingBaseUrl")
+    .orNull?.trim()?.takeIf { it.isNotEmpty() }
+    ?: "https://staging-not-configured.invalid/"
+val stagingUri = URI(transferStagingBaseUrl)
+val stagingHost = stagingUri.host?.lowercase()
+require(
+    stagingUri.scheme == "https" &&
+    stagingHost != null &&
+    stagingHost.contains("staging") &&
+    stagingUri.path == "/" &&
+    stagingUri.rawQuery == null &&
+    stagingUri.rawFragment == null &&
+    stagingUri.rawUserInfo == null &&
+    stagingHost != "transfer-servis52.ru" &&
+    stagingHost != "www.transfer-servis52.ru" &&
+    stagingHost != "uber-v3.lobanov0710.workers.dev"
+) {
+    "Debug API must use a separate HTTPS staging host with a root URL ending in /"
+}
+
+// Это только временный токен доступа к staging PHP, НЕ HMAC-секрет Worker.
+// Он компилируется в Debug APK, поэтому APK не подлежит распространению.
+val transferStagingAccessToken = providers.gradleProperty("transferStagingAccessToken")
+    .orNull?.trim() ?: ""
+require(transferStagingAccessToken.none { it == '"' || it == '\\' || it == '\n' || it == '\r' }) {
+    "Invalid staging tester token"
 }
 
 android {
@@ -28,7 +60,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Отдельный package ID и хранилище: staging APK не заменяет рабочее приложение.
+            applicationIdSuffix = ".staging"
+            buildConfigField("String", "API_BASE_URL", "\"$transferStagingBaseUrl\"")
+            buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
+        }
         release {
+            buildConfigField("String", "API_BASE_URL", "\"https://transfer-servis52.ru/\"")
+            buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"\"")
             optimization {
                 enable = true
 

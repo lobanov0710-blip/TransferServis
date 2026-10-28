@@ -9,6 +9,9 @@ on:
   pull_request:
     branches:
       - master
+      # Проверяем также черновики PR в рабочих ветках до слияния.
+      - feature/**
+      - fix/**
 
 permissions:
   contents: read
