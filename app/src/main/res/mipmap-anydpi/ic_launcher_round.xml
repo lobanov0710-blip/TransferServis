@@ -6,5 +6,5 @@
             <solid android:color="#0B131E" />
         </shape>
     </item>
-    <item android:drawable="@drawable/ic_launcher_foreground" />
+    <item android:drawable="@drawable/ts_brand_launcher" />
 </layer-list>
