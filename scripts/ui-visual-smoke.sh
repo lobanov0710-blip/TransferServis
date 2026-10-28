@@ -34,7 +34,23 @@ adb pull /sdcard/ui01-home.png "$out/home.png" >/dev/null
 # The OS settings page shows the app name and actual launcher icon.
 adb shell am start -a android.settings.APPLICATION_DETAILS_SETTINGS \
     -d "package:${pkg}" | tee "$out/appinfo-start.txt"
-sleep 2
+
+# The Settings app may cold-start with its own splash; verify the actual
+# application detail page is visible before taking an icon screenshot.
+ready=0
+for attempt in $(seq 1 15); do
+    adb shell uiautomator dump /sdcard/ui01-appinfo-window.xml >/dev/null 2>&1 || true
+    if adb pull /sdcard/ui01-appinfo-window.xml "$out/appinfo-window.xml" >/dev/null 2>&1 \
+        && grep -Fq "Transfer Servis" "$out/appinfo-window.xml"; then
+        ready=1
+        break
+    fi
+    sleep 2
+done
+if [ "$ready" -ne 1 ]; then
+    echo "ERROR: application settings details never showed Transfer Servis" >&2
+    exit 1
+fi
 adb shell screencap -p /sdcard/ui01-appinfo.png
 adb pull /sdcard/ui01-appinfo.png "$out/app-info-icon.png" >/dev/null
 
