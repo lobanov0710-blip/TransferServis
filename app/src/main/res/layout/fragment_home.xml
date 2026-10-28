@@ -437,68 +437,7 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- =========================
-             SERVICE FEATURES
-        ========================== -->
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginTop="20dp"
-
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-
-                android:layout_weight="1"
-
-                android:gravity="center"
-
-                android:padding="10dp"
-
-                android:text="@string/home_feature_24_7"
-                android:textColor="@color/ts_text_primary"
-
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-
-                android:layout_weight="1"
-
-                android:gravity="center"
-
-                android:padding="10dp"
-
-                android:text="@string/home_feature_direct"
-                android:textColor="@color/ts_text_primary"
-
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-
-                android:layout_weight="1"
-
-                android:gravity="center"
-
-                android:padding="10dp"
-
-                android:text="@string/home_feature_private"
-                android:textColor="@color/ts_text_primary"
-
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
+        <!-- Service details are shown in the trust card below. -->
 
         <!-- =========================
      ACTIVE ORDER
