@@ -51,6 +51,10 @@ public final class HomeFragment
 
     private MaterialButton calculateButton;
 
+    private MaterialButton swapRouteButton;
+
+    private TextView tariffDescription;
+
     private MaterialButton activeOrderButton;
 
     private MaterialCardView pendingOrderNoticeCard;
@@ -146,6 +150,9 @@ public final class HomeFragment
                         R.id.toInput
                 );
 
+        swapRouteButton = root.findViewById(R.id.swapRouteButton);
+        tariffDescription = root.findViewById(R.id.tariffDescription);
+
 
         tariffToggleGroup =
                 root.findViewById(
@@ -185,10 +192,21 @@ public final class HomeFragment
 
 
     private void configureTariffs() {
+        tariffToggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) {
+                return;
+            }
+            if (checkedId == R.id.buttonBusiness) {
+                tariffDescription.setText(R.string.tariff_business_description);
+            } else if (checkedId == R.id.buttonMinivan) {
+                tariffDescription.setText(R.string.tariff_minivan_description);
+            } else {
+                tariffDescription.setText(R.string.tariff_comfort_description);
+            }
+        });
 
-        tariffToggleGroup.check(
-                R.id.buttonComfort
-        );
+        // Keep the existing default and checked-button IDs for compatibility.
+        tariffToggleGroup.check(R.id.buttonComfort);
     }
 
 
@@ -247,6 +265,8 @@ public final class HomeFragment
 
     private void configureActions() {
 
+        swapRouteButton.setOnClickListener(view -> swapRouteAddresses());
+
         calculateButton.setOnClickListener(
                 view -> calculateQuote()
         );
@@ -260,6 +280,16 @@ public final class HomeFragment
         pendingOrderRecoverButton.setOnClickListener(view -> confirmPendingRecovery());
     }
 
+
+    private void swapRouteAddresses() {
+        // Local input edit only. Does not calculate, submit, or reset an order.
+        String from = fromInput.getText() == null
+                ? "" : fromInput.getText().toString();
+        String to = toInput.getText() == null
+                ? "" : toInput.getText().toString();
+        fromInput.setText(to);
+        toInput.setText(from);
+    }
 
     private void calculateQuote() {
         // A recreated Home cannot bypass the durable booking lock.
