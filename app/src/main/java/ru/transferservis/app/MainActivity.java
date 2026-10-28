@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
@@ -19,6 +20,9 @@ public final class MainActivity
     protected void onCreate(
             Bundle savedInstanceState
     ) {
+        // Используем системный экран запуска без искусственной задержки.
+        SplashScreen.installSplashScreen(this);
+
         super.onCreate(
                 savedInstanceState
         );
