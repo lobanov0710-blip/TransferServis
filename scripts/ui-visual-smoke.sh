@@ -22,7 +22,7 @@ adb shell input keyevent KEYCODE_HOME
 sleep 2
 
 # Capture the system splash transition and final home screen.
-adb shell screenrecord --size 720x1280 --bit-rate 3500000 --time-limit 12 \
+adb shell screenrecord --bit-rate 3500000 --time-limit 12 \
     /sdcard/ui01-launch.mp4 > "$out/screenrecord.log" 2>&1 &
 rec_pid=$!
 sleep 2
