@@ -28,3 +28,10 @@ local.properties
 *.key
 .env
 .env.*
+
+# RELEASE-01: local signing configuration and privately created release output.
+# Signing keys themselves are already excluded by the *.jks/*.keystore rules.
+/release-artifacts/
+/release-secrets/
+signing.properties
+keystore.properties
