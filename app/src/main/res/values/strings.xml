@@ -32,6 +32,12 @@
         Укажите полный адрес отправления и назначения
     </string>
 
+    <string name="home_swap_route">Поменять адреса местами</string>
+
+    <string name="tariff_comfort_description">Комфорт — базовый класс автомобиля</string>
+    <string name="tariff_business_description">Бизнес — повышенный класс автомобиля</string>
+    <string name="tariff_minivan_description">Минивэн — вместительный автомобиль</string>
+
     <string name="home_tariff_subtitle">
         Выберите подходящий класс автомобиля
     </string>
