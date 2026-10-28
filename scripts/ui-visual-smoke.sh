@@ -99,6 +99,7 @@ for report in reports:
             continue
         passed.add(case.attrib["name"])
 
+print(f"UI02_INSTRUMENTED_CASES={','.join(sorted(passed))}")
 print(f"UI02_INSTRUMENTED_TESTS_PASSED={len(passed)}/2")
 print(f"UI02_INSTRUMENTED_XML_REPORTS_FOUND={len(reports)}")
 if passed != expected:
