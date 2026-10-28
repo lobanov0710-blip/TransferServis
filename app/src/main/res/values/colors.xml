@@ -14,6 +14,8 @@
 
     <color name="ts_primary">#2B7CFF</color>
     <color name="ts_primary_pressed">#1D62D5</color>
+    <!-- Белая надпись на кнопке: контраст выше 4.5:1. -->
+    <color name="ts_action_primary">#1D62D5</color>
     <color name="ts_primary_container">#12345F</color>
 
     <color name="ts_secondary">#D5B06F</color>
