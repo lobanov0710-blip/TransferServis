@@ -63,11 +63,47 @@ test -s "$out/launch.mp4"
 echo "UI01_VISUAL_SMOKE_ARTIFACTS_READY=true"
 echo "No booking or production network calls were made by this script."
 
-# UI-02: Execute only the two view-only tests on this disposable AVD.
-# The class does not click Calculate or submit orders.
+# UI-02: screenshot APK and Gradle-built test APK can have different debug
+# signing keys on ephemeral runners. Uninstall *only on this disposable AVD*
+# before Gradle installs its matching app + test pair.
+adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
+adb uninstall "${pkg}.test" >/dev/null 2>&1 || true
+adb uninstall "$pkg" >/dev/null 2>&1 || true
+
 ./gradlew :app:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.ui.home.HomeRouteSwapUiTest \
     --stacktrace
+
+# Do not trust Gradle exit status alone: an AndroidTestRunner install error
+# can otherwise be reported as BUILD SUCCESSFUL with ZERO executed tests.
+python3 - <<'PY'
+from pathlib import Path
+import xml.etree.ElementTree as ET
+
+root = Path("app/build/outputs/androidTest-results/connected")
+expected = {
+    "swapRouteExchangesAddressesWithoutSubmission",
+    "changingTariffShowsMatchingDescription",
+}
+passed = set()
+reports = list(root.rglob("*.xml")) if root.exists() else []
+for report in reports:
+    try:
+        xml = ET.parse(report).getroot()
+    except ET.ParseError:
+        continue
+    for case in xml.iter("testcase"):
+        if case.attrib.get("name") not in expected:
+            continue
+        if any(case.find(tag) is not None for tag in ("failure", "error", "skipped")):
+            continue
+        passed.add(case.attrib["name"])
+
+print(f"UI02_INSTRUMENTED_TESTS_PASSED={len(passed)}/2")
+print(f"UI02_INSTRUMENTED_XML_REPORTS_FOUND={len(reports)}")
+if passed != expected:
+    raise SystemExit("ERROR: both view-only Espresso tests must actually execute and pass")
+PY
 mkdir -p "$out/ui02-test-results"
 cp -a app/build/outputs/androidTest-results/connected/. "$out/ui02-test-results/" 2>/dev/null || true
 echo "UI02_VIEW_ONLY_TESTS_COMPLETED=true"
