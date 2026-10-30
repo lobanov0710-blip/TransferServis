@@ -794,6 +794,13 @@ public final class HomeFragment
                 null;
 
 
+        swapRouteButton =
+                null;
+
+        tariffDescription =
+                null;
+
+
         activeOrderButton =
                 null;
 
