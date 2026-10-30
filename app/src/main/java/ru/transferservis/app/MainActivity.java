@@ -4,6 +4,10 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
@@ -19,6 +23,9 @@ public final class MainActivity
     protected void onCreate(
             Bundle savedInstanceState
     ) {
+        // Используем системный экран запуска без искусственной задержки.
+        SplashScreen.installSplashScreen(this);
+
         super.onCreate(
                 savedInstanceState
         );
@@ -32,7 +39,23 @@ public final class MainActivity
                         R.id.bottomNavigation
                 );
 
+        applySystemBarInsets();
         configureNavigation();
+    }
+
+    private void applySystemBarInsets() {
+        // targetSdk 35+: content draws edge-to-edge. Keep the navigation host,
+        // bottom bar, and form titles clear of status/navigation bar regions.
+        View mainRoot = findViewById(R.id.mainRoot);
+        ViewCompat.setOnApplyWindowInsetsListener(mainRoot, (view, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+            );
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(mainRoot);
     }
 
     private void configureNavigation() {

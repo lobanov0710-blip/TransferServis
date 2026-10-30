@@ -1,0 +1,71 @@
+name: UI-01 Android visual smoke
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/ui-visual-smoke.yml"
+      - "scripts/ui-visual-smoke.sh"
+      - "app/src/main/AndroidManifest.xml"
+      - "app/src/main/res/**"
+      - "app/src/main/java/ru/transferservis/app/MainActivity.java"
+      - "app/build.gradle.kts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-visual-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshot:
+    name: API 35 isolated emulator screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Prepare Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Enable KVM access on disposable runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Capture splash, home and application icon on isolated Android 15
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: false
+          script: bash scripts/ui-visual-smoke.sh
+
+      - name: Upload screenshots and startup recording
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ui01-emulator-screenshots-api35
+          path: build/ui-visual-smoke/
+          if-no-files-found: warn
+          retention-days: 14

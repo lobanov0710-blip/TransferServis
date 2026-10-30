@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Фирменная иконка для Android 7–7.1 (до adaptive icons). -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#0B131E" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ts_brand_launcher" />
+</layer-list>

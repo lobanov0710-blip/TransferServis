@@ -38,4 +38,11 @@
         name="Theme.TransferServis"
         parent="Base.Theme.TransferServis" />
 
+    <!-- После старта автоматически применяется Theme.TransferServis. -->
+    <style name="Theme.TransferServis.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ts_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ts_brand_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.TransferServis</item>
+    </style>
+
 </resources>
