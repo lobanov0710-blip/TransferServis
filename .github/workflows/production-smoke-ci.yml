@@ -1,0 +1,57 @@
+name: Production API emulator smoke build (no orders)
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "app/build.gradle.kts"
+      - "app/src/productionSmoke/**"
+      - "app/src/test/java/ru/transferservis/app/data/remote/ProductionSmokeConfigurationTest.java"
+      - "docs/PRODUCTION_SMOKE_ANDROID.md"
+      - ".github/workflows/production-smoke-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-smoke-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Opt-in emulator build, mock-only tests (no production requests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x gradlew
+
+      - name: Validate special variant and build for emulator
+        run: |
+          ./gradlew -PtransferProductionSmoke=I_ACKNOWLEDGE_PRODUCTION_ORDERS \
+            :app:testProductionSmokeUnitTest :app:assembleProductionSmoke --stacktrace
+
+      - name: Check isolated APK identity (no artifact upload)
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/productionSmoke/app-productionSmoke.apk"
+          test -s "$apk"
+          aapt="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n 1)"
+          test -n "$aapt"
+          "$aapt" dump badging "$apk" | grep "^package: name='ru.transferservis.app.productiontest'"
+          echo "PRODUCTION_SMOKE_PACKAGE_ISOLATED=true"
+          echo "No production calls, signed release APKs, or uploads performed."
