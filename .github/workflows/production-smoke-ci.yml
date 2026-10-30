@@ -39,9 +39,12 @@ jobs:
       - name: Grant Gradle wrapper execute permission
         run: chmod +x gradlew
 
-      - name: Validate special variant and build for emulator
+      - name: Validate isolation against a populated staging token and build emulator APK
         run: |
+          # Deliberately inject a NON-SECRET sentinel like a local gradle.properties token.
+          # The productionSmoke BuildConfig and HTTP headers MUST remain token-free.
           ./gradlew -PtransferProductionSmoke=I_ACKNOWLEDGE_PRODUCTION_ORDERS \
+            -PtransferStagingAccessToken=ci-nonsecret-staging-token-sentinel \
             :app:testProductionSmokeUnitTest :app:assembleProductionSmoke --stacktrace
 
       - name: Check isolated APK identity (no artifact upload)
