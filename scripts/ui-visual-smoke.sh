@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UI-01 visual smoke on a disposable GitHub Actions AVD.
+# UI-01 splash and UI-02 viewport/Espresso smoke on disposable GitHub Actions AVD.
 # This must not submit orders or contact the production service.
 set -euo pipefail
 
@@ -62,6 +62,40 @@ test -s "$out/app-info-icon.png"
 test -s "$out/launch.mp4"
 echo "UI01_VISUAL_SMOKE_ARTIFACTS_READY=true"
 echo "No booking or production network calls were made by this script."
+
+# UI-02 viewport matrix on the same DISPOSABLE AVD only.
+# Android dimensions are given as pixels; 900px/400dpi=360dp and
+# 1080px/420dpi=411.4dp. These are screenshots, not proof of visual quality.
+# Include actual emulator settings in the artifact so the sizes are auditable.
+capture_viewport() {
+    local label="$1" pixels="$2" density="$3" font_scale="$4"
+    adb shell wm size "$pixels"
+    adb shell wm density "$density"
+    adb shell settings put system font_scale "$font_scale"
+    adb shell am force-stop "$pkg"
+    adb shell am start -W -n "${pkg}/${activity}" > "$out/am-start-${label}.txt"
+    sleep 3
+    adb shell wm size > "$out/wm-size-${label}.txt"
+    adb shell wm density > "$out/wm-density-${label}.txt"
+    adb shell settings get system font_scale > "$out/font-scale-${label}.txt"
+    grep -Fq "Override size: $pixels" "$out/wm-size-${label}.txt"
+    grep -Fq "Override density: $density" "$out/wm-density-${label}.txt"
+    grep -Fxq "$font_scale" "$out/font-scale-${label}.txt"
+    adb shell screencap -p "/sdcard/ui02-${label}.png"
+    adb pull "/sdcard/ui02-${label}.png" "$out/home-${label}.png" >/dev/null
+    test -s "$out/home-${label}.png"
+}
+
+capture_viewport "360dp-font100" "900x2000" "400" "1.0"
+capture_viewport "360dp-font130" "900x2000" "400" "1.3"
+capture_viewport "411dp-font130" "1080x2400" "420" "1.3"
+
+# Restore normal emulator dimensions/scale before the Espresso run.
+adb shell wm size reset
+adb shell wm density reset
+adb shell settings put system font_scale 1.0
+echo "UI02_VIEWPORT_SCREENSHOTS=3"
+echo "UI02_VIEWPORT_SETTINGS_CAPTURED=true"
 
 # UI-02: screenshot APK and Gradle-built test APK can have different debug
 # signing keys on ephemeral runners. Uninstall *only on this disposable AVD*
