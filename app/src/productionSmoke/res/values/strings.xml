@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Unmistakable launcher label for the isolated, live-API emulator variant. -->
+    <string name="app_name">Transfer Servis (ПРОД-ТЕСТ)</string>
+</resources>
