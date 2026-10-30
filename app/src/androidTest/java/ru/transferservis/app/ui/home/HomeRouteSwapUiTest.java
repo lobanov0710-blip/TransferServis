@@ -9,6 +9,13 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
+import android.text.Layout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -53,4 +60,33 @@ public final class HomeRouteSwapUiTest {
         onView(withId(R.id.tariffDescription))
                 .check(matches(withText(R.string.tariff_minivan_description)));
     }
+    @Test
+    public void tariffLabelsAreFullyVisible() {
+        onView(withId(R.id.tariffToggleGroup)).check((view, missing) -> {
+            if (missing != null) {
+                throw missing;
+            }
+            android.content.res.Configuration config =
+                    view.getResources().getConfiguration();
+            if (config.screenWidthDp < 400 || config.fontScale > 1.15f) {
+                assertEquals("Compact layout must use a vertical tariff group",
+                        LinearLayout.VERTICAL, ((LinearLayout) view).getOrientation());
+            }
+        });
+        int[] ids = {R.id.buttonComfort, R.id.buttonBusiness, R.id.buttonMinivan};
+        for (int id : ids) {
+            onView(withId(id)).perform(scrollTo()).check((view, missing) -> {
+                if (missing != null) {
+                    throw missing;
+                }
+                Layout layout = ((TextView) view).getLayout();
+                assertNotNull("Tariff text must be laid out", layout);
+                for (int line = 0; line < layout.getLineCount(); line++) {
+                    assertEquals("Tariff name must not be ellipsized", 0,
+                            layout.getEllipsisCount(line));
+                }
+            });
+        }
+    }
+
 }
