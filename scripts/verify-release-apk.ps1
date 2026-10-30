@@ -172,3 +172,9 @@ Write-Output "VERSION_NAME=$name"
 Write-Output "APK_SHA256=$hash"
 Write-Output "APK_FILE=$apk"
 Write-Output 'RELEASE_PREFLIGHT=SUCCESS'
+
+# apksigner intentionally returns a nonzero native exit code for unsigned APKs.
+# That failure is expected and has already been checked above in Unsigned mode.
+# Clear the process exit state AFTER all checks pass so the invoking PowerShell
+# host (including GitHub Actions pwsh) does not report a false failure.
+$global:LASTEXITCODE = 0
