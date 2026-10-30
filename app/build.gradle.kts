@@ -96,8 +96,8 @@ android {
                 versionNameSuffix = "-PROD-TEST"
                 matchingFallbacks += listOf("debug")
                 signingConfig = signingConfigs.getByName("debug")
-                buildConfigField("String", "API_BASE_URL", "\\\"https://transfer-servis52.ru/\\\"")
-                buildConfigField("String", "STAGING_ACCESS_TOKEN", "\\\"\\\"")
+                buildConfigField("String", "API_BASE_URL", "\"https://transfer-servis52.ru/\"")
+                buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
             }
         }
     }
