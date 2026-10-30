@@ -68,10 +68,10 @@
             android:layout_marginTop="24dp"
 
             app:cardBackgroundColor="@color/ts_primary_container"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
 
-            app:strokeColor="@color/ts_primary"
+            app:strokeColor="@color/ts_secondary"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -102,7 +102,8 @@
 
                     android:textColor="@color/white"
 
-                    android:textSize="36sp"
+                    android:textSize="38sp"
+                    android:fontFamily="sans"
                     android:textStyle="bold" />
 
                 <TextView

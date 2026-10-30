@@ -3,10 +3,12 @@ package ru.transferservis.app.ui.home;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,6 +52,10 @@ public final class HomeFragment
 
 
     private MaterialButton calculateButton;
+
+    private MaterialButton swapRouteButton;
+
+    private TextView tariffDescription;
 
     private MaterialButton activeOrderButton;
 
@@ -146,6 +152,9 @@ public final class HomeFragment
                         R.id.toInput
                 );
 
+        swapRouteButton = root.findViewById(R.id.swapRouteButton);
+        tariffDescription = root.findViewById(R.id.tariffDescription);
+
 
         tariffToggleGroup =
                 root.findViewById(
@@ -185,10 +194,43 @@ public final class HomeFragment
 
 
     private void configureTariffs() {
+        configureResponsiveTariffButtons();
+        tariffToggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) {
+                return;
+            }
+            if (checkedId == R.id.buttonBusiness) {
+                tariffDescription.setText(R.string.tariff_business_description);
+            } else if (checkedId == R.id.buttonMinivan) {
+                tariffDescription.setText(R.string.tariff_minivan_description);
+            } else {
+                tariffDescription.setText(R.string.tariff_comfort_description);
+            }
+        });
 
-        tariffToggleGroup.check(
-                R.id.buttonComfort
-        );
+        // Keep the existing default and checked-button IDs for compatibility.
+        tariffToggleGroup.check(R.id.buttonComfort);
+    }
+
+    private void configureResponsiveTariffButtons() {
+        // Three horizontal equal-width buttons truncate class names at 360dp
+        // and at enlarged font scales. Stack them on compact displays, while
+        // retaining the three stable IDs and single-selection contract.
+        Configuration config = getResources().getConfiguration();
+        if (config.screenWidthDp >= 400 && config.fontScale <= 1.15f) {
+            return;
+        }
+
+        tariffToggleGroup.setOrientation(LinearLayout.VERTICAL);
+        int[] ids = {R.id.buttonComfort, R.id.buttonBusiness, R.id.buttonMinivan};
+        for (int id : ids) {
+            MaterialButton button = tariffToggleGroup.findViewById(id);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)
+                    button.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.weight = 0f;
+            button.setLayoutParams(params);
+        }
     }
 
 
@@ -247,6 +289,8 @@ public final class HomeFragment
 
     private void configureActions() {
 
+        swapRouteButton.setOnClickListener(view -> swapRouteAddresses());
+
         calculateButton.setOnClickListener(
                 view -> calculateQuote()
         );
@@ -260,6 +304,16 @@ public final class HomeFragment
         pendingOrderRecoverButton.setOnClickListener(view -> confirmPendingRecovery());
     }
 
+
+    private void swapRouteAddresses() {
+        // Local input edit only. Does not calculate, submit, or reset an order.
+        String from = fromInput.getText() == null
+                ? "" : fromInput.getText().toString();
+        String to = toInput.getText() == null
+                ? "" : toInput.getText().toString();
+        fromInput.setText(to);
+        toInput.setText(from);
+    }
 
     private void calculateQuote() {
         // A recreated Home cannot bypass the durable booking lock.
@@ -761,6 +815,13 @@ public final class HomeFragment
 
 
         calculateButton =
+                null;
+
+
+        swapRouteButton =
+                null;
+
+        tariffDescription =
                 null;
 
 
