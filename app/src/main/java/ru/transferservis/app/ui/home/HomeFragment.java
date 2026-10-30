@@ -3,10 +3,12 @@ package ru.transferservis.app.ui.home;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -192,6 +194,7 @@ public final class HomeFragment
 
 
     private void configureTariffs() {
+        configureResponsiveTariffButtons();
         tariffToggleGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (!isChecked) {
                 return;
@@ -207,6 +210,27 @@ public final class HomeFragment
 
         // Keep the existing default and checked-button IDs for compatibility.
         tariffToggleGroup.check(R.id.buttonComfort);
+    }
+
+    private void configureResponsiveTariffButtons() {
+        // Three horizontal equal-width buttons truncate class names at 360dp
+        // and at enlarged font scales. Stack them on compact displays, while
+        // retaining the three stable IDs and single-selection contract.
+        Configuration config = getResources().getConfiguration();
+        if (config.screenWidthDp >= 400 && config.fontScale <= 1.15f) {
+            return;
+        }
+
+        tariffToggleGroup.setOrientation(LinearLayout.VERTICAL);
+        int[] ids = {R.id.buttonComfort, R.id.buttonBusiness, R.id.buttonMinivan};
+        for (int id : ids) {
+            MaterialButton button = tariffToggleGroup.findViewById(id);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams)
+                    button.getLayoutParams();
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.weight = 0f;
+            button.setLayoutParams(params);
+        }
     }
 
 
