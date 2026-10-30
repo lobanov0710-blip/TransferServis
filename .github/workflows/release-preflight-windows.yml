@@ -1,0 +1,83 @@
+name: RELEASE-01 Windows unsigned APK preflight
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/release-preflight-windows.yml"
+      - "scripts/verify-release-apk.ps1"
+      - "docs/RELEASE_SIGNING.md"
+      - "app/build.gradle.kts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-preflight-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unsigned-powershell:
+    name: Unsigned APK / PowerShell / Windows (no signing keys)
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Assemble unsigned Release APK
+        shell: pwsh
+        run: .\gradlew.bat :app:assembleRelease --stacktrace
+
+      - name: Verify unsigned APK with production metadata (PowerShell)
+        shell: pwsh
+        run: |
+          .\scripts\verify-release-apk.ps1 -Mode Unsigned |
+            Tee-Object -FilePath release-preflight-windows.txt
+          if (-not (Select-String -LiteralPath release-preflight-windows.txt -Pattern '^RELEASE_PREFLIGHT=SUCCESS$' -Quiet)) {
+            throw "Unsigned Windows release preflight did not report SUCCESS"
+          }
+          if (-not (Select-String -LiteralPath release-preflight-windows.txt -Pattern '^PACKAGE=ru\.transferservis\.app$' -Quiet)) {
+            throw "Incorrect package ID in unsigned Release"
+          }
+
+      - name: Assert signed gate rejects a missing certificate pin
+        shell: pwsh
+        run: |
+          $foundExpectedFailure = $false
+          try {
+            .\scripts\verify-release-apk.ps1 -Mode Signed
+          }
+          catch {
+            if ($_.Exception.Message -match 'Для Signed требуется -ExpectedCertificateSha256') {
+              $foundExpectedFailure = $true
+            }
+            else {
+              throw
+            }
+          }
+          if (-not $foundExpectedFailure) {
+            throw "Signed mode must require a release certificate SHA-256 pin"
+          }
+          Write-Output "SIGNED_MODE_REQUIRES_CERTIFICATE_PIN=true"
+
+      - name: Upload textual preflight report (no APK or key)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-preflight-windows-text
+          path: release-preflight-windows.txt
+          if-no-files-found: ignore
+          retention-days: 14

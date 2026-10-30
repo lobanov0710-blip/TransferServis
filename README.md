@@ -4,7 +4,7 @@
 
 **Состояние на 28.10.2026.** Функциональная Android-реализация перенесена из `fix/passenger-profile-instrumentation-v1` в `master` через [PR №9](https://github.com/lobanov0710-blip/TransferServis/pull/9), merge-коммит [`67b1e1b`](https://github.com/lobanov0710-blip/TransferServis/commit/67b1e1b95ff243b936cd96c6d5de4a1a7bf24dbc). Ранее в рабочую ветку вошли [PR №10](https://github.com/lobanov0710-blip/TransferServis/pull/10) (автоматизированные Debug/Release-проверки) и [PR №11](https://github.com/lobanov0710-blip/TransferServis/pull/11) (очистка локальных артефактов). [GitHub Actions №40765068343](https://github.com/lobanov0710-blip/TransferServis/actions/runs/40765068343) на merge-коммите `master` завершился успешно в обоих заданиях. Это **не означает выпуск или приёмку production Release**.
 
-[План разработки](docs/DEVELOPMENT_PLAN.md) · [STAGING Android Debug](docs/STAGING_ANDROID_DEBUG.md) · [Результаты проверок](docs/VALIDATION.md)
+[План разработки](docs/DEVELOPMENT_PLAN.md) · [STAGING Android Debug](docs/STAGING_ANDROID_DEBUG.md) · [Результаты проверок](docs/VALIDATION.md) · [Подготовка подписанного Release APK](docs/RELEASE_SIGNING.md)
 
 ## Варианты сборки
 
