@@ -97,7 +97,8 @@ android {
                 matchingFallbacks += listOf("debug")
                 signingConfig = signingConfigs.getByName("debug")
                 buildConfigField("String", "API_BASE_URL", "\"https://transfer-servis52.ru/\"")
-                buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
+                // Never inherit Debug secrets: even with real Gradle staging credentials present.
+                buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"\"")
             }
         }
     }
