@@ -41,7 +41,7 @@ Set-Location ..\TransferServis-prod-smoke
 
 Условие: путь `..\TransferServis-prod-smoke` не должен уже существовать. При повторном использовании не создавать второй worktree без проверки. **Нельзя отправлять производственный заказ без отдельного согласия владельца**, потому что он попадёт в production D1, может вызвать действующий Telegram и Firebase-уведомления водителям.
 
-Из корневой папки `TransferServis` (секреты не нужны):
+Из корневой папки **временного worktree** `TransferServis-prod-smoke` (секреты не нужны):
 
 ```powershell
 .\gradlew.bat -PtransferProductionSmoke=I_ACKNOWLEDGE_PRODUCTION_ORDERS :app:testProductionSmokeUnitTest :app:assembleProductionSmoke
@@ -70,6 +70,7 @@ Set-Location ..\TransferServis-prod-smoke
 
 - Сохранить только результаты: SHA проверенного PR, package ID, `orderId` контрольной заявки **без персональных данных**, факт D1 и факт Telegram/проверенные ошибки.
 - После диагностики удалить с эмулятора только `ru.transferservis.app.productiontest`.
+- Перед удалением worktree перейти обратно в **основной** каталог `TransferServis` (`Set-Location ..\TransferServis` при приведённой структуре директорий). Не вызывать `git worktree remove` из удаляемого worktree.
 - При использовании отдельного worktree после сохранения диагностических результатов выполнить из основной папки репозитория `git worktree remove ..\TransferServis-prod-smoke` (только если в этом worktree нет нужных несохранённых изменений). Затем по отдельному решению закрыть PR №17 без слияния. Это предпочтительный вариант: диагностика не остаётся частью основного приложения.
 - Не использовать `productionSmoke` для распространения приложения, рекламных или пользовательских поездок. После приёмки заключения отдельно согласовать удаление этого **временного** build type/workflow из основной ветки (если PR будет слит); исходный `debug` и `release` не трогать.
 - Этот PR не разрешает реальную заявку и **не запускает её сам**. Отдельное согласие требуется именно перед отправкой в production.
