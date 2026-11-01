@@ -59,6 +59,21 @@
 
             android:textSize="15sp" />
 
+        <!-- Visible only in the isolated productionSmoke emulator build.
+             Displays the actual compiled API target and exact D1 quote ID. -->
+        <TextView
+            android:id="@+id/quoteSmokeTrace"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@color/ts_surface"
+            android:padding="12dp"
+            android:textColor="@color/ts_text_primary"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:textIsSelectable="true"
+            android:visibility="gone" />
+
         <!-- PRICE -->
 
         <com.google.android.material.card.MaterialCardView
