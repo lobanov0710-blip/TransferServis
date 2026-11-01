@@ -16,6 +16,7 @@ import com.google.android.material.button.MaterialButton;
 
 import java.util.Locale;
 
+import ru.transferservis.app.BuildConfig;
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.Quote;
 
@@ -29,6 +30,7 @@ public final class QuoteFragment
     private TextView quoteDistance;
     private TextView quoteDuration;
     private TextView quoteErrorText;
+    private TextView quoteSmokeTrace;
 
     private MaterialButton continueBookingButton;
     private MaterialButton changeRouteButton;
@@ -110,6 +112,11 @@ public final class QuoteFragment
                         R.id.quoteErrorText
                 );
 
+        quoteSmokeTrace =
+                root.findViewById(
+                        R.id.quoteSmokeTrace
+                );
+
         continueBookingButton =
                 root.findViewById(
                         R.id.continueBookingButton
@@ -178,6 +185,22 @@ public final class QuoteFragment
         quoteErrorText.setVisibility(
                 View.GONE
         );
+
+        // Only the isolated emulator productionSmoke variant shows its real
+        // compiled API target and exact quote ID for D1 reconciliation.
+        // Reading this text never sends another request or creates an order.
+        if ("productionSmoke".equals(BuildConfig.BUILD_TYPE)) {
+            quoteSmokeTrace.setText(
+                    getString(
+                            R.string.quote_smoke_reference,
+                            BuildConfig.API_BASE_URL,
+                            quote.getQuoteId()
+                    )
+            );
+            quoteSmokeTrace.setVisibility(View.VISIBLE);
+        } else {
+            quoteSmokeTrace.setVisibility(View.GONE);
+        }
 
         continueBookingButton.setEnabled(
                 true
@@ -324,6 +347,9 @@ public final class QuoteFragment
                 null;
 
         quoteErrorText =
+                null;
+
+        quoteSmokeTrace =
                 null;
 
         continueBookingButton =
