@@ -224,6 +224,17 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/favoritesFromButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/favorites_choose_from"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
                 <!-- Swap only the entered addresses; no quote or order request. -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/swapRouteButton"
@@ -271,6 +282,17 @@
                         android:textColorHint="@color/ts_text_muted" />
 
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/favoritesToButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/favorites_choose_to"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
 
                 <!-- =========================
                      TARIFF
