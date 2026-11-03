@@ -10,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -19,9 +21,20 @@ import java.util.Locale;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.TripHistoryItem;
+import ru.transferservis.app.domain.model.RouteDraft;
 
 public final class TripHistoryAdapter
         extends RecyclerView.Adapter<TripHistoryAdapter.TripViewHolder> {
+
+    public interface RepeatListener {
+        void onRepeat(@NonNull TripHistoryItem trip);
+    }
+
+    private final RepeatListener repeatListener;
+
+    public TripHistoryAdapter(@NonNull RepeatListener repeatListener) {
+        this.repeatListener = repeatListener;
+    }
 
     private List<TripHistoryItem> items =
             Collections.emptyList();
@@ -78,7 +91,8 @@ public final class TripHistoryAdapter
         holder.bind(
                 items.get(
                         position
-                )
+                ),
+                repeatListener
         );
     }
 
@@ -98,6 +112,7 @@ public final class TripHistoryAdapter
         private final TextView tripMeta;
         private final TextView tripPrice;
         private final TextView tripOrderId;
+        private final MaterialButton tripRepeatButton;
 
         TripViewHolder(
                 @NonNull View itemView
@@ -140,10 +155,12 @@ public final class TripHistoryAdapter
                     itemView.findViewById(
                             R.id.tripOrderId
                     );
+            tripRepeatButton = itemView.findViewById(R.id.tripRepeatButton);
         }
 
         void bind(
-                @NonNull TripHistoryItem item
+                @NonNull TripHistoryItem item,
+                @NonNull RepeatListener listener
         ) {
 
             Context context =
@@ -194,6 +211,12 @@ public final class TripHistoryAdapter
                             item.getOrderId()
                     )
             );
+
+            boolean canRepeat = RouteDraft.fromCompletedTrip(item) != null;
+            tripRepeatButton.setVisibility(canRepeat ? View.VISIBLE : View.GONE);
+            tripRepeatButton.setOnClickListener(canRepeat
+                    ? view -> listener.onRepeat(item)
+                    : null);
         }
 
         @NonNull
