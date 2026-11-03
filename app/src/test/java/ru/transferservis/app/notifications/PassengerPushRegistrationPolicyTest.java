@@ -75,6 +75,18 @@ public final class PassengerPushRegistrationPolicyTest {
     }
 
     @Test
+    public void cleanupGrantAfterOptOutRequiresCurrentVerifiedSession() {
+        assertTrue(PassengerPushRegistrationPolicy.canIssueRevocationGrant(
+                true, ORDER, "read-token", NOW + 120000, INSTALL, NOW));
+        assertFalse(PassengerPushRegistrationPolicy.canIssueRevocationGrant(
+                false, ORDER, "read-token", NOW + 120000, INSTALL, NOW));
+        assertFalse(PassengerPushRegistrationPolicy.canIssueRevocationGrant(
+                true, ORDER, "read-token", NOW - 1, INSTALL, NOW));
+        assertFalse(PassengerPushRegistrationPolicy.canIssueRevocationGrant(
+                true, ORDER, "read-token", NOW + 120000, "bad-id", NOW));
+    }
+
+    @Test
     public void revocationAllowedEvenAfterConsentOrOsPermissionIsWithdrawn() {
         assertTrue(PassengerPushRegistrationPolicy.canRevoke(
                 true, "new-grant", NOW + 120000, NOW));
