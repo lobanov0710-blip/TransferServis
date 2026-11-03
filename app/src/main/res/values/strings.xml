@@ -492,4 +492,30 @@
         Данные заявки слишком большие.
     </string>
 
+
+    <!-- FAV-02: только локальные избранные адреса, без отправки на сервер. -->
+    <string name="favorites_title">Избранные адреса</string>
+    <string name="favorites_subtitle">Сохраняйте адреса и выбирайте их без повторного ввода.</string>
+    <string name="favorites_choose_from">Избранное: откуда</string>
+    <string name="favorites_choose_to">Избранное: куда</string>
+    <string name="favorites_add">Добавить адрес</string>
+    <string name="favorites_empty">Пока нет сохранённых адресов.</string>
+    <string name="favorites_list_accessibility">Список сохранённых адресов</string>
+    <string name="favorites_select">Выбрать адрес</string>
+    <string name="favorites_edit">Изменить</string>
+    <string name="favorites_delete">Удалить</string>
+    <string name="favorites_delete_title">Удалить адрес?</string>
+    <string name="favorites_delete_message">Адрес будет удалён только из избранного. История поездок не изменится.</string>
+    <string name="favorites_new_title">Новый адрес</string>
+    <string name="favorites_edit_title">Изменить адрес</string>
+    <string name="favorites_label_hint">Название (например, Дом)</string>
+    <string name="favorites_address_hint">Адрес</string>
+    <string name="favorites_cancel">Отмена</string>
+    <string name="favorites_save">Сохранить</string>
+    <string name="favorites_invalid_label">Введите название не длиннее 60 символов.</string>
+    <string name="favorites_invalid_address">Введите адрес не длиннее 200 символов.</string>
+    <string name="favorites_saved">Адрес сохранён.</string>
+    <string name="favorites_deleted">Адрес удалён.</string>
+    <string name="favorites_storage_error">Не удалось изменить избранное. Попробуйте снова.</string>
+
 </resources>
