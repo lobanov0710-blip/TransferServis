@@ -23,7 +23,13 @@ public final class PassengerPushConsentStore {
 
     /** Default false: an absent, restored or unset choice never opts in. */
     public boolean isConsented() {
-        return preferences.getBoolean(KEY_EXPLICIT_CONSENT, false);
+        try {
+            return preferences.getBoolean(KEY_EXPLICIT_CONSENT, false);
+        } catch (ClassCastException invalidPreference) {
+            // Malformed or restored state cannot silently grant consent.
+            preferences.edit().remove(KEY_EXPLICIT_CONSENT).commit();
+            return false;
+        }
     }
 
     /**
