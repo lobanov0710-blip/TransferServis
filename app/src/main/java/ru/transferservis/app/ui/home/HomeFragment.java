@@ -5,6 +5,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
+import androidx.navigation.NavBackStackEntry;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -33,6 +36,7 @@ import ru.transferservis.app.ui.active.ActiveOrderUiState;
 import ru.transferservis.app.ui.active.ActiveOrderViewModel;
 import ru.transferservis.app.ui.booking.OrderViewModel;
 import ru.transferservis.app.ui.common.UiErrorMapper;
+import ru.transferservis.app.ui.favorites.FavoriteSelectionKeys;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
 
@@ -54,6 +58,8 @@ public final class HomeFragment
     private MaterialButton calculateButton;
 
     private MaterialButton swapRouteButton;
+    private MaterialButton favoritesFromButton;
+    private MaterialButton favoritesToButton;
 
     private TextView tariffDescription;
 
@@ -134,6 +140,8 @@ public final class HomeFragment
 
 
         configureActions();
+        observeFavoriteSelections();
+        watchQuoteInputs();
     }
 
 
@@ -153,6 +161,8 @@ public final class HomeFragment
                 );
 
         swapRouteButton = root.findViewById(R.id.swapRouteButton);
+        favoritesFromButton = root.findViewById(R.id.favoritesFromButton);
+        favoritesToButton = root.findViewById(R.id.favoritesToButton);
         tariffDescription = root.findViewById(R.id.tariffDescription);
 
 
@@ -206,6 +216,7 @@ public final class HomeFragment
             } else {
                 tariffDescription.setText(R.string.tariff_comfort_description);
             }
+            invalidateCurrentQuote();
         });
 
         // Keep the existing default and checked-button IDs for compatibility.
@@ -290,6 +301,10 @@ public final class HomeFragment
     private void configureActions() {
 
         swapRouteButton.setOnClickListener(view -> swapRouteAddresses());
+        favoritesFromButton.setOnClickListener(view ->
+                openFavorites(FavoriteSelectionKeys.TARGET_FROM));
+        favoritesToButton.setOnClickListener(view ->
+                openFavorites(FavoriteSelectionKeys.TARGET_TO));
 
         calculateButton.setOnClickListener(
                 view -> calculateQuote()
@@ -304,6 +319,77 @@ public final class HomeFragment
         pendingOrderRecoverButton.setOnClickListener(view -> confirmPendingRecovery());
     }
 
+
+    private void openFavorites(@NonNull String target) {
+        NavController nav = NavHostFragment.findNavController(this);
+        if (nav.getCurrentDestination() == null
+                || nav.getCurrentDestination().getId() != R.id.homeFragment) {
+            return;
+        }
+        // Не переносим в экран избранного ранее рассчитанную цену.
+        invalidateCurrentQuote();
+        Bundle args = new Bundle();
+        args.putString(FavoriteSelectionKeys.ARG_TARGET, target);
+        nav.navigate(R.id.action_homeFragment_to_favoritesFragment, args);
+    }
+
+    private void observeFavoriteSelections() {
+        NavBackStackEntry entry = NavHostFragment.findNavController(this)
+                .getCurrentBackStackEntry();
+        if (entry == null) {
+            return;
+        }
+        entry.getSavedStateHandle()
+                .<String>getLiveData(FavoriteSelectionKeys.RESULT_FROM)
+                .observe(getViewLifecycleOwner(), selected -> {
+                    if (selected == null) {
+                        return;
+                    }
+                    fromInput.setText(selected);
+                    entry.getSavedStateHandle()
+                            .set(FavoriteSelectionKeys.RESULT_FROM, null);
+                });
+        entry.getSavedStateHandle()
+                .<String>getLiveData(FavoriteSelectionKeys.RESULT_TO)
+                .observe(getViewLifecycleOwner(), selected -> {
+                    if (selected == null) {
+                        return;
+                    }
+                    toInput.setText(selected);
+                    entry.getSavedStateHandle()
+                            .set(FavoriteSelectionKeys.RESULT_TO, null);
+                });
+    }
+
+    private void watchQuoteInputs() {
+        TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence text, int start,
+                                          int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence text, int start,
+                                      int before, int count) {
+                invalidateCurrentQuote();
+            }
+
+            @Override
+            public void afterTextChanged(Editable text) {
+            }
+        };
+        fromInput.addTextChangedListener(watcher);
+        toInput.addTextChangedListener(watcher);
+    }
+
+    private void invalidateCurrentQuote() {
+        if (quoteViewModel == null) {
+            return;
+        }
+        // reset() аннулирует и запрос в полёте через requestSequence.
+        calculationRequested = false;
+        quoteViewModel.reset();
+    }
 
     private void swapRouteAddresses() {
         // Local input edit only. Does not calculate, submit, or reset an order.
@@ -820,6 +906,9 @@ public final class HomeFragment
 
         swapRouteButton =
                 null;
+        favoritesFromButton = null;
+        favoritesToButton = null;
+
 
         tariffDescription =
                 null;
