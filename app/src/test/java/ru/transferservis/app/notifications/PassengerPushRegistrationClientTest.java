@@ -108,7 +108,7 @@ public final class PassengerPushRegistrationClientTest {
         RecordedRequest recorded = server.takeRequest(2, TimeUnit.SECONDS);
         assertNotNull(recorded);
         assertEquals("POST", recorded.getMethod());
-        assertEquals("/api/passenger-push-grant.php", recorded.getPath());
+        assertEquals("/api/passenger-push-grant.php", recorded.getUrl().encodedPath());
         assertNull(recorded.getHeaders().get("X-Proxy-Signature"));
         assertNull(recorded.getHeaders().get("X-Proxy-Nonce"));
 
@@ -136,7 +136,7 @@ public final class PassengerPushRegistrationClientTest {
         assertNotNull(revokeOnly);
         assertTrue(revokeOnly.execute().isSuccessful());
         assertEquals("/api/passenger-push-grant.php",
-                server.takeRequest(2, TimeUnit.SECONDS).getPath());
+                server.takeRequest(2, TimeUnit.SECONDS).getUrl().encodedPath());
         assertNull(client.prepareRegister(false, false,
                 "cleanup-grant", NOW + 120000, "fcm-token", NOW));
         assertEquals(1, server.getRequestCount());
@@ -157,7 +157,7 @@ public final class PassengerPushRegistrationClientTest {
         RecordedRequest post = server.takeRequest(2, TimeUnit.SECONDS);
         assertNotNull(post);
         assertEquals("POST", post.getMethod());
-        assertEquals("/api/passenger-push-device.php", post.getPath());
+        assertEquals("/api/passenger-push-device.php", post.getUrl().encodedPath());
 
         JsonObject postJson = JsonParser.parseString(new Gson().toJson(
                 new PassengerPushPayloads.DeviceRequest(
@@ -176,7 +176,7 @@ public final class PassengerPushRegistrationClientTest {
         RecordedRequest delete = server.takeRequest(2, TimeUnit.SECONDS);
         assertNotNull(delete);
         assertEquals("DELETE", delete.getMethod());
-        assertEquals("/api/passenger-push-device.php", delete.getPath());
+        assertEquals("/api/passenger-push-device.php", delete.getUrl().encodedPath());
 
         JsonObject deleteJson = JsonParser.parseString(new Gson().toJson(
                 new PassengerPushPayloads.RevokeRequest(
