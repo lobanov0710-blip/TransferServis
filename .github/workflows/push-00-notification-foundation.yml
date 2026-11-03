@@ -1,0 +1,61 @@
+name: PUSH-00 notification foundation
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/push-00-notification-foundation.yml"
+      - "app/src/main/AndroidManifest.xml"
+      - "app/src/main/java/ru/transferservis/app/MainActivity.java"
+      - "app/src/main/java/ru/transferservis/app/notifications/**"
+      - "app/src/test/java/ru/transferservis/app/notifications/**"
+      - "app/src/androidTest/java/ru/transferservis/app/notifications/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: push-00-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-instrumentation:
+    name: Notification channel and permission on isolated API35 AVD
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Grant KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Check private channel and runtime permission without FCM
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            chmod +x ./gradlew
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerNotificationChannelsTest --stacktrace
+      - name: Upload instrumentation results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: push00-notification-instrumentation
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 14

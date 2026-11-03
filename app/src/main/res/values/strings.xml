@@ -521,4 +521,8 @@
     <string name="history_repeat_route">Повторить поездку</string>
     <string name="history_repeat_prompt">Маршрут заполнен. Проверьте тариф и рассчитайте актуальную стоимость.</string>
 
+    <!-- PUSH-00. Канал — инфраструктура, доставку FCM пока не включает. -->
+    <string name="passenger_notification_channel_title">Состояние поездки</string>
+    <string name="passenger_notification_channel_description">Изменения статуса вашего заказа Transfer Servis</string>
+
 </resources>
