@@ -52,6 +52,7 @@ public final class PassengerPushRegistrationPolicy {
                 && notificationsAllowed
                 && validTime(nowMillis, grantExpiresAtMillis)
                 && validToken(grantToken, MAX_BEARER_LENGTH)
+                && !"__REDACTED__".equals(fcmToken)
                 && validToken(fcmToken, MAX_FCM_LENGTH);
     }
 
