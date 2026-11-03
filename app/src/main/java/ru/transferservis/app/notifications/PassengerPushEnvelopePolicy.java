@@ -3,6 +3,9 @@ package ru.transferservis.app.notifications;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -25,7 +28,9 @@ public final class PassengerPushEnvelopePolicy {
                     + "[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     );
     private static final Set<String> ALLOWED_FIELDS =
-            Set.of("v", "type", "eventId", "orderId");
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "v", "type", "eventId", "orderId"
+            )));
 
     private PassengerPushEnvelopePolicy() {
     }
