@@ -12,12 +12,16 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.List;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.TripHistoryItem;
+import ru.transferservis.app.domain.model.RouteDraft;
+import ru.transferservis.app.ui.home.RepeatRouteViewModel;
 
 public final class HistoryFragment
         extends Fragment {
@@ -82,7 +86,7 @@ public final class HistoryFragment
     private void configureRecyclerView() {
 
         adapter =
-                new TripHistoryAdapter();
+                new TripHistoryAdapter(this::repeatTrip);
 
         historyRecycler.setLayoutManager(
                 new LinearLayoutManager(
@@ -110,6 +114,24 @@ public final class HistoryFragment
                         getViewLifecycleOwner(),
                         this::renderTrips
                 );
+    }
+
+    private void repeatTrip(@NonNull TripHistoryItem trip) {
+        RouteDraft draft = RouteDraft.fromCompletedTrip(trip);
+        if (draft == null) {
+            return;
+        }
+        BottomNavigationView bottomNavigation =
+                requireActivity().findViewById(R.id.bottomNavigation);
+        if (bottomNavigation == null) {
+            return;
+        }
+
+        // Передаём только адреса: никаких id/quote/цены/даты и сетевых запросов.
+        new ViewModelProvider(requireActivity())
+                .get(RepeatRouteViewModel.class)
+                .prepare(draft);
+        bottomNavigation.setSelectedItemId(R.id.homeFragment);
     }
 
     private void renderTrips(

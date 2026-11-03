@@ -518,4 +518,7 @@
     <string name="favorites_deleted">Адрес удалён.</string>
     <string name="favorites_storage_error">Не удалось изменить избранное. Попробуйте снова.</string>
 
+    <string name="history_repeat_route">Повторить поездку</string>
+    <string name="history_repeat_prompt">Маршрут заполнен. Проверьте тариф и рассчитайте актуальную стоимость.</string>
+
 </resources>

@@ -32,6 +32,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import ru.transferservis.app.R;
 import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiErrorCode;
+import ru.transferservis.app.domain.model.RouteDraft;
 import ru.transferservis.app.ui.active.ActiveOrderUiState;
 import ru.transferservis.app.ui.active.ActiveOrderViewModel;
 import ru.transferservis.app.ui.booking.OrderViewModel;
@@ -142,6 +143,7 @@ public final class HomeFragment
         configureActions();
         observeFavoriteSelections();
         watchQuoteInputs();
+        observeRepeatRoute();
     }
 
 
@@ -389,6 +391,32 @@ public final class HomeFragment
         // reset() аннулирует и запрос в полёте через requestSequence.
         calculationRequested = false;
         quoteViewModel.reset();
+    }
+
+    private void observeRepeatRoute() {
+        RepeatRouteViewModel routeModel =
+                new ViewModelProvider(requireActivity())
+                        .get(RepeatRouteViewModel.class);
+        routeModel.getPendingDraft().observe(getViewLifecycleOwner(), encoded -> {
+            if (encoded == null) {
+                return;
+            }
+            RouteDraft draft = RepeatRouteViewModel.read(encoded);
+            // Однократное потребление даже после process death и возврата на Home.
+            routeModel.clear();
+            if (draft == null) {
+                return;
+            }
+            invalidateCurrentQuote();
+            fromInput.setText(draft.getFrom());
+            toInput.setText(draft.getTo());
+            // Исторический tariffName не является надёжным API-кодом.
+            // По умолчанию показываем действующий базовый тариф; пользователь
+            // проверяет его и подтверждает новый расчёт отдельной кнопкой.
+            tariffToggleGroup.check(R.id.buttonComfort);
+            Toast.makeText(requireContext(),
+                    R.string.history_repeat_prompt, Toast.LENGTH_LONG).show();
+        });
     }
 
     private void swapRouteAddresses() {
