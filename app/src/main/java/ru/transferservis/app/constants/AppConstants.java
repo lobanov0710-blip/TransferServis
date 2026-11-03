@@ -23,4 +23,11 @@ public final class AppConstants {
 
     public static final String API_ORDER_STATUS =
             "api/order-status.php";
+
+    // New passenger-only PHP gateways. Not wired to startup or FCM.
+    public static final String API_PASSENGER_PUSH_GRANT =
+            "api/passenger-push-grant.php";
+
+    public static final String API_PASSENGER_PUSH_DEVICE =
+            "api/passenger-push-device.php";
 }
