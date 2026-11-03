@@ -1,0 +1,67 @@
+name: FAV-01 Room migration tests
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/fav-01-room-migration.yml"
+      - "app/src/main/java/ru/transferservis/app/data/local/**"
+      - "app/src/androidTest/java/ru/transferservis/app/data/local/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fav-01-migration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration:
+    name: Verify v1 to v2 migration on disposable API 35 AVD
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Allow emulator to use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Room migration and existing trip-history tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            chmod +x ./gradlew
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.data.local.FavoriteAddressDatabaseTest,ru.transferservis.app.data.local.TripHistoryDatabaseTest --stacktrace
+
+      - name: Upload instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fav01-room-instrumented-reports
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 14
