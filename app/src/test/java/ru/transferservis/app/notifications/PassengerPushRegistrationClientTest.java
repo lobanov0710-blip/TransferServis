@@ -123,6 +123,26 @@ public final class PassengerPushRegistrationClientTest {
     }
 
     @Test
+    public void canPrepareRevokeGrantAfterOptOutWithoutEnablingEnrollment()
+            throws Exception {
+        PassengerPushRegistrationClient client =
+                new PassengerPushRegistrationClient(api, true);
+        server.enqueue(new MockResponse.Builder().code(200)
+                .body("{\"ok\":true,\"grantToken\":\"cleanup-grant\","
+                        + "\"expiresAt\":1793700120000}").build());
+        Call<PassengerPushPayloads.GrantResponse> revokeOnly =
+                client.prepareRevocationGrant(ORDER, "read-only-token",
+                        NOW + 120000, INSTALL, NOW);
+        assertNotNull(revokeOnly);
+        assertTrue(revokeOnly.execute().isSuccessful());
+        assertEquals("/api/passenger-push-grant.php",
+                server.takeRequest(2, TimeUnit.SECONDS).getPath());
+        assertNull(client.prepareRegister(false, false,
+                "cleanup-grant", NOW + 120000, "fcm-token", NOW));
+        assertEquals(1, server.getRequestCount());
+    }
+
+    @Test
     public void postDeviceAndDeleteHaveStrictBodiesAndPaths()
             throws Exception {
         PassengerPushRegistrationClient client =
