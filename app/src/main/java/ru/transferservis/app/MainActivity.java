@@ -14,7 +14,6 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import ru.transferservis.app.notifications.PassengerNotificationChannels;
 
 public final class MainActivity
         extends AppCompatActivity {
@@ -43,7 +42,6 @@ public final class MainActivity
 
         applySystemBarInsets();
         configureNavigation();
-        PassengerNotificationChannels.ensureCreated(this);
     }
 
     private void applySystemBarInsets() {
