@@ -19,7 +19,7 @@ public final class FavoriteAddressValidator {
         if (source == null) {
             return "";
         }
-        return source.replaceAll("\\s+", " ").replaceAll("^ +| +$", "");
+        return source.replaceAll(" +", " ").replaceAll("^ +| +$", "");
     }
 
     public static boolean isValidLabel(@Nullable String label) {
