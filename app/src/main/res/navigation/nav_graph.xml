@@ -29,6 +29,10 @@
 
             app:destination="@id/activeOrderFragment" />
 
+        <action
+            android:id="@+id/action_homeFragment_to_favoritesFragment"
+            app:destination="@id/favoritesFragment" />
+
     </fragment>
 
     <!-- =========================
@@ -49,6 +53,18 @@
             app:nullable="true"
             android:defaultValue="@null" />
 
+    </fragment>
+
+    <!-- FAV-02: выбор/управление адресами без сетевых запросов. -->
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="ru.transferservis.app.ui.favorites.FavoritesFragment"
+        android:label="@string/favorites_title">
+        <argument
+            android:name="favorite_target"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
     </fragment>
 
     <!-- =========================
