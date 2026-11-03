@@ -50,6 +50,10 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        // PUSH-02A: registration is forbidden in every APK until Firebase,
+        // opt-in UI, server rollout and separate approval are complete.
+        buildConfigField("boolean", "PASSENGER_PUSH_NETWORK_ENABLED", "false")
+
         testInstrumentationRunner =
             "androidx.test.runner.AndroidJUnitRunner"
     }
