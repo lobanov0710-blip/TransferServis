@@ -46,6 +46,26 @@ public final class PassengerPushRegistrationClient {
         ));
     }
 
+    /**
+     * A prior registration must be revocable even after consent/OS denial.
+     * A backend revoke-only grant scope is not yet implemented: the caller
+     * MUST use the issued grant exclusively for prepareRevoke().
+     */
+    @Nullable
+    public Call<PassengerPushPayloads.GrantResponse> prepareRevocationGrant(
+            @Nullable String orderId, @Nullable String readToken,
+            long sessionExpiry, @Nullable String installationId, long nowMillis
+    ) {
+        if (!PassengerPushRegistrationPolicy.canIssueRevocationGrant(
+                networkEnabled, orderId, readToken, sessionExpiry,
+                installationId, nowMillis)) {
+            return null;
+        }
+        return api.issueGrant(new PassengerPushPayloads.GrantRequest(
+                readToken, installationId
+        ));
+    }
+
     @Nullable
     public Call<PassengerPushPayloads.OperationResponse> prepareRegister(
             boolean consented, boolean notificationsAllowed,
