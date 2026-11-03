@@ -82,6 +82,9 @@ public final class ApiClient {
                     ApiService.class
             );
 
+    private static final PassengerPushApiService PASSENGER_PUSH_API =
+            RETROFIT.create(PassengerPushApiService.class);
+
     private ApiClient() {
         throw new IllegalStateException(
                 "Utility class"
@@ -90,5 +93,10 @@ public final class ApiClient {
 
     public static ApiService getApiService() {
         return API_SERVICE;
+    }
+
+    // This getter only returns an interface; it never performs a request.
+    public static PassengerPushApiService getPassengerPushApiService() {
+        return PASSENGER_PUSH_API;
     }
 }
