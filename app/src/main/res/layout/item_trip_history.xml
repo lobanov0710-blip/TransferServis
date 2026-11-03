@@ -130,6 +130,18 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tripRepeatButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:minHeight="48dp"
+            android:text="@string/history_repeat_route"
+            android:textAllCaps="false"
+            android:visibility="gone"
+            app:cornerRadius="12dp" />
+
         <TextView
             android:id="@+id/tripOrderId"
 
