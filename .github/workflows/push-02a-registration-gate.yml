@@ -1,0 +1,103 @@
+name: PUSH-02A passenger registration gate and mock PHP API
+
+on:
+  pull_request:
+    branches:
+      - master
+      - docs/**
+      - feature/**
+    paths:
+      - ".github/workflows/push-02a-registration-gate.yml"
+      - "app/build.gradle.kts"
+      - "app/src/main/AndroidManifest.xml"
+      - "app/src/main/java/ru/transferservis/app/notifications/**"
+      - "app/src/main/java/ru/transferservis/app/data/remote/**"
+      - "app/src/main/java/ru/transferservis/app/constants/AppConstants.java"
+      - "app/src/main/res/xml/backup_rules.xml"
+      - "app/src/main/res/xml/data_extraction_rules.xml"
+      - "app/src/test/java/ru/transferservis/app/notifications/**"
+      - "app/src/androidTest/java/ru/transferservis/app/notifications/**"
+      - "docs/PUSH_02A_REGISTRATION_GATE.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: push-02a-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-build:
+    name: Fail-closed Java policy, MockWebServer and Android debug compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests and debug assembly without FCM
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace --no-daemon
+      - name: Assert no Firebase configuration or SDK introduced
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f app/google-services.json
+          test ! -f app/src/debug/google-services.json
+          test ! -f app/src/release/google-services.json
+          grep -Fq 'buildConfigField("boolean", "PASSENGER_PUSH_NETWORK_ENABLED", "false")' app/build.gradle.kts
+          grep -Fq 'android:name="firebase_messaging_auto_init_enabled"' app/src/main/AndroidManifest.xml
+          grep -Fq 'android:value="false"' app/src/main/AndroidManifest.xml
+          echo "PASSENGER_PUSH_NETWORK_DISABLED=PASS"
+      - name: Upload unit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: push02a-unit
+          path: app/build/reports/tests/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  consent-android:
+    name: Passenger consent default and revoke on isolated API35
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Grant KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test opt-in in Android emulator without FCM network
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            chmod +x ./gradlew
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest --stacktrace --no-daemon
+      - name: Upload emulator results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: push02a-consent-android
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          retention-days: 14
+          if-no-files-found: ignore
