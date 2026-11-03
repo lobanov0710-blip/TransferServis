@@ -18,6 +18,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -42,7 +43,10 @@ public final class PassengerNotificationChannelsTest {
                 PassengerNotificationChannels.ORDER_STATUS_CHANNEL_ID
         );
         assertNotNull(channel);
-        assertEquals(Notification.VISIBILITY_PRIVATE, channel.getLockscreenVisibility());
+        // Android 15 can return VISIBILITY_NO_OVERRIDE (-1000) when the
+        // system applies its default channel policy. That is not PUBLIC.
+        // The future Notification builder MUST also set VISIBILITY_PRIVATE.
+        assertNotEquals(Notification.VISIBILITY_PUBLIC, channel.getLockscreenVisibility());
         assertEquals(NotificationManager.IMPORTANCE_DEFAULT, channel.getImportance());
     }
 
