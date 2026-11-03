@@ -18,9 +18,9 @@
 ## 2. Что реализовано именно на этапе PUSH-00
 
 1. В `AndroidManifest.xml` добавлено `POST_NOTIFICATIONS`, **без автоматического запроса** при запуске.
-2. `PassengerNotificationChannels` создаёт канал `passenger_order_status_v1` с русским названием, `IMPORTANCE_DEFAULT`, `VISIBILITY_PRIVATE`, только на Android API26+.
+2. `PassengerNotificationChannels` предоставляет создание канала `passenger_order_status_v1` с русским названием и `IMPORTANCE_DEFAULT`, запрашивает приватную видимость. Android 15 может вернуть `VISIBILITY_NO_OVERRIDE` — это системное отсутствие переопределения, не публичность. При будущей публикации уведомления сам notification builder обязан выставлять `VISIBILITY_PRIVATE`.
 3. `PassengerNotificationPermission` даёт безопасный способ проверить возможность показа уведомления с учётом Android API33+ и пользовательской блокировки канала/приложения.
-4. `MainActivity` создаёт/обновляет системный канал без публикации уведомления.
+4. Создание канала **отложено до подключения FCM и осознанного включения уведомлений**; `MainActivity` не изменён. Новые сервисы, фоновые процессы или разрешения при запуске не запрашиваются.
 5. `PassengerPushEnvelopePolicy` — строгий `version=1`, `type=passenger_order_updated`, `eventId` и `orderId` (канонические UUID), **никаких лишних полей** (телефон, текст чата, токен, адрес или статус). Принимать только event для текущего неистёкшего защищённого `sessionOrderId`. Парсер не выполняет запросы и не утверждает серверный статус.
 6. Добавлены JUnit-тесты валидации envelope и инструментальный тест канала/manifest на изолированном Android API35.
 
@@ -76,7 +76,7 @@ Event означает только «на сервере могло измен�
 | ID | Критерий | PUSH-00 |
 |---|---|---|
 | P00-T01 | JUnit filter: свой UUID, чужой order UUID, неверная версия/тип, секрет в payload | Unit-тесты добавлены, результаты CI проверять отдельно |
-| P00-T02 | Channel API35: PRIVАTE + русские ресурсы; API24 no-op без сбоя | Instrumented тест добавлен для API35; API24 отдельно перед релизом |
+| P00-T02 | Channel API35: не PUBLIC, русские ресурсы; API24 no-op без сбоя | Instrumented тест добавлен для API35; API24 отдельно перед релизом |
 | P00-T03 | POST_NOTIFICATIONS в AndroidManifest и отсутствие автоматического запроса | Code-review + instrumented |
 | P00-T04 | На отказе permission старое бронирование работает | Регрессия Android CI и отдельный E2E после подключения FCM |
 | P00-T05 | Ни один новый endpoint/FCM token/реальный push в этой ветке не появляется | Сравнение diff; no production tests |
