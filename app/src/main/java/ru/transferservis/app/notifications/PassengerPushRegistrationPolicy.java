@@ -38,6 +38,27 @@ public final class PassengerPushRegistrationPolicy {
                 && validToken(passengerReadToken, MAX_BEARER_LENGTH);
     }
 
+    /**
+     * Cleanup may be required after explicit opt-out or OS permission loss.
+     * This authorizes only preparing a grant request on the Android side.
+     * The current server grant still has passenger_push:manage scope; a
+     * revoke-only server scope is a separate design decision before release.
+     */
+    public static boolean canIssueRevocationGrant(
+            boolean networkFeatureEnabled,
+            @Nullable String activeOrderId,
+            @Nullable String passengerReadToken,
+            long sessionExpiresAtMillis,
+            @Nullable String installationId,
+            long nowMillis
+    ) {
+        return networkFeatureEnabled
+                && validTime(nowMillis, sessionExpiresAtMillis)
+                && validUuid(activeOrderId)
+                && validUuid(installationId)
+                && validToken(passengerReadToken, MAX_BEARER_LENGTH);
+    }
+
     public static boolean canRegister(
             boolean networkFeatureEnabled,
             boolean explicitConsent,
