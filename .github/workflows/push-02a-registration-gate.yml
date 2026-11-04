@@ -17,6 +17,13 @@ on:
       - "app/src/main/res/xml/data_extraction_rules.xml"
       - "app/src/test/java/ru/transferservis/app/notifications/**"
       - "app/src/androidTest/java/ru/transferservis/app/notifications/**"
+      - "app/src/main/java/ru/transferservis/app/ui/active/**"
+      - "app/src/main/java/ru/transferservis/app/data/local/PassengerOrderSessionStore.java"
+      - "app/src/main/res/layout/fragment_active_order.xml"
+      - "app/src/main/res/values/strings_active_order.xml"
+      - "app/src/test/java/ru/transferservis/app/ui/active/**"
+      - "app/src/androidTest/java/ru/transferservis/app/ui/PassengerExplicitExitUiTest.java"
+      - "docs/PUSH_02H_EXPLICIT_EXIT_UI.md"
       - "app/src/main/java/ru/transferservis/app/ui/profile/ProfileFragment.java"
       - "app/src/main/res/layout/fragment_profile.xml"
       - "app/src/main/res/values/strings.xml"
@@ -100,7 +107,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x ./gradlew
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest,ru.transferservis.app.notifications.PassengerPushInstallationStoreTest --stacktrace --no-daemon
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest,ru.transferservis.app.notifications.PassengerPushInstallationStoreTest,ru.transferservis.app.ui.PassengerExplicitExitUiTest --stacktrace --no-daemon
       - name: Upload emulator results
         if: always()
         uses: actions/upload-artifact@v4

@@ -98,4 +98,25 @@
         Не удалось получить данные поездки.
     </string>
 
+    <!-- Removing local order access is NOT a server booking cancellation. -->
+    <string name="active_order_exit_button">Убрать поездку с устройства</string>
+    <string name="active_order_exit_title">Удалить доступ к поездке?</string>
+    <string name="active_order_exit_local_warning">С устройства будут удалены данные доступа к этой поездке. Заявка на сервере останется действующей — это не отмена заказа. Отключение push-уведомлений на сервере НЕ подтверждено. После удаления вы можете потерять доступ к отслеживанию поездки.</string>
+    <string name="active_order_exit_local_confirm">Удалить только здесь</string>
+    <string name="active_order_exit_remote_title">Отключить уведомления и выйти?</string>
+    <string name="active_order_exit_remote_message">Сначала приложение запросит отключение уведомлений для этой установки на сервере. Данные доступа к поездке будут удалены только после подтверждения сервера. Заказ при этом не отменяется.</string>
+    <string name="active_order_exit_remote_confirm">Отключить и выйти</string>
+    <string name="active_order_exit_cancel">Отмена</string>
+    <string name="active_order_exit_pending">Выполняется выход…</string>
+    <string name="active_order_exit_local_success">Доступ к поездке удалён только с устройства. Заказ не отменён. Серверный отзыв push не подтверждён.</string>
+    <string name="active_order_exit_remote_success">Сервер подтвердил отзыв push-регистрации. Локальный доступ к поездке удалён.</string>
+    <string name="active_order_exit_remote_failed">Серверный отзыв push не подтверждён. Данные поездки сохранены на устройстве. Можно повторить запрос или отдельно удалить данные только с устройства.</string>
+    <string name="active_order_exit_remote_retry">Повторить запрос</string>
+    <string name="active_order_exit_session_changed">Данные поездки изменились. Новая сессия не затронута. Обновите экран.</string>
+    <string name="active_order_exit_no_session">Данные активной сессии уже отсутствуют. Заказ на сервере этим действием не отменён.</string>
+    <string name="active_order_exit_storage_failed">Не удалось изменить локальные данные. Серверный отзыв не подтверждён. Повторите действие позже.</string>
+    <string name="active_order_exit_remote_local_failed">Сервер подтвердил отзыв push, но удалить локальные данные не удалось. Проверьте текущую сессию и повторите локальную очистку.</string>
+    <string name="active_order_exit_remote_id_retained">Сервер подтвердил отзыв push и доступ к поездке удалён, но локальный идентификатор установки сохранился или изменился. Новая регистрация push требует дополнительной проверки.</string>
+    <string name="active_order_exit_remote_session_changed">Сервер подтвердил отзыв push для прежней сессии. Новая сессия не удалялась.</string>
+
 </resources>
