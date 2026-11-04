@@ -41,8 +41,9 @@ public final class PassengerPushRegistrationPolicy {
     /**
      * Cleanup may be required after explicit opt-out or OS permission loss.
      * This authorizes only preparing a grant request on the Android side.
-     * The current server grant still has passenger_push:manage scope; a
-     * revoke-only server scope is a separate design decision before release.
+     * The revoke-only backend scope exists only in a separate Draft PR.
+     * An expired read capability cannot be used to mint a new revoke grant.
+     * Until the full revoke lifecycle is verified, keep network disabled.
      */
     public static boolean canIssueRevocationGrant(
             boolean networkFeatureEnabled,
