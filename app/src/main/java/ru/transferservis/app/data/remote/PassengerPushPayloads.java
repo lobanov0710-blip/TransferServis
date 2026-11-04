@@ -15,11 +15,33 @@ public final class PassengerPushPayloads {
     public static final class GrantRequest {
         private final String accessToken;
         private final String installationId;
+        @Nullable
+        private final String operation;
 
         public GrantRequest(@NonNull String accessToken,
                             @NonNull String installationId) {
+            this(accessToken, installationId, null);
+        }
+
+        private GrantRequest(@NonNull String accessToken,
+                             @NonNull String installationId,
+                             @Nullable String operation) {
             this.accessToken = accessToken;
             this.installationId = installationId;
+            this.operation = operation;
+        }
+
+        /**
+         * Explicitly asks the PHP/Worker for passenger_push:revoke.
+         * The 2-field constructor remains manage-only for legacy use.
+         * Gson excludes the null operation in the ordinary manage request.
+         */
+        @NonNull
+        public static GrantRequest forRevocation(
+                @NonNull String accessToken,
+                @NonNull String installationId
+        ) {
+            return new GrantRequest(accessToken, installationId, "revoke");
         }
     }
 
