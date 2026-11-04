@@ -139,3 +139,13 @@
 - Старый unit-and-build с MockWebServer + Debug компиляцией не удалён: он выполняется только для PR, нацеленных на docs/** (где основной Android CI не запускается по trigger), а также при workflow_dispatch. На PR с base master/feature/** полные JVM/Debug тесты уже выполняет обязательный основной Android CI.
 - Обязательный инструментальный тест согласия на isolated Android API35 продолжает работать, режим FCM network остаётся выключенным. Не менялись Java, XML, Gradle build types, server contracts, release/signing, секреты и production.
 - Требуется проверить срабатывание нового workflow на зависимом Draft PR, правильность skip/fallback и результат API35 emulator. Без замеров на сопоставимых PR не заявлять процент ускорения.
+
+
+## 9. 04.11.2026 — SECURITY-01: Debug staging credential origin isolation
+
+- Репозиторий: TransferServis. Найденный при ревизии риск: ApiClient.createHttpClient() прежде добавлял X-Staging-Access-Token ко всем исходящим HTTP-запросам независимо от origin. В частности, вызов к стороннему URL с общим OkHttpClient получал временный credential; у нестандартных HTTP-заголовков при редиректе нет гарантии удаления при смене origin. Это возможная утечка секретного Debug staging-токена, а не утверждение о подтверждённой утечке в сети.
+- Исправлено в отдельной ветке security/staging-header-origin-guard-v1 поверх Draft PR №33. В Debug заголовок добавляется только для точного origin из BuildConfig.API_BASE_URL: схема https, равные host/port, без userinfo. При наличии Debug staging-токена клиент отключает followRedirects/followSslRedirects; HTTP 3xx ответа не следует автоматически. Release BuildConfig.DEBUG=false и staging header в Release не отправляется.
+- Обновлён DebugGatewayConfigurationTest: MockWebServer вместо прежнего ожидания передачи токена на произвольный localhost проверяет его отсутствие; проверяются точный HTTPS host/port, HTTP и чужие origin, userinfo и запрет redirect на другой MockWebServer. Не вызывается ни один реальный STAGING/production endpoint.
+- Обновлена документация STAGING_ANDROID_DEBUG.md; реальный access token и HMAC ключи не читались и не коммитились.
+- Требуется доказать успешными CI Debug и Release unit tests и isolated API35 regression; до этого исправление считается **не принято/не влито**. Ветка останется Draft; другие репозитории и production не затронуты.
+- Решение владельца: при последующем обнаружении подтверждённых уязвимостей самостоятельно исправлять в отдельных feature/security ветках, добавлять регрессионные тесты, фиксировать обнаружение, коммит, CI, остаточный риск в журнале. Слияния, production deployments, Firebase, миграции, secrets и реальные заказы по-прежнему требуют отдельного разрешения.
