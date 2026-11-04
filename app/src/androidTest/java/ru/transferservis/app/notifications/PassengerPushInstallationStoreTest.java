@@ -62,6 +62,34 @@ public final class PassengerPushInstallationStoreTest {
     }
 
     @Test
+    public void forgedCallerFlagsCannotOverrideStoredConsentOrOsPermission() {
+        prefs().edit().clear().commit();
+        try {
+            PassengerPushInstallationStore noPersistedConsent =
+                    new PassengerPushInstallationStore(app(), true,
+                            () -> false, () -> true);
+            assertNull(noPersistedConsent.getOrCreateForExplicitRegistration(true, true));
+            assertFalse(prefs().contains(KEY));
+
+            PassengerPushInstallationStore noOsPermission =
+                    new PassengerPushInstallationStore(app(), true,
+                            () -> true, () -> false);
+            assertNull(noOsPermission.getOrCreateForExplicitRegistration(true, true));
+            assertFalse(prefs().contains(KEY));
+
+            PassengerPushInstallationStore brokenOsPermission =
+                    new PassengerPushInstallationStore(app(), true,
+                            () -> true, () -> {
+                                throw new IllegalStateException("OS permission unavailable");
+                            });
+            assertNull(brokenOsPermission.getOrCreateForExplicitRegistration(true, true));
+            assertFalse(prefs().contains(KEY));
+        } finally {
+            prefs().edit().clear().commit();
+        }
+    }
+
+    @Test
     public void explicitEnrollmentCreatesStableCanonicalIdAndRevokeOnlyReadsIt() {
         prefs().edit().clear().commit();
         try {
