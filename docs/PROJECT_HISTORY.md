@@ -176,3 +176,9 @@
 - У владельца ранее создан локальный JKS: alias `transferservis_release`, публичный сертификат `03:0A:83:6C:E4:95:45:8A:EE:39:DB:63:30:E9:94:39:A4:33:82:7C:70:47:2A:07:16:67:D2:EE:1B:56:16:89`. Паролей и приватного ключа нет в удалённых системах, передавать их не требуется.
 - Для публикации нужны юридически точная app-specific privacy policy и Data safety, контент карточки, Play Console учётная запись/Play App Signing, подписанный AAB и трек. Ни один из этих шагов нельзя отмечать как выполненный без фактического результата.
 - Работа выполнена в отдельном Draft, production Worker/D1/PHP, FCM и GitHub master не изменены, STAGING только для необходимых тестов. Публикация пока не выполнена.
+
+### RELEASE-PLAY-01 — дополнительная проверка security/privacy (04.11.2026)
+
+- Предотвращена потеря уже проверенного SECURITY-01 при переходе от PR №35 к цепочке PUSH PR №38: перенесены exact-origin и запрет redirects Debug STAGING токена плюс MockWebServer тесты в release Draft PR №39; PassengerPushApiService сохранён.
+- Для сайта подготовлен [Draft PR №10](https://github.com/lobanov0710-blip/public_html/pull/10): Android-секция privacy.html. Не развернуто; юридические сведения/сроки хранения требуют проверки владельца.
+- Секреты подписи остаются на устройстве владельца. В доступном браузере нет подтверждённой сессии Play Console. Signing/upload/production публикация не выполнялись.

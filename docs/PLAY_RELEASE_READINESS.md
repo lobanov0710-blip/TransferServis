@@ -88,3 +88,9 @@ Transfer Servis — приложение для оформления индив�
 ## Финальный стоп-фактор
 
 **Нельзя утверждать «размещено в Google Play»**, пока не выполнены в Play Console реальная загрузка **подписанного AAB**, проверка владельца/прав, создание или выбор track, заполнение обязательных деклараций и подтверждение Play release status/URL. Все внешние действия записывать в журнал с фактическим ID и ссылкой, не домысливать их.
+
+## SECURITY-01 и политика для Android: дополнение к подготовке
+
+- На исходном HEAD PUSH-02H отсутствовал код защиты Debug STAGING заголовка из [PR №35](https://github.com/lobanov0710-blip/TransferServis/pull/35). Он перенесён **в эту release-ветку** (ApiClient и DebugGatewayConfigurationTest) с сохранением PassengerPushApiService. До merge сверить этот перенос с PR №35 и не удваивать изменения. Финальный CI на HEAD обязателен.
+- [public_html Draft PR №10](https://github.com/lobanov0710-blip/public_html/pull/10) добавляет раздел Android в действующую privacy.html, но пока **не слит и не развёрнут**. Перед Google Play подтвердить юридическую корректность, данные оператора, сроки хранения, публичный HTTPS URL и Data safety.
+- Наличие Google Play Console аккаунта, право публикации, подписанный локальным JKS AAB и фактический upload пока не подтверждены. Не обозначать готовую публикацию.
