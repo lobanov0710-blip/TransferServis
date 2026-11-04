@@ -22,6 +22,7 @@ on:
       - "app/src/main/res/values/strings.xml"
       - "app/src/androidTest/java/ru/transferservis/app/ui/PassengerPushConsentUiTest.java"
       - "docs/PUSH_02D_CONSENT_UI.md"
+      - "docs/PUSH_02G_INSTALLATION_IDENTITY.md"
       - "docs/PUSH_02A_REGISTRATION_GATE.md"
   workflow_dispatch:
 
@@ -58,6 +59,10 @@ jobs:
           grep -Fq 'buildConfigField("boolean", "PASSENGER_PUSH_NETWORK_ENABLED", "false")' app/build.gradle.kts
           grep -Fq 'android:name="firebase_messaging_auto_init_enabled"' app/src/main/AndroidManifest.xml
           grep -Fq 'android:value="false"' app/src/main/AndroidManifest.xml
+          # UUID must never be copied to another device via cloud restore
+          # or device-to-device transfer (both supported backup schemas).
+          grep -Fq 'passenger_push_installation_v1.xml' app/src/main/res/xml/backup_rules.xml
+          test "$(grep -Fc 'passenger_push_installation_v1.xml' app/src/main/res/xml/data_extraction_rules.xml)" -eq 2
           echo "PASSENGER_PUSH_NETWORK_DISABLED=PASS"
       - name: Upload unit reports
         if: always()
@@ -95,7 +100,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x ./gradlew
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest --stacktrace --no-daemon
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest,ru.transferservis.app.notifications.PassengerPushInstallationStoreTest --stacktrace --no-daemon
       - name: Upload emulator results
         if: always()
         uses: actions/upload-artifact@v4

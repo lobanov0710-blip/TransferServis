@@ -32,7 +32,9 @@ public final class PassengerPushSessionExitCoordinator {
         SESSION_CHANGED,
         REMOTE_NOT_CONFIRMED,
         REMOTE_REVOKED_AND_LOCAL_CLEARED,
-        REMOTE_REVOKED_BUT_SESSION_CHANGED
+        REMOTE_REVOKED_BUT_SESSION_CHANGED,
+        REMOTE_REVOKED_LOCAL_CLEAR_FAILED,
+        REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED
     }
 
     interface Sessions {
@@ -40,7 +42,14 @@ public final class PassengerPushSessionExitCoordinator {
         boolean clearIfMatches(@NonNull Session expected);
     }
 
+    interface Installations {
+        @Nullable String getExistingForRevocation();
+        boolean isCurrent(@NonNull String expectedId);
+        boolean clearAfterConfirmedRevocation(@NonNull String expectedId);
+    }
+
     private final Sessions sessions;
+    @Nullable private final Installations installations;
     private final PassengerPushRegistrationClient client;
     private final LongSupplier clock;
 
@@ -60,6 +69,21 @@ public final class PassengerPushSessionExitCoordinator {
                 return store.clearIfMatches(expected);
             }
         };
+        PassengerPushInstallationStore installationStore =
+                new PassengerPushInstallationStore(context.getApplicationContext());
+        this.installations = new Installations() {
+            @Override public String getExistingForRevocation() {
+                return installationStore.getExistingForRevocation();
+            }
+            @Override public boolean isCurrent(@NonNull String expectedId) {
+                return installationStore.isCurrent(expectedId);
+            }
+            @Override public boolean clearAfterConfirmedRevocation(
+                    @NonNull String expectedId
+            ) {
+                return installationStore.clearAfterConfirmedRevocation(expectedId);
+            }
+        };
         this.client = new PassengerPushRegistrationClient(
                 ApiClient.getPassengerPushApiService()
         );
@@ -72,15 +96,43 @@ public final class PassengerPushSessionExitCoordinator {
             @NonNull PassengerPushRegistrationClient client,
             @NonNull LongSupplier clock
     ) {
+        this(sessions, null, client, clock);
+    }
+
+    // Test-only injection verifies that the revoke path never creates an ID.
+    PassengerPushSessionExitCoordinator(
+            @NonNull Sessions sessions,
+            @Nullable Installations installations,
+            @NonNull PassengerPushRegistrationClient client,
+            @NonNull LongSupplier clock
+    ) {
         this.sessions = Objects.requireNonNull(sessions, "sessions");
+        this.installations = installations;
         this.client = Objects.requireNonNull(client, "client");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     /**
-     * The caller must hold a snapshot of the existing encrypted session and
-     * the installation ID of its prior push registration. No installation ID
-     * is generated, stored or inferred by this class.
+     * Production entry point: load an ALREADY persisted installation ID only.
+     * Missing/malformed ID -> no request and no local session clearing.
+     */
+    @NonNull
+    @WorkerThread
+    public Outcome revokeBeforeLocalExit(@Nullable Session expected) {
+        try {
+            if (expected == null) return Outcome.NO_ACTIVE_SESSION;
+            if (installations == null) return Outcome.REMOTE_NOT_CONFIRMED;
+            String existing = installations.getExistingForRevocation();
+            if (existing == null) return Outcome.REMOTE_NOT_CONFIRMED;
+            return revokeBeforeLocalExit(expected, existing);
+        } catch (RuntimeException failure) {
+            return Outcome.REMOTE_NOT_CONFIRMED;
+        }
+    }
+
+    /**
+     * Test-only/legacy narrow entry point; explicit installationId is checked
+     * against the persisted value when the production store is present.
      *
      * Neither a transport failure nor a local-only preference means that the
      * remote registration was revoked. The caller must not show a "server
@@ -88,7 +140,7 @@ public final class PassengerPushSessionExitCoordinator {
      */
     @NonNull
     @WorkerThread
-    public Outcome revokeBeforeLocalExit(
+    Outcome revokeBeforeLocalExit(
             @Nullable Session expected, @Nullable String installationId
     ) {
         if (expected == null) return Outcome.NO_ACTIVE_SESSION;
@@ -99,7 +151,11 @@ public final class PassengerPushSessionExitCoordinator {
                 // Cannot authenticate revoke with an expired read capability.
                 return Outcome.REMOTE_NOT_CONFIRMED;
             }
-            if (!sessions.isCurrent(expected)) return Outcome.SESSION_CHANGED;
+            if (!sessions.isCurrent(expected)
+                    || (installations != null
+                    && (installationId == null || !installations.isCurrent(installationId)))) {
+                return Outcome.SESSION_CHANGED;
+            }
 
             Call<PassengerPushPayloads.GrantResponse> grantCall =
                     client.prepareRevocationGrant(
@@ -123,7 +179,11 @@ public final class PassengerPushSessionExitCoordinator {
 
             // A session switch while the grant was in flight must not affect
             // the next order. This also prevents a stale remote DELETE.
-            if (!sessions.isCurrent(expected)) return Outcome.SESSION_CHANGED;
+            if (!sessions.isCurrent(expected)
+                    || (installations != null
+                    && (installationId == null || !installations.isCurrent(installationId)))) {
+                return Outcome.SESSION_CHANGED;
+            }
             now = clock.getAsLong();
             if (now <= 0L || expected.getAccessExpiresAtMillis() <= now) {
                 return Outcome.REMOTE_NOT_CONFIRMED;
@@ -146,9 +206,30 @@ public final class PassengerPushSessionExitCoordinator {
             }
 
             // clearIfMatches atomically protects a newly stored order session.
-            return sessions.clearIfMatches(expected)
-                    ? Outcome.REMOTE_REVOKED_AND_LOCAL_CLEARED
-                    : Outcome.REMOTE_REVOKED_BUT_SESSION_CHANGED;
+            // The remote DELETE is now confirmed. Local failures must not
+            // downgrade this result to an ambiguous "remote not confirmed".
+            final boolean sessionCleared;
+            try {
+                sessionCleared = sessions.clearIfMatches(expected);
+            } catch (RuntimeException localFailure) {
+                return Outcome.REMOTE_REVOKED_LOCAL_CLEAR_FAILED;
+            }
+            if (!sessionCleared) {
+                return Outcome.REMOTE_REVOKED_BUT_SESSION_CHANGED;
+            }
+            if (installations != null) {
+                try {
+                    if (installationId == null
+                            || !installations.clearAfterConfirmedRevocation(installationId)) {
+                        // A newer registration or storage failure must not be
+                        // erased; explicit re-enrollment is not yet safe.
+                        return Outcome.REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED;
+                    }
+                } catch (RuntimeException storageFailure) {
+                    return Outcome.REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED;
+                }
+            }
+            return Outcome.REMOTE_REVOKED_AND_LOCAL_CLEARED;
         } catch (IOException | RuntimeException failure) {
             // Do not log access token, grant, installation ID or response body.
             return Outcome.REMOTE_NOT_CONFIRMED;
