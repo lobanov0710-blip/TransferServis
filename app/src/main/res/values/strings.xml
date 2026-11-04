@@ -525,4 +525,16 @@
     <string name="passenger_notification_channel_title">Состояние поездки</string>
     <string name="passenger_notification_channel_description">Изменения статуса вашего заказа Transfer Servis</string>
 
+    <!-- PUSH-02D -->
+    <string name="push_consent_title">Уведомления о поездке</string>
+    <string name="push_consent_description">Здесь можно будет получать уведомления об изменениях статуса заказа. Это не влияет на бронирование.</string>
+    <string name="push_consent_enable">Включить уведомления</string>
+    <string name="push_consent_disable">Отключить уведомления</string>
+    <string name="push_consent_unavailable">Функция пока готовится. Уведомления не отправляются; разрешение Android не запрашивается.</string>
+    <string name="push_consent_off">Уведомления выключены.</string>
+    <string name="push_consent_on">Согласие сохранено на этом устройстве. Доставка требует серверного подключения.</string>
+    <string name="push_consent_permission_lost">Системные уведомления запрещены. Новые уведомления не будут показаны.</string>
+    <string name="push_consent_storage_error">Не удалось сохранить настройку уведомлений.</string>
+    <string name="push_permission_settings_unavailable">Не удалось открыть настройки уведомлений Android.</string>
+
 </resources>

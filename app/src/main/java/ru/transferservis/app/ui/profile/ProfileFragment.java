@@ -1,6 +1,12 @@
 package ru.transferservis.app.ui.profile;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,7 +14,10 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -17,7 +26,12 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import ru.transferservis.app.BuildConfig;
 import ru.transferservis.app.R;
+import ru.transferservis.app.notifications.PassengerNotificationChannels;
+import ru.transferservis.app.notifications.PassengerNotificationPermission;
+import ru.transferservis.app.notifications.PassengerPushConsentStore;
+import ru.transferservis.app.notifications.PassengerPushConsentUiPolicy;
 import ru.transferservis.app.domain.model.PassengerProfile;
 import ru.transferservis.app.domain.validation.PassengerValidator;
 
@@ -35,6 +49,28 @@ public final class ProfileFragment
     private TextView profileSaveStatus;
 
     private ProfileViewModel profileViewModel;
+
+    private PassengerPushConsentStore pushConsentStore;
+    private MaterialButton pushConsentButton;
+    private TextView pushConsentStatus;
+
+    // Запрос системного разрешения возможен только по явному действию.
+    // В текущих сборках compile-time gate=false.
+    private final ActivityResultLauncher<String> notificationsPermissionLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestPermission(),
+                    granted -> {
+                        if (!isAdded() || pushConsentStatus == null) {
+                            return;
+                        }
+                        if (granted && BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED
+                                && PassengerNotificationPermission.canDisplay(requireContext())) {
+                            savePushChoice(true);
+                        } else {
+                            renderPushChoice();
+                        }
+                    }
+            );
 
     @Nullable
     @Override
@@ -68,6 +104,8 @@ public final class ProfileFragment
         configureViewModel();
 
         configureActions();
+        pushConsentStore = new PassengerPushConsentStore(requireContext());
+        renderPushChoice();
     }
 
     private void bindViews(
@@ -103,6 +141,9 @@ public final class ProfileFragment
                 root.findViewById(
                         R.id.profileSaveStatus
                 );
+
+        pushConsentButton = root.findViewById(R.id.pushConsentButton);
+        pushConsentStatus = root.findViewById(R.id.pushConsentStatus);
     }
 
     private void configureViewModel() {
@@ -127,6 +168,96 @@ public final class ProfileFragment
         profileSaveButton.setOnClickListener(
                 view -> saveProfile()
         );
+        pushConsentButton.setOnClickListener(view -> onPushChoiceClicked());
+    }
+
+    private void onPushChoiceClicked() {
+        // До завершения серверной revoke-only логики флаг остаётся false.
+        if (!BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED || pushConsentStore == null) {
+            return;
+        }
+        if (pushConsentStore.isConsented()) {
+            // В будущей интеграции отключение должно отзывать серверную регистрацию.
+            savePushChoice(false);
+            return;
+        }
+
+        boolean granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || ContextCompat.checkSelfPermission(
+                        requireContext(), Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED;
+
+        if (PassengerPushConsentUiPolicy.shouldRequestRuntimePermission(
+                BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED,
+                true, granted, Build.VERSION.SDK_INT)) {
+            notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            return;
+        }
+        if (!PassengerNotificationPermission.canDisplay(requireContext())) {
+            openNotificationSettings();
+            return;
+        }
+        savePushChoice(true);
+    }
+
+    private void savePushChoice(boolean consented) {
+        if (!BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED || pushConsentStore == null) {
+            return;
+        }
+        try {
+            pushConsentStore.setConsented(consented);
+            if (consented) {
+                PassengerNotificationChannels.ensureCreated(requireContext());
+            }
+            renderPushChoice();
+        } catch (IllegalStateException storageError) {
+            pushConsentStatus.setText(R.string.push_consent_storage_error);
+        }
+    }
+
+    private void openNotificationSettings() {
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
+        } else {
+            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + requireContext().getPackageName()));
+        }
+        try {
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException noSettings) {
+            pushConsentStatus.setText(R.string.push_permission_settings_unavailable);
+        }
+    }
+
+    private void renderPushChoice() {
+        if (pushConsentStore == null || pushConsentButton == null || !isAdded()) {
+            return;
+        }
+        // Нельзя собирать opt-in на неработающую доставку.
+        if (!BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED) {
+            pushConsentButton.setEnabled(false);
+            pushConsentButton.setText(R.string.push_consent_enable);
+            pushConsentStatus.setText(R.string.push_consent_unavailable);
+            return;
+        }
+        boolean consented = pushConsentStore.isConsented();
+        pushConsentButton.setEnabled(true);
+        pushConsentButton.setText(consented
+                ? R.string.push_consent_disable : R.string.push_consent_enable);
+        if (!consented) {
+            pushConsentStatus.setText(R.string.push_consent_off);
+        } else {
+            pushConsentStatus.setText(PassengerNotificationPermission.canDisplay(requireContext())
+                    ? R.string.push_consent_on : R.string.push_consent_permission_lost);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        renderPushChoice();
     }
 
     private void renderProfile(
@@ -287,6 +418,9 @@ public final class ProfileFragment
 
         profileSaveStatus =
                 null;
+        pushConsentButton = null;
+        pushConsentStatus = null;
+        pushConsentStore = null;
 
         super.onDestroyView();
     }
