@@ -30,7 +30,8 @@ public final class DebugGatewayConfigurationTest {
 
     @Before
     public void debugBuildOnly() {
-        assumeTrue("Debug gateway tests run only for Debug", BuildConfig.DEBUG);
+        assumeTrue("Staging gateway tests run only for the debug build type",
+                "debug".equals(BuildConfig.BUILD_TYPE));
     }
 
     @Test
