@@ -95,7 +95,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x ./gradlew
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest --stacktrace --no-daemon
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest,ru.transferservis.app.notifications.PassengerPushInstallationStoreTest --stacktrace --no-daemon
       - name: Upload emulator results
         if: always()
         uses: actions/upload-artifact@v4
