@@ -211,7 +211,7 @@ public final class PassengerPushSessionExitCoordinatorTest {
         FakeInstallations installations = new FakeInstallations(INSTALL);
         grant200();
         server.enqueue(new MockResponse.Builder().code(503)
-                .body("{\\"ok\\":false}").build());
+                .body("{\"ok\":false}").build());
         assertEquals(PassengerPushSessionExitCoordinator.Outcome.REMOTE_NOT_CONFIRMED,
                 withInstallations(sessions, installations, true)
                         .revokeBeforeLocalExit(sessions.current));
