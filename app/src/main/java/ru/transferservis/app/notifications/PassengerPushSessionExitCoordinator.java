@@ -33,6 +33,7 @@ public final class PassengerPushSessionExitCoordinator {
         REMOTE_NOT_CONFIRMED,
         REMOTE_REVOKED_AND_LOCAL_CLEARED,
         REMOTE_REVOKED_BUT_SESSION_CHANGED,
+        REMOTE_REVOKED_LOCAL_CLEAR_FAILED,
         REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED
     }
 
@@ -205,15 +206,28 @@ public final class PassengerPushSessionExitCoordinator {
             }
 
             // clearIfMatches atomically protects a newly stored order session.
-            if (!sessions.clearIfMatches(expected)) {
+            // The remote DELETE is now confirmed. Local failures must not
+            // downgrade this result to an ambiguous "remote not confirmed".
+            final boolean sessionCleared;
+            try {
+                sessionCleared = sessions.clearIfMatches(expected);
+            } catch (RuntimeException localFailure) {
+                return Outcome.REMOTE_REVOKED_LOCAL_CLEAR_FAILED;
+            }
+            if (!sessionCleared) {
                 return Outcome.REMOTE_REVOKED_BUT_SESSION_CHANGED;
             }
-            if (installations != null
-                    && (installationId == null
-                    || !installations.clearAfterConfirmedRevocation(installationId))) {
-                // Remote deletion succeeded, but the local ID remains or has
-                // already changed. Do not claim future enrollment is ready.
-                return Outcome.REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED;
+            if (installations != null) {
+                try {
+                    if (installationId == null
+                            || !installations.clearAfterConfirmedRevocation(installationId)) {
+                        // A newer registration or storage failure must not be
+                        // erased; explicit re-enrollment is not yet safe.
+                        return Outcome.REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED;
+                    }
+                } catch (RuntimeException storageFailure) {
+                    return Outcome.REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED;
+                }
             }
             return Outcome.REMOTE_REVOKED_AND_LOCAL_CLEARED;
         } catch (IOException | RuntimeException failure) {
