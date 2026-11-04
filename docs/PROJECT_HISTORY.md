@@ -110,3 +110,23 @@
 - 04.11.2026: PUSH-02D в зависимой feature/push-02d-consent-ui от PR №29. Подготовлен раздел уведомлений на экране профиля, Java-проверка OS runtime permission для API33+ и unit/UI тесты. В реальном Debug/Release compile-time PASSENGER_PUSH_NETWORK_ENABLED=false: кнопка выключена, согласие на неработающую услугу не запрашивается и не сохраняется, канал и Firebase не активируются.
 - Обязательные блокеры до rollout: отдельная безопасная серверная revoke-only регистрация/отзыв; review цепочки PHP/Worker; раздельные Firebase Android конфигурации; сервис FCM с onNewToken и revocation; E2E и отдельное одобрение владельца. Изменять compile-time флаг до закрытия блокеров нельзя.
 - Состояние на 04.11: master, production, D1, TransferDriver, реальные заказы, подписание APK, публикация не изменены. Новая ветка не слита. Результаты проверки PUSH-02D указываются отдельно по фактическим GitHub Actions.
+
+
+## 6. 04.11.2026 — PUSH-02D CI и серверный revoke-only контракт
+
+- PUSH-02D PR №30, HEAD bcb13475b7a7915396b1896995772758a680af1c: GitHub Actions Android CI, unsigned Release Gate, MockWebServer, изолированный API35 consent/UI и регрессия FAV-03 завершены success, всего 7/7 check-runs. PR остаётся Draft поверх Android PUSH-02C №29, не merged.
+- Backend uber-v3 PUSH-01I PR №21: Draft поверх PR №20; точный operation="revoke" выпускает passenger_push:revoke, который не принимается POST-регистрацией и допустим только для DELETE. Прежняя двухпольная форма остаётся manage-only. Backend CI на проверенном HEAD d78701de завершён success.
+- PHP public_html PUSH-01I PR №9: Draft поверх PR №8. Добавлена строгая проверка операции revoke и неизменённая HMAC v2 подпись тела. PHP gateway CI на проверенном HEAD 4d67bfe завершён success. Ни один серверный PR не merged и не deployed.
+- Android PUSH-02E: отдельная зависимая ветка feature/push-02e-revoke-only-grant-client поверх PR №30; prepareRevocationGrant теперь сериализует точное поле operation="revoke" без клиентского orderId. Добавлен MockWebServer HTTP body test; состояние CI для нового PR фиксировать только после завершения соответствующих GitHub Actions.
+- Ограничения перед real FCM: общий лимит выдачи grant (5 за 60 с) может задержать revoke; истёкшая read-сессия не допускает выдачи revoke; lifecycle/retention и повторный opt-in не согласованы. Требуются отдельная безопасная интеграция, тестирование PHP→Worker на обновлённых кодах, Firebase setup, E2E и разрешение владельца. Feature gate PASSENGER_PUSH_NETWORK_ENABLED=false остаётся неизменным.
+- Не затронуты: Android master, uber-v3 main, public_html main, production D1/Worker/PHP, реальные заказы, FCM, водительское приложение, подписание/публикация APK.
+
+## 7. 04.11.2026 — PUSH-02E приёмка и PUSH-01J приоритет отзыва
+
+- Android PUSH-02E PR №31 (https://github.com/lobanov0710-blip/TransferServis/pull/31), проверенный HEAD 2ab2ab153ee5b65d18eb12aa29483b41845b85e8: все 6/6 checks на этом SHA завершились success (двойные Android Debug/unsigned Release, MockWebServer, API35 consent/UI). Ранее найденный compile error ByteString.readUtf8() исправлен на ByteString.utf8(); результаты старого SHA не считать результатом финальной версии.
+- Backend PUSH-01I (uber-v3 PR №21) и PHP PUSH-01I (public_html PR №9) прошли свои CI, но продолжают оставаться Draft.
+- Backend PUSH-01J PR №22 (https://github.com/lobanov0710-blip/uber-v3/pull/22), проверенный HEAD 49449ffcce1fca2ed9b7c1aa02595605edbf5313: 3/3 GitHub checks success (backend, PHP HMAC→Worker→SQLite и локальный PHP HTTP/cURL→Worker Router→SQLite). Один из пяти грантов за 60 секунд зарезервирован для revoke после четырёх manage. Общий максимум 5 не изменён, новой D1 migration нет.
+- Отзыв при истёкшей passenger read capability по-прежнему закрыт: нельзя выпускать grant без действующей авторизации. Local HTTP E2E проверил отказ 403. Cleanup-функция ещё не включена по расписанию; до FCM необходимы eligibility на отправке, retention, maintenance и политика восстановления.
+- STAGING только при необходимости тестов; проверки прошли без удалённой staging/production D1. Production основной продукт; реальных секретов/заказов/FCM нет.
+- Все указанные PR остаются Draft и не объединены. Android master, backend main, сайт main, production PHP/Worker/D1 и signed Release APK не затронуты.
+- Следующий блокер: отдельный серверный lifecycle/eligibility для истёкшей регистрации, terminal order и недоступной D1; затем Firebase rollout и UX повторного согласия. Нельзя показывать статус «отключено на сервере» без подтверждённого ответа.

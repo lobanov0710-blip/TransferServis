@@ -64,6 +64,8 @@ public final class PassengerPushRegistrationClientTest {
                 new PassengerPushRegistrationClient(api);
         assertNull(client.prepareGrant(true, true, ORDER,
                 "read-token", NOW + 120000, INSTALL, NOW));
+        assertNull(client.prepareRevocationGrant(ORDER, "read-token",
+                NOW + 120000, INSTALL, NOW));
         assertNull(client.prepareRegister(true, true,
                 "grant-token", NOW + 120000, "fcm-token", NOW));
         assertNull(client.prepareRevoke("grant-token",
@@ -135,8 +137,19 @@ public final class PassengerPushRegistrationClientTest {
                         NOW + 120000, INSTALL, NOW);
         assertNotNull(revokeOnly);
         assertTrue(revokeOnly.execute().isSuccessful());
+        RecordedRequest revokeGrantRequest = server.takeRequest(2, TimeUnit.SECONDS);
+        assertNotNull(revokeGrantRequest);
         assertEquals("/api/passenger-push-grant.php",
-                server.takeRequest(2, TimeUnit.SECONDS).getUrl().encodedPath());
+                revokeGrantRequest.getUrl().encodedPath());
+        assertEquals("POST", revokeGrantRequest.getMethod());
+        JsonObject body = JsonParser.parseString(
+                revokeGrantRequest.getBody().utf8()).getAsJsonObject();
+        assertEquals(3, body.size());
+        assertEquals("revoke", body.get("operation").getAsString());
+        assertEquals("read-only-token", body.get("accessToken").getAsString());
+        assertEquals(INSTALL, body.get("installationId").getAsString());
+        assertFalse(body.has("orderId"));
+        assertFalse(body.has("fcmToken"));
         assertNull(client.prepareRegister(false, false,
                 "cleanup-grant", NOW + 120000, "fcm-token", NOW));
         assertEquals(1, server.getRequestCount());
