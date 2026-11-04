@@ -12,6 +12,7 @@ import static org.junit.Assume.assumeTrue;
 
 import java.io.IOException;
 
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -55,13 +56,54 @@ public final class DebugGatewayConfigurationTest {
     }
 
     @Test
-    public void debugClientAddsOnlyTemporaryStagingHeader() throws Exception {
-        // Токен фиктивный: он не используется в staging и не попадает в рабочие логи.
+    public void debugClientDoesNotSendStagingSecretToLocalHttp() throws Exception {
+        // The old unguarded interceptor attached the credential to this
+        // unrelated MockWebServer request. It must now fail closed.
         RecordedRequest request = requestWithToken("unit-test-staging-token");
-        assertEquals("unit-test-staging-token",
-                request.getHeaders().get("X-Staging-Access-Token"));
+        assertNull(request.getHeaders().get("X-Staging-Access-Token"));
         assertNull(request.getHeaders().get("X-Proxy-Signature"));
         assertNull(request.getHeaders().get("X-Proxy-Timestamp"));
+    }
+
+    @Test
+    public void debugCredentialIsRestrictedToExactHttpsOrigin() {
+        HttpUrl configured = HttpUrl.get(AppConstants.API_BASE_URL);
+        assertTrue(ApiClient.isApprovedStagingOrigin(configured));
+        assertTrue(ApiClient.isApprovedStagingOrigin(
+                configured.newBuilder().addPathSegment("api").build()));
+        assertFalse(ApiClient.isApprovedStagingOrigin(
+                configured.newBuilder().scheme("http").build()));
+        assertFalse(ApiClient.isApprovedStagingOrigin(
+                configured.newBuilder().host("other-staging.example").build()));
+        assertFalse(ApiClient.isApprovedStagingOrigin(
+                configured.newBuilder().host(configured.host() + ".evil.example").build()));
+        assertFalse(ApiClient.isApprovedStagingOrigin(
+                configured.newBuilder().port(8443).build()));
+        assertFalse(ApiClient.isApprovedStagingOrigin(
+                configured.newBuilder().username("untrusted").build()));
+    }
+
+    @Test
+    public void clientWithDebugCredentialNeverFollowsRedirect() throws Exception {
+        MockWebServer first = new MockWebServer();
+        MockWebServer destination = new MockWebServer();
+        first.start();
+        destination.start();
+        try {
+            first.enqueue(new MockResponse.Builder().code(302)
+                    .addHeader("Location", destination.url("/other").toString())
+                    .build());
+            OkHttpClient client = ApiClient.createHttpClient("unit-test-staging-token");
+            try (Response response = client.newCall(new Request.Builder()
+                    .url(first.url("/api/calculate.php")).get().build()).execute()) {
+                assertEquals(302, response.code());
+            }
+            assertEquals(1, first.getRequestCount());
+            assertEquals(0, destination.getRequestCount());
+        } finally {
+            first.close();
+            destination.close();
+        }
     }
 
     @Test
