@@ -1,6 +1,7 @@
 package ru.transferservis.app.ui.profile;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -53,6 +55,7 @@ public final class ProfileFragment
     private PassengerPushConsentStore pushConsentStore;
     private MaterialButton pushConsentButton;
     private TextView pushConsentStatus;
+    private MaterialButton privacyPolicyButton;
 
     // Запрос системного разрешения возможен только по явному действию.
     // В текущих сборках compile-time gate=false.
@@ -144,6 +147,7 @@ public final class ProfileFragment
 
         pushConsentButton = root.findViewById(R.id.pushConsentButton);
         pushConsentStatus = root.findViewById(R.id.pushConsentStatus);
+        privacyPolicyButton = root.findViewById(R.id.profilePrivacyPolicyButton);
     }
 
     private void configureViewModel() {
@@ -169,6 +173,19 @@ public final class ProfileFragment
                 view -> saveProfile()
         );
         pushConsentButton.setOnClickListener(view -> onPushChoiceClicked());
+        privacyPolicyButton.setOnClickListener(view -> openPrivacyPolicy());
+    }
+
+    private void openPrivacyPolicy() {
+        // No passenger access, HMAC, phone, or order ID leaves the app.
+        Intent intent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse(getString(R.string.profile_privacy_policy_url)));
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException unableToOpen) {
+            Toast.makeText(requireContext(),
+                    R.string.profile_privacy_policy_unavailable, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void onPushChoiceClicked() {
@@ -420,6 +437,7 @@ public final class ProfileFragment
                 null;
         pushConsentButton = null;
         pushConsentStatus = null;
+        privacyPolicyButton = null;
         pushConsentStore = null;
 
         super.onDestroyView();
