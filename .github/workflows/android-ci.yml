@@ -2,22 +2,25 @@ name: Android CI
 
 on:
   push:
+    # Feature/fix branches already get a PR run. Avoid duplicate push runs.
     branches:
       - master
-      - feature/**
-      - fix/**
   pull_request:
+    # Release validation is re-enabled when a draft becomes ready to merge.
+    types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft]
     branches:
       - master
       # Проверяем также черновики PR в рабочих ветках до слияния.
       - feature/**
       - fix/**
+  # Explicit full pipeline is available on demand, including for draft branches.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-ci-${{ github.ref }}
+  group: android-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -41,17 +44,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
-
-      - name: Run Android lint
-        run: ./gradlew :app:lintDebug --stacktrace
-
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
-
-      - name: Compile Android instrumentation tests
-        run: ./gradlew :app:assembleDebugAndroidTest --stacktrace
+      - name: Test, lint, assemble debug APK and instrumentation tests
+        # One Gradle invocation de-duplicates shared task dependencies.
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
 
       - name: Upload test and lint reports
         if: always()
@@ -75,6 +70,9 @@ jobs:
           retention-days: 14
   release_gate:
     name: Unsigned Release verification (no publishing)
+    # Draft PRs are not mergeable; run full Release verification once ready,
+    # on default-branch pushes, or via explicit manual dispatch.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:
@@ -93,14 +91,8 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Run Release unit tests
-        run: ./gradlew :app:testReleaseUnitTest --stacktrace
-
-      - name: Run Release lint
-        run: ./gradlew :app:lintRelease --stacktrace
-
-      - name: Build unsigned Release APK
-        run: ./gradlew :app:assembleRelease --stacktrace
+      - name: Run Release tests, lint and build unsigned APK
+        run: ./gradlew :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease --stacktrace
 
       - name: Assert Release APK is present and NOT signed
         shell: bash
