@@ -22,6 +22,7 @@ on:
       - "app/src/main/res/values/strings.xml"
       - "app/src/androidTest/java/ru/transferservis/app/ui/PassengerPushConsentUiTest.java"
       - "docs/PUSH_02D_CONSENT_UI.md"
+      - "docs/PUSH_02G_INSTALLATION_IDENTITY.md"
       - "docs/PUSH_02A_REGISTRATION_GATE.md"
   workflow_dispatch:
 
