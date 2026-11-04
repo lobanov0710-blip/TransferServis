@@ -99,3 +99,14 @@
 5. Приоритет — **проверка недостающего факта**, а не новый рефакторинг того, что уже существует.
 
 **Сверка источников:** GitHub REST history всех PR `TransferServis`, `uber-v3`, `public_html` от 30.10.2026; [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [VALIDATION.md](VALIDATION.md), [STAGING_ANDROID_DEBUG.md](STAGING_ANDROID_DEBUG.md), [RELEASE_SIGNING.md](RELEASE_SIGNING.md), [UI_02_HOME_QUOTE.md](UI_02_HOME_QUOTE.md), [API_CONTRACT_V1.md](https://github.com/lobanov0710-blip/uber-v3/blob/main/docs/API_CONTRACT_V1.md), технические аудиты от 17 и 21 октября.
+
+
+## 5. Сверка 04.11.2026 — актуальные FAV/PUSH
+
+Эта запись дополняет историческую сверку 30.10.2026. Статусы master, Draft PR, CI и production не отождествлять.
+
+- 03.11.2026: спецификация пассажирского приложения вариант Б v0.2 объединена в master. Android FAV-01 / FAV-02 / FAV-03 объединены через PR №22, №23, №24. Последний проверенный master SHA: 43abdc8f24eb3bd77140a1b684357d9e34df2aaf. Избранные адреса и повтор завершённой поездки реализованы; отдельное сохранение пар маршрутов не подтверждено.
+- 03.11.2026: PUSH-00 / PUSH-02 docs / PUSH-02A / PUSH-02B / PUSH-02C — Draft PR №25→№26→№27→№28→№29 (зависимые ветки). На HEAD PR №29 f9d6de0 Android CI и PUSH-02A CI завершились success. Никакого production FCM, Firebase SDK или регистрации пассажира пока нет.
+- 04.11.2026: PUSH-02D в зависимой feature/push-02d-consent-ui от PR №29. Подготовлен раздел уведомлений на экране профиля, Java-проверка OS runtime permission для API33+ и unit/UI тесты. В реальном Debug/Release compile-time PASSENGER_PUSH_NETWORK_ENABLED=false: кнопка выключена, согласие на неработающую услугу не запрашивается и не сохраняется, канал и Firebase не активируются.
+- Обязательные блокеры до rollout: отдельная безопасная серверная revoke-only регистрация/отзыв; review цепочки PHP/Worker; раздельные Firebase Android конфигурации; сервис FCM с onNewToken и revocation; E2E и отдельное одобрение владельца. Изменять compile-time флаг до закрытия блокеров нельзя.
+- Состояние на 04.11: master, production, D1, TransferDriver, реальные заказы, подписание APK, публикация не изменены. Новая ветка не слита. Результаты проверки PUSH-02D указываются отдельно по фактическим GitHub Actions.

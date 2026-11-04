@@ -17,6 +17,11 @@ on:
       - "app/src/main/res/xml/data_extraction_rules.xml"
       - "app/src/test/java/ru/transferservis/app/notifications/**"
       - "app/src/androidTest/java/ru/transferservis/app/notifications/**"
+      - "app/src/main/java/ru/transferservis/app/ui/profile/ProfileFragment.java"
+      - "app/src/main/res/layout/fragment_profile.xml"
+      - "app/src/main/res/values/strings.xml"
+      - "app/src/androidTest/java/ru/transferservis/app/ui/PassengerPushConsentUiTest.java"
+      - "docs/PUSH_02D_CONSENT_UI.md"
       - "docs/PUSH_02A_REGISTRATION_GATE.md"
   workflow_dispatch:
 
@@ -64,7 +69,7 @@ jobs:
           if-no-files-found: ignore
 
   consent-android:
-    name: Passenger consent default and revoke on isolated API35
+    name: Passenger consent store and guarded UI on isolated API35
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -79,7 +84,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Test opt-in in Android emulator without FCM network
+      - name: Test consent store and blocked profile UI without FCM network
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -90,7 +95,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x ./gradlew
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest --stacktrace --no-daemon
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.notifications.PassengerPushConsentStoreTest,ru.transferservis.app.ui.PassengerPushConsentUiTest --stacktrace --no-daemon
       - name: Upload emulator results
         if: always()
         uses: actions/upload-artifact@v4
