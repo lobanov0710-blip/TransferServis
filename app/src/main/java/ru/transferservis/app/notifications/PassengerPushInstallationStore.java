@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
 import ru.transferservis.app.BuildConfig;
@@ -28,17 +29,30 @@ public final class PassengerPushInstallationStore {
 
     private final SharedPreferences preferences;
     private final boolean networkEnabled;
+    private final BooleanSupplier storedConsent;
+    private final BooleanSupplier osPermission;
 
     public PassengerPushInstallationStore(@NonNull Context context) {
-        this(context, BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED);
+        this(context, BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED,
+                new PassengerPushConsentStore(context)::isConsented,
+                () -> PassengerNotificationPermission.canDisplay(
+                        context.getApplicationContext()));
     }
 
-    // Package-private isolated Android test hook: never used from production UI.
+    // Package-private isolated Android test hooks: never used from production UI.
     PassengerPushInstallationStore(@NonNull Context context, boolean networkEnabled) {
+        this(context, networkEnabled, () -> true, () -> true);
+    }
+
+    PassengerPushInstallationStore(@NonNull Context context, boolean networkEnabled,
+                                    @NonNull BooleanSupplier storedConsent,
+                                    @NonNull BooleanSupplier osPermission) {
         preferences = context.getApplicationContext().getSharedPreferences(
                 PREFS, Context.MODE_PRIVATE
         );
         this.networkEnabled = networkEnabled;
+        this.storedConsent = storedConsent;
+        this.osPermission = osPermission;
     }
 
     /**
@@ -63,6 +77,15 @@ public final class PassengerPushInstallationStore {
             boolean userConsented, boolean notificationsAllowed
     ) {
         if (!networkEnabled || !userConsented || !notificationsAllowed) {
+            return null;
+        }
+        try {
+            // Call-site booleans are not authorization: the actual persisted
+            // consent and OS notification setting must independently agree.
+            if (!storedConsent.getAsBoolean() || !osPermission.getAsBoolean()) {
+                return null;
+            }
+        } catch (RuntimeException invalidPermissionState) {
             return null;
         }
         synchronized (LOCK) {
