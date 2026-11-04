@@ -98,8 +98,14 @@ public final class PassengerSessionExitAction {
             // Until the separate release approval, never initiate HTTP.
             if (!remoteEnabled) return Outcome.REMOTE_NOT_CONFIRMED;
 
-            PassengerPushSessionExitCoordinator.Outcome remote =
-                    revoker.revoke(session);
+            final PassengerPushSessionExitCoordinator.Outcome remote;
+            try {
+                remote = revoker.revoke(session);
+            } catch (RuntimeException remoteFailure) {
+                // A transport or protocol exception is never proof that
+                // backend revoke succeeded. Preserve the local session.
+                return Outcome.REMOTE_NOT_CONFIRMED;
+            }
             switch (remote) {
                 case REMOTE_REVOKED_AND_LOCAL_CLEARED:
                     return Outcome.REMOTE_CONFIRMED_AND_CLEARED;
