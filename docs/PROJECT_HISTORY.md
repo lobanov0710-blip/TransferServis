@@ -130,3 +130,12 @@
 - STAGING только при необходимости тестов; проверки прошли без удалённой staging/production D1. Production основной продукт; реальных секретов/заказов/FCM нет.
 - Все указанные PR остаются Draft и не объединены. Android master, backend main, сайт main, production PHP/Worker/D1 и signed Release APK не затронуты.
 - Следующий блокер: отдельный серверный lifecycle/eligibility для истёкшей регистрации, terminal order и недоступной D1; затем Firebase rollout и UX повторного согласия. Нельзя показывать статус «отключено на сервере» без подтверждённого ответа.
+
+## 8. 04.11.2026 — CI-SPEED-02: устранение дублирующейся PUSH-02A сборки
+
+- Репозиторий TransferServis. Зависимая ветка ci/push-02a-no-duplicate-build-v1 создана строго от PUSH-02E PR №31 (HEAD c07efef40502439aa5e3f131ae0e2972b32f56db). Не сливать до согласования и прохождения CI. Независимая оптимизация основного Android CI находится в Draft PR №32 (ci/android-build-speed-v1), её коммиты сюда не копировались.
+- Факт до изменения: PUSH-02A unit-and-build повторял testDebugUnitTest и assembleDebug из основного Android CI. При последней проверке PR №31 его job выполнялся 135 сек, а отдельный API35 emulator job — 218 сек (оба параллельны); поэтому выигрыш во времени всей PR-проверки не гарантируется.
+- Новый лёгкий job policy запускается при любом срабатывании PUSH-02A: отсутствие google-services.json, сохранение PASSENGER_PUSH_NETWORK_ENABLED=false, auto-init=false, отсутствие явной Firebase-зависимости/плагина в Gradle-файлах. Доступа к Firebase, production Worker/D1/заказам не создаётся.
+- Старый unit-and-build с MockWebServer + Debug компиляцией не удалён: он выполняется только для PR, нацеленных на docs/** (где основной Android CI не запускается по trigger), а также при workflow_dispatch. На PR с base master/feature/** полные JVM/Debug тесты уже выполняет обязательный основной Android CI.
+- Обязательный инструментальный тест согласия на isolated Android API35 продолжает работать, режим FCM network остаётся выключенным. Не менялись Java, XML, Gradle build types, server contracts, release/signing, секреты и production.
+- Требуется проверить срабатывание нового workflow на зависимом Draft PR, правильность skip/fallback и результат API35 emulator. Без замеров на сопоставимых PR не заявлять процент ускорения.
