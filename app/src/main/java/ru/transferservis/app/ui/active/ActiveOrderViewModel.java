@@ -84,6 +84,13 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
         requests.clearActiveOrder();
     }
 
+    // Only the non-secret order ID is exposed to the exit screen; the
+    // worker re-reads and atomically checks the encrypted session at use.
+    @Nullable
+    public String getSessionOrderIdForExit() {
+        return requests.getSessionOrderIdForExit();
+    }
+
     @Override
     protected void onCleared() {
         requests.close();
@@ -235,6 +242,12 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
                     && session.getOrderId().equals(other.getOrderId())
                     && session.getAccessToken().equals(other.getAccessToken())
                     && session.getAccessExpiresAtMillis() == other.getAccessExpiresAtMillis();
+        }
+
+        @Nullable
+        String getSessionOrderIdForExit() {
+            Session session = requestedSession;
+            return session == null ? null : session.getOrderId();
         }
 
         public void refresh() {
