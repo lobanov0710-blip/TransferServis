@@ -38,7 +38,7 @@ transferStagingAccessToken=TEMPORARY_STAGING_ONLY_TOKEN
 
 - Код Android не переводился с Java на Kotlin.
 - Retrofit-контракт, модель заказа, защищённое хранилище Keystore/AES-GCM и механизм восстановления заявки не переписаны.
-- HTTP-тест с MockWebServer проверяет заголовок `X-Staging-Access-Token` и отсутствие HMAC-заголовков Worker.
+- SECURITY-01 (04.11.2026): HTTP-тесты с MockWebServer теперь проверяют, что `X-Staging-Access-Token` **не отправляется** на локальный HTTP/чужой origin, а HTTPS staging определяется строго по схеме, точному имени хоста и порту. Debug-клиент с временным токеном **не следует HTTP 3xx-редиректам**: приложение не должно пересылать секрет на сторонний сервер. Положительный доступ к staging остаётся возможным только при точном HTTPS origin; HMAC-заголовки Worker не формируются на Android.
 - CI выполняет unit-тесты, Lint, сборку debug APK и компиляцию Android instrumentation APK. Сам эмулятор CI не запускает.
 
 ## Результаты ручных E2E-проверок (27.10.2026)
