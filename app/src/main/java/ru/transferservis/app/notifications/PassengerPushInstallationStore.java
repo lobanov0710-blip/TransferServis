@@ -35,8 +35,12 @@ public final class PassengerPushInstallationStore {
     public PassengerPushInstallationStore(@NonNull Context context) {
         this(context, BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED,
                 new PassengerPushConsentStore(context)::isConsented,
-                () -> PassengerNotificationPermission.canDisplay(
-                        context.getApplicationContext()));
+                osPermissionChecker(context));
+    }
+
+    private static BooleanSupplier osPermissionChecker(@NonNull Context context) {
+        Context app = context.getApplicationContext();
+        return () -> PassengerNotificationPermission.canDisplay(app);
     }
 
     // Package-private isolated Android test hooks: never used from production UI.
