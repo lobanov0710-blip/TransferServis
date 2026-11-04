@@ -88,3 +88,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-release-apk
 - [ ] Production-сценарии проверены только после отдельного согласования; релизная подпись не означает разрешения публиковать APK.
 
 **Этот PR не меняет `app/build.gradle.kts`, gradle signingConfig, существующий Android CI и Release API**. Дополнительно создаётся отдельный `.github/workflows/release-preflight-windows.yml`: он собирает **неподписанный** Release APK на Windows, проверяет PowerShell-скрипт и его отказ работать в режиме Signed без SHA-256 сертификата. Никаких приватных keystore, паролей, signed APK или публикации в этой проверке нет. Успех этого Windows CI подтверждает только unsigned-ветку скрипта; локальное подписание владельцем и signed preflight остаются отдельным этапом.
+
+
+## RELEASE-PLAY-01 — Google Play App Bundle (04.11.2026)
+
+Для Google Play использовать **подписанный AAB**, не проверенный ранее неподписанный APK. Проверка: `.\scripts\verify-play-aab.ps1 -Mode Signed -BundlePath '<путь к AAB>' -ExpectedCertificateSha256 '<публичный SHA-256 сертификата из этого документа>'`. Никогда не передавать пароль и JKS в GitHub / чат; подписывать локально в Android Studio через **Build → Generate Signed Bundle / APK → Android App Bundle** с уже существующим `TransferServis-release.jks`.
+
+`scripts/verify-play-aab.ps1 -Mode Unsigned` и GitHub Actions `play-aab-preflight.yml` проверяют неподписанный bundle без доступа к ключам. Детальный порядок зависимых PR, требований Play App Signing, Data safety, privacy policy, production access и публикации — `docs/PLAY_RELEASE_READINESS.md`. Проверенная техническая сборка AAB **не означает**, что AAB подписан, загружен или опубликован.

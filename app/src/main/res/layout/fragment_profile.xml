@@ -324,6 +324,18 @@
 
                     android:textSize="14sp" />
 
+                <!-- Google Play requires a privacy policy link inside the app. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/profilePrivacyPolicyButton"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:layout_marginTop="18dp"
+                    android:text="@string/profile_privacy_policy_open"
+                    android:textAllCaps="false"
+                    app:cornerRadius="14dp" />
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>

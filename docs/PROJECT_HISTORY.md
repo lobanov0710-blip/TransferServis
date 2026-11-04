@@ -164,3 +164,21 @@
 - Новые `PassengerSessionExitActionTest` (JVM) и `PassengerExplicitExitUiTest` (API35 изолированный эмулятор). Workflow расширен; конечный PASS требуется подтвердить на последнем SHA.
 - **Остаточный риск:** автоматические сбросы сессии (expired/malformed, legacy `clearActiveOrder`) по-прежнему не равны remote revoke. По этой причине флаг FCM остаётся выключенным. `installationId` после local-only удаления сохраняется; проблема устаревших серверных записей требует утверждённых TTL/maintenance и/или авторизованного revoke.
 - Production — основной продукт. STAGING только для необходимых тестов. Изменения в рабочей feature ветке, не в `TransferServis/master`; live Worker/PHP/D1/FCM, заказы и APK не затронуты.
+
+
+## 11. 04.11.2026 — RELEASE-PLAY-01: подготовка слияния, AAB и Google Play (Draft)
+
+- Запрошены подготовка объединения Android Transfer Servis, подпись существующим `TransferServis-release.jks` и размещение в Google Play. В работе только пассажирское приложение `ru.transferservis.app`; `TransferDriver` не затрагивается.
+- Отдельная ветка `release/google-play-01-aab-preflight` поверх Android PUSH-02H PR №38; документация `docs/PLAY_RELEASE_READINESS.md`, тесты `scripts/verify-play-aab.ps1`, `.github/workflows/play-aab-preflight.yml`. Release configuration: versionCode 1 / versionName 1.0, API37, production PHP API, push network=false.
+- Добавлена самостоятельная **неподписанная** `bundleRelease` проверка структуры AAB, SHA-256 и конфигурации релиза. Signed mode требует публичный pinned certificate SHA-256, вызывает jarsigner/keytool и не принимает подпись другого сертификата. CI не получает JKS/пароли, не подписывает, не загружает AAB и не обращается в Play Console.
+- В Profile добавлена ссылка на существующую политику `https://transfer-servis52.ru/privacy.html`; фактическую live-доступность и app-specific полноту политики необходимо отдельно подтвердить. Сайт `public_html/main/privacy.html` на дату аудита описывал преимущественно сайт.
+- Цепочка Android PUSH PR №25–31 и №36–38 **не объединена**; SECURITY-01 PR №35 отдельно от ветки PUSH. Нельзя начинать подпись до интегрированного master CI, применения security fix, проверки Android release test и утверждения версии/Play account/track.
+- У владельца ранее создан локальный JKS: alias `transferservis_release`, публичный сертификат `03:0A:83:6C:E4:95:45:8A:EE:39:DB:63:30:E9:94:39:A4:33:82:7C:70:47:2A:07:16:67:D2:EE:1B:56:16:89`. Паролей и приватного ключа нет в удалённых системах, передавать их не требуется.
+- Для публикации нужны юридически точная app-specific privacy policy и Data safety, контент карточки, Play Console учётная запись/Play App Signing, подписанный AAB и трек. Ни один из этих шагов нельзя отмечать как выполненный без фактического результата.
+- Работа выполнена в отдельном Draft, production Worker/D1/PHP, FCM и GitHub master не изменены, STAGING только для необходимых тестов. Публикация пока не выполнена.
+
+### RELEASE-PLAY-01 — дополнительная проверка security/privacy (04.11.2026)
+
+- Предотвращена потеря уже проверенного SECURITY-01 при переходе от PR №35 к цепочке PUSH PR №38: перенесены exact-origin и запрет redirects Debug STAGING токена плюс MockWebServer тесты в release Draft PR №39; PassengerPushApiService сохранён.
+- Для сайта подготовлен [Draft PR №10](https://github.com/lobanov0710-blip/public_html/pull/10): Android-секция privacy.html. Не развернуто; юридические сведения/сроки хранения требуют проверки владельца.
+- Секреты подписи остаются на устройстве владельца. В доступном браузере нет подтверждённой сессии Play Console. Signing/upload/production публикация не выполнялись.
