@@ -402,6 +402,10 @@
         Укажите номер с +7 или 8 (всего 11 цифр).
     </string>
 
+    <string name="profile_privacy_policy_open">Политика конфиденциальности</string>
+    <string name="profile_privacy_policy_url" translatable="false">https://transfer-servis52.ru/privacy.html</string>
+    <string name="profile_privacy_policy_unavailable">Не удалось открыть страницу политики конфиденциальности. Проверьте браузер и подключение к интернету.</string>
+
     <string name="profile_privacy_note">
         Имя и телефон сохраняются локально в данных приложения и используются для автозаполнения формы поездки.
     </string>
