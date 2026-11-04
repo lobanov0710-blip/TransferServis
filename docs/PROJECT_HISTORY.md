@@ -130,3 +130,13 @@
 - STAGING только при необходимости тестов; проверки прошли без удалённой staging/production D1. Production основной продукт; реальных секретов/заказов/FCM нет.
 - Все указанные PR остаются Draft и не объединены. Android master, backend main, сайт main, production PHP/Worker/D1 и signed Release APK не затронуты.
 - Следующий блокер: отдельный серверный lifecycle/eligibility для истёкшей регистрации, terminal order и недоступной D1; затем Firebase rollout и UX повторного согласия. Нельзя показывать статус «отключено на сервере» без подтверждённого ответа.
+
+
+## 8. 04.11.2026 — PUSH-02F: подготовлен безопасный отзыв перед локальным выходом
+
+- Android: отдельная ветка `feature/push-02f-session-exit-revoke-guard` поверх PUSH-02E PR №31. `PassengerPushSessionExitCoordinator` — только **подготовленный** Java/Retrofit протокол, к UI не подключён и не может выполнять запросы при действующем compile-time `PASSENGER_PUSH_NETWORK_ENABLED=false`.
+- Порядок будущего явного выхода: проверка текущей encrypted Session → scoped `operation=revoke` grant → подтверждённый серверный DELETE `/passenger-push-device.php` → `PassengerOrderSessionStore.clearIfMatches(expected)`. Только два успешных ответа `ok=true` дают результат `REMOTE_REVOKED_AND_LOCAL_CLEARED`; неуспешные/просроченные/неверные ответы не очищают сессию и не заявляют серверный успех.
+- Безопасность: при смене сессии во время сети старая операция никогда не удаляет новую; доступ в API ограничен уже существующим scope/installationId, не добавлены bearer credential storage, фоновые повторы, Firebase, установка токенов, обход истёкшего read-JWT.
+- `PassengerPushSessionExitCoordinatorTest` использует MockWebServer (только localhost), покрывает disabled network, отсутствие/истечение сессии, чужой installationId, 503, отсутствие `ok=true`, гонки после grant/DELETE. Полный результат CI фиксировать по итоговому SHA и **не объявлять PASS до реального завершения**.
+- Критический остаточный блокер: существующие локальные пути `ActiveOrderViewModel.clearActiveOrder()` и очистка истёкшей session **не отзывают серверный push**. Нет утверждённого logout UI, installationId store, политики offline/manual local-only exit; до их доработки FCM network flag оставлять false. Read-token после exp не допускает новый grant, серверный read-bound TTL (backend PR №26) и bounded cleanup (backend PR №25) ещё Draft.
+- `docs/PUSH_02F_SESSION_EXIT_REVOKE.md` — схема, тесты и нерешённые ограничения. Production основной, STAGING только необходимые тесты. Никаких merges, D1/Worker/PHP deploy, реальных заказов, Firebase или APK signing.
