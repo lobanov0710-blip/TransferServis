@@ -395,7 +395,13 @@ public final class PassengerOrderSessionStore {
             if (!matches(loadLocked(), expected)) {
                 return false;
             }
-            clearLocked();
+            // Logout must not return success until the encrypted token has
+            // been durably removed. apply() would report success before disk
+            // persistence and could restore access after a process crash.
+            if (!preferences.edit().clear().commit()) {
+                throw new IllegalStateException(
+                        "Unable to persist passenger session removal");
+            }
             return true;
         }
     }
