@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 
 import retrofit2.Retrofit;
@@ -23,6 +24,11 @@ public final class ApiClient {
     private static final Gson GSON =
             new GsonBuilder()
                     .create();
+
+    // Single origin for the staging credential. Never infer trust from a
+    // substring of an arbitrary request URL or a redirect's destination.
+    private static final HttpUrl STAGING_BASE_URL =
+            HttpUrl.get(BuildConfig.API_BASE_URL);
 
     private static final OkHttpClient HTTP_CLIENT =
             createHttpClient(BuildConfig.STAGING_ACCESS_TOKEN);
@@ -43,19 +49,37 @@ public final class ApiClient {
         // HMAC-секрет Worker никогда не хранится в Android-приложении.
         if (BuildConfig.DEBUG && stagingAccessToken != null &&
                 !stagingAccessToken.isEmpty()) {
-            builder.addInterceptor(chain ->
-                    chain.proceed(
-                            chain.request().newBuilder()
-                                    .header(
-                                            "X-Staging-Access-Token",
-                                            stagingAccessToken
-                                    )
-                                    .build()
-                    )
-            );
+            // Do not forward a custom bearer header across HTTP redirects.
+            // Unlike Authorization, a custom header is not necessarily stripped
+            // by the HTTP client when the redirect changes origin.
+            builder.followRedirects(false);
+            builder.followSslRedirects(false);
+            builder.addInterceptor(chain -> {
+                okhttp3.Request request = chain.request();
+                if (!isApprovedStagingOrigin(request.url())) {
+                    // Never attach credentials to an HTTP, foreign-host,
+                    // different-port or userinfo-bearing request.
+                    return chain.proceed(request);
+                }
+                return chain.proceed(request.newBuilder()
+                        .header("X-Staging-Access-Token", stagingAccessToken)
+                        .build());
+            });
         }
 
         return builder.build();
+    }
+
+    // Package-private for offline unit tests. Only one configured HTTPS
+    // origin can receive the temporary debug credential.
+    static boolean isApprovedStagingOrigin(HttpUrl requestUrl) {
+        return BuildConfig.DEBUG
+                && "https".equals(STAGING_BASE_URL.scheme())
+                && "https".equals(requestUrl.scheme())
+                && requestUrl.host().equals(STAGING_BASE_URL.host())
+                && requestUrl.port() == STAGING_BASE_URL.port()
+                && requestUrl.username().isEmpty()
+                && requestUrl.password().isEmpty();
     }
 
     private static final Retrofit RETROFIT =
