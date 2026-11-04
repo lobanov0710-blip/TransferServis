@@ -99,3 +99,15 @@
 5. Приоритет — **проверка недостающего факта**, а не новый рефакторинг того, что уже существует.
 
 **Сверка источников:** GitHub REST history всех PR `TransferServis`, `uber-v3`, `public_html` от 30.10.2026; [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [VALIDATION.md](VALIDATION.md), [STAGING_ANDROID_DEBUG.md](STAGING_ANDROID_DEBUG.md), [RELEASE_SIGNING.md](RELEASE_SIGNING.md), [UI_02_HOME_QUOTE.md](UI_02_HOME_QUOTE.md), [API_CONTRACT_V1.md](https://github.com/lobanov0710-blip/uber-v3/blob/main/docs/API_CONTRACT_V1.md), технические аудиты от 17 и 21 октября.
+
+
+## 7. 04.11.2026 — CI-SPEED-01: оптимизация Android CI (Draft, без merge)
+
+- Репозиторий: TransferServis. Отправная точка master: 43abdc8f24eb3bd77140a1b684357d9e34df2aaf. Рабочая ветка: ci/android-build-speed-v1; PR открыт отдельно от PUSH-02E и не зависит от PUSH/Firebase изменений.
+- До изменения .github/workflows/android-ci.yml запускался как при push в feature/**/fix/**, так и при pull_request на эти ветки. Из-за этого один HEAD PR получал дублирующиеся Debug и Release jobs (наблюдалось на PUSH-02E).
+- Теперь автоматический push запускает Android CI только на master; каждый обычный и Draft PR на master/feature/**/fix/** запускает единый PR CI. Дополнительно предусмотрен workflow_dispatch для явной полной проверки.
+- Один Gradle вызов для всех существующих Debug задач: testDebugUnitTest, lintDebug, assembleDebug, assembleDebugAndroidTest. Release задачи тоже объединены в один вызов: testReleaseUnitTest, lintRelease, assembleRelease. Проверка отсутствия подписи у unsigned Release APK сохранена без изменений.
+- Для Draft PR release_gate пропускается, но основной Debug/Test/Lint/assembleAndroidTest остаётся обязательным. Переход Draft в Ready for review запускает Release gate; push в master или ручной workflow_dispatch также всегда выполняют Release. Не сливать PR, пока Release gate не прошёл после перевода в Ready.
+- Gradle: org.gradle.configuration-cache=true уже был; дополнительно включён org.gradle.caching=true. Без новых сторонних кеш-сервисов и без удаления тестов. Доказанное ускорение в минутах пока не измерено: нужно сравнить фактические времена старого и нового CI на сопоставимых коммитах.
+- Ветка master ещё не изменена; новые правила будут действовать для проекта только после отдельного согласованного merge. Отдельный PUSH-02A workflow имеется только в ещё не влитых feature-ветках, поэтому его повторную Debug-компиляцию потребуется оптимизировать отдельно, без скрытого изменения этих PR.
+- Не менять production окружение, API, Firebase/FCM, подписанные APK, D1, STAGING или GitHub branch protection. Проверка CI не означает разрешение на слияние.
