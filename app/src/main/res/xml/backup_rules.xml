@@ -25,6 +25,11 @@
         domain="sharedpref"
         path="passenger_push_consent_v1.xml" />
 
+    <!-- Device-scoped installation identity must never follow a cloud restore. -->
+    <exclude
+        domain="sharedpref"
+        path="passenger_push_installation_v1.xml" />
+
     <!--
         Локальная история поездок
         остаётся только на устройстве.
