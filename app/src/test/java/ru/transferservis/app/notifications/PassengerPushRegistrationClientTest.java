@@ -143,7 +143,7 @@ public final class PassengerPushRegistrationClientTest {
                 revokeGrantRequest.getUrl().encodedPath());
         assertEquals("POST", revokeGrantRequest.getMethod());
         JsonObject body = JsonParser.parseString(
-                revokeGrantRequest.getBody().readUtf8()).getAsJsonObject();
+                revokeGrantRequest.getBody().utf8()).getAsJsonObject();
         assertEquals(3, body.size());
         assertEquals("revoke", body.get("operation").getAsString());
         assertEquals("read-only-token", body.get("accessToken").getAsString());
