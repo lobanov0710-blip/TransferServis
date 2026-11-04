@@ -48,6 +48,7 @@ public final class PassengerPushSessionExitCoordinatorTest {
         int checks;
         int switchAfterCheck;
         boolean changeWhenClearing;
+        boolean failWhenClearing;
 
         FakeSessions(Session current) {
             this.current = current;
@@ -65,6 +66,9 @@ public final class PassengerPushSessionExitCoordinatorTest {
         @Override
         public boolean clearIfMatches(Session expected) {
             clears++;
+            if (failWhenClearing) {
+                throw new IllegalStateException("Simulated local session storage failure");
+            }
             if (changeWhenClearing) {
                 current = new Session(OTHER_ORDER, "next-order-token", NOW + 100000);
             }
@@ -82,6 +86,7 @@ public final class PassengerPushSessionExitCoordinatorTest {
         int clears;
         int switchAfterCheck;
         boolean changeDuringClear;
+        boolean failWhenClearing;
 
         FakeInstallations(String current) {
             this.current = current;
@@ -105,6 +110,9 @@ public final class PassengerPushSessionExitCoordinatorTest {
         @Override
         public boolean clearAfterConfirmedRevocation(String expectedId) {
             clears++;
+            if (failWhenClearing) {
+                throw new IllegalStateException("Simulated installation storage failure");
+            }
             if (changeDuringClear) {
                 current = OTHER_ORDER;
             }
@@ -220,6 +228,37 @@ public final class PassengerPushSessionExitCoordinatorTest {
         assertNotNull(sessions.current);
         assertEquals(0, sessions.clears);
         assertEquals(2, server.getRequestCount());
+    }
+
+    @Test
+    public void confirmedRemoteRevokeAndLocalStorageFailureHaveDistinctOutcomes() {
+        FakeSessions failedSession = new FakeSessions(session());
+        failedSession.failWhenClearing = true;
+        FakeInstallations installation = new FakeInstallations(INSTALL);
+        grant200();
+        revoke200();
+        assertEquals(
+                PassengerPushSessionExitCoordinator.Outcome.REMOTE_REVOKED_LOCAL_CLEAR_FAILED,
+                withInstallations(failedSession, installation, true)
+                        .revokeBeforeLocalExit(failedSession.current));
+        assertNotNull(failedSession.current);
+        assertEquals(INSTALL, installation.current);
+        assertEquals(0, installation.clears);
+
+        FakeSessions clearSession = new FakeSessions(session());
+        FakeInstallations failedId = new FakeInstallations(INSTALL);
+        failedId.failWhenClearing = true;
+        grant200();
+        revoke200();
+        assertEquals(
+                PassengerPushSessionExitCoordinator.Outcome
+                        .REMOTE_REVOKED_LOCAL_CLEARED_ID_RETAINED,
+                withInstallations(clearSession, failedId, true)
+                        .revokeBeforeLocalExit(clearSession.current));
+        assertNull(clearSession.current);
+        assertEquals(INSTALL, failedId.current);
+        assertEquals(1, failedId.clears);
+        assertEquals(4, server.getRequestCount());
     }
 
     @Test
