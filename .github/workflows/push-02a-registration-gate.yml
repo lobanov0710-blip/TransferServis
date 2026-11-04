@@ -58,6 +58,10 @@ jobs:
           grep -Fq 'buildConfigField("boolean", "PASSENGER_PUSH_NETWORK_ENABLED", "false")' app/build.gradle.kts
           grep -Fq 'android:name="firebase_messaging_auto_init_enabled"' app/src/main/AndroidManifest.xml
           grep -Fq 'android:value="false"' app/src/main/AndroidManifest.xml
+          # UUID must never be copied to another device via cloud restore
+          # or device-to-device transfer (both supported backup schemas).
+          grep -Fq 'passenger_push_installation_v1.xml' app/src/main/res/xml/backup_rules.xml
+          test "$(grep -Fc 'passenger_push_installation_v1.xml' app/src/main/res/xml/data_extraction_rules.xml)" -eq 2
           echo "PASSENGER_PUSH_NETWORK_DISABLED=PASS"
       - name: Upload unit reports
         if: always()
