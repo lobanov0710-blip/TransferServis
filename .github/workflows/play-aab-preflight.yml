@@ -1,0 +1,89 @@
+name: RELEASE-PLAY-01 unsigned AAB preflight (no signing secrets)
+
+on:
+  pull_request:
+    branches:
+      - master
+      - feature/**
+      - release/**
+    paths:
+      - ".github/workflows/play-aab-preflight.yml"
+      - "scripts/verify-play-aab.ps1"
+      - "app/build.gradle.kts"
+      - "app/src/main/**"
+      - "docs/PLAY_RELEASE_READINESS.md"
+      - "docs/RELEASE_SIGNING.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: play-aab-preflight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unsigned-aab:
+    name: Build and inspect unsigned Play AAB (NO upload key)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x gradlew
+
+      - name: Build unsigned release Android App Bundle
+        run: ./gradlew :app:bundleRelease --stacktrace
+
+      - name: Check AAB structure, unsigned status and release source config
+        shell: pwsh
+        run: |
+          ./scripts/verify-play-aab.ps1 -Mode Unsigned |
+            Tee-Object -FilePath play-aab-preflight.txt
+          if (-not (Select-String -LiteralPath play-aab-preflight.txt -Pattern '^PLAY_BUNDLE_PREFLIGHT=SUCCESS$' -Quiet)) {
+            throw "AAB preflight failed"
+          }
+          if (-not (Select-String -LiteralPath play-aab-preflight.txt -Pattern '^RELEASE_CONFIG_PUSH_NETWORK=false$' -Quiet)) {
+            throw "Passenger FCM must remain disabled in the upload candidate"
+          }
+
+      - name: Assert signed verification rejects a missing certificate pin
+        shell: pwsh
+        run: |
+          $pinRequired = $false
+          try {
+            ./scripts/verify-play-aab.ps1 -Mode Signed
+          } catch {
+            if ($_.Exception.Message -match 'Signed mode requires -ExpectedCertificateSha256') {
+              $pinRequired = $true
+            } else {
+              throw
+            }
+          }
+          if (-not $pinRequired) {
+            throw "Missing expected certificate pin was not rejected"
+          }
+          Write-Output 'PLAY_SIGNED_MODE_REQUIRES_CERTIFICATE_PIN=true'
+
+      # NEVER upload signing keys, signing env vars, or a misleading unsigned
+      # bundle that could be mistaken for a publishable artifact.
+      - name: Upload text-only preflight report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: play-aab-preflight-text
+          path: play-aab-preflight.txt
+          if-no-files-found: ignore
+          retention-days: 14
