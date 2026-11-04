@@ -1,11 +1,16 @@
 package ru.transferservis.app.ui.active;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
@@ -15,8 +20,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
+import ru.transferservis.app.BuildConfig;
 import ru.transferservis.app.R;
 import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.data.remote.ApiErrorCode;
@@ -45,7 +52,11 @@ public final class ActiveOrderFragment
     private TextView errorText;
 
     private MaterialButton refreshButton;
+    private MaterialButton exitButton;
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    @Nullable private ExecutorService exitWorker;
+    private boolean exitBusy;
 
     private ActiveOrderViewModel viewModel;
 
@@ -77,6 +88,9 @@ public final class ActiveOrderFragment
                 savedInstanceState
         );
 
+
+        exitWorker = Executors.newSingleThreadExecutor();
+        exitBusy = false;
 
         bindViews(
                 view
@@ -182,6 +196,8 @@ public final class ActiveOrderFragment
                 root.findViewById(
                         R.id.activeOrderRefreshButton
                 );
+
+        exitButton = root.findViewById(R.id.activeOrderExitButton);
     }
 
 
@@ -212,6 +228,7 @@ public final class ActiveOrderFragment
         refreshButton.setOnClickListener(
                 view -> viewModel.refresh()
         );
+        exitButton.setOnClickListener(view -> showExitDialog());
     }
 
 
@@ -235,6 +252,136 @@ public final class ActiveOrderFragment
             viewModel.restoreActiveOrder(expectedOrderId());
         }
     }
+
+    /**
+     * Explicit removal of local access is not a trip cancellation and does
+     * not assert that push was disabled on the backend.
+     */
+    private void showExitDialog() {
+        if (exitBusy || exitWorker == null) return;
+        String orderId = viewModel.getSessionOrderIdForExit();
+        if (orderId == null || (expectedOrderId() != null
+                && !expectedOrderId().equals(orderId))) {
+            showMessage(R.string.active_order_exit_no_session);
+            viewModel.restoreActiveOrder(expectedOrderId());
+            return;
+        }
+
+        if (!BuildConfig.PASSENGER_PUSH_NETWORK_ENABLED) {
+            showLocalOnlyConfirmation(orderId);
+            return;
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.active_order_exit_remote_title)
+                .setMessage(R.string.active_order_exit_remote_message)
+                .setPositiveButton(R.string.active_order_exit_remote_confirm,
+                        (dialog, which) -> runExit(
+                                PassengerSessionExitAction.Mode.REVOKE_ON_SERVER_THEN_EXIT,
+                                orderId))
+                .setNeutralButton(R.string.active_order_exit_local_confirm,
+                        (dialog, which) -> showLocalOnlyConfirmation(orderId))
+                .setNegativeButton(R.string.active_order_exit_cancel, null)
+                .show();
+    }
+
+    private void showLocalOnlyConfirmation(@NonNull String orderId) {
+        if (exitBusy || !isAdded()) return;
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.active_order_exit_title)
+                .setMessage(R.string.active_order_exit_local_warning)
+                .setPositiveButton(R.string.active_order_exit_local_confirm,
+                        (dialog, which) -> runExit(
+                                PassengerSessionExitAction.Mode.LOCAL_ONLY,
+                                orderId))
+                .setNegativeButton(R.string.active_order_exit_cancel, null)
+                .show();
+    }
+
+    private void runExit(@NonNull PassengerSessionExitAction.Mode mode,
+                         @NonNull String orderId) {
+        if (exitBusy || exitWorker == null || !isAdded()) return;
+        exitBusy = true;
+        exitButton.setEnabled(false);
+        refreshButton.setEnabled(false);
+
+        // Construct before background dispatch: no Fragment or Activity is
+        // retained by the worker. Only the application context is used.
+        PassengerSessionExitAction action =
+                new PassengerSessionExitAction(requireContext().getApplicationContext());
+        exitWorker.execute(() -> {
+            PassengerSessionExitAction.Outcome outcome = action.perform(mode, orderId);
+            mainHandler.post(() -> {
+                if (!isAdded() || getView() == null) return;
+                exitBusy = false;
+                exitButton.setEnabled(true);
+                refreshButton.setEnabled(true);
+                renderExitOutcome(outcome, orderId);
+            });
+        });
+    }
+
+    private void renderExitOutcome(@NonNull PassengerSessionExitAction.Outcome outcome,
+                                   @NonNull String orderId) {
+        switch (outcome) {
+            case LOCAL_ONLY_CLEARED:
+                viewModel.restoreActiveOrder(expectedOrderId());
+                showMessage(R.string.active_order_exit_local_success);
+                break;
+            case REMOTE_CONFIRMED_AND_CLEARED:
+                viewModel.restoreActiveOrder(expectedOrderId());
+                showMessage(R.string.active_order_exit_remote_success);
+                break;
+            case REMOTE_CONFIRMED_ID_RETAINED:
+                viewModel.restoreActiveOrder(expectedOrderId());
+                showMessage(R.string.active_order_exit_remote_id_retained);
+                break;
+            case REMOTE_CONFIRMED_LOCAL_CLEAR_FAILED:
+                showMessage(R.string.active_order_exit_remote_local_failed);
+                break;
+            case REMOTE_CONFIRMED_SESSION_CHANGED:
+                viewModel.restoreActiveOrder(expectedOrderId());
+                showMessage(R.string.active_order_exit_remote_session_changed);
+                break;
+            case REMOTE_NOT_CONFIRMED:
+                // Server status unknown. No automatic fallback that deletes
+                // the access token; user must explicitly choose local-only.
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.active_order_exit_remote_title)
+                        .setMessage(R.string.active_order_exit_remote_failed)
+                        .setPositiveButton(R.string.active_order_exit_remote_retry,
+                                (dialog, which) -> runExit(
+                                        PassengerSessionExitAction.Mode
+                                                .REVOKE_ON_SERVER_THEN_EXIT,
+                                        orderId))
+                        .setNeutralButton(R.string.active_order_exit_local_confirm,
+                                (dialog, which) -> showLocalOnlyConfirmation(orderId))
+                        .setNegativeButton(R.string.active_order_exit_cancel, null)
+                        .show();
+                break;
+            case SESSION_CHANGED:
+                viewModel.restoreActiveOrder(expectedOrderId());
+                showMessage(R.string.active_order_exit_session_changed);
+                break;
+            case NO_SESSION:
+                viewModel.restoreActiveOrder(expectedOrderId());
+                showMessage(R.string.active_order_exit_no_session);
+                break;
+            case LOCAL_STORAGE_FAILED:
+            default:
+                showMessage(R.string.active_order_exit_storage_failed);
+                break;
+        }
+    }
+
+    private void showMessage(@StringRes int message) {
+        if (!isAdded()) return;
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
 
     @Nullable
     private String expectedOrderId() {
@@ -279,6 +426,15 @@ public final class ActiveOrderFragment
                 );
 
                 break;
+        }
+        exitButton.setVisibility(
+                state.getStatus() == ActiveOrderUiState.Status.SUCCESS
+                || state.getStatus() == ActiveOrderUiState.Status.ERROR
+                        ? View.VISIBLE : View.GONE
+        );
+        if (exitBusy) {
+            exitButton.setEnabled(false);
+            refreshButton.setEnabled(false);
         }
     }
 
@@ -742,6 +898,14 @@ public final class ActiveOrderFragment
         refreshButton =
                 null;
 
+        exitButton = null;
+        exitBusy = false;
+        if (exitWorker != null) {
+            // In-flight server calls may finish but cannot touch a destroyed
+            // Fragment view. The session comparison still protects new orders.
+            exitWorker.shutdown();
+            exitWorker = null;
+        }
 
         super.onDestroyView();
     }
