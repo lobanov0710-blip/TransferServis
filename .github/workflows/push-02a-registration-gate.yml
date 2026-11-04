@@ -33,8 +33,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  policy:
+    name: Passenger push fail-closed policy (static)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify disabled push network and absent Firebase SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in app/google-services.json app/src/main/google-services.json app/src/debug/google-services.json app/src/release/google-services.json; do
+            test ! -e "$file"
+          done
+          grep -Fq 'buildConfigField("boolean", "PASSENGER_PUSH_NETWORK_ENABLED", "false")' app/build.gradle.kts
+          grep -Fq 'android:name="firebase_messaging_auto_init_enabled"' app/src/main/AndroidManifest.xml
+          grep -Fq 'android:value="false"' app/src/main/AndroidManifest.xml
+          if grep -Eiq 'com[.]google[.]firebase|com[.]google[.]gms[.]google-services|firebase-bom|firebase-messaging' \
+            app/build.gradle.kts build.gradle.kts settings.gradle.kts gradle/libs.versions.toml; then
+            echo "ERROR: Firebase dependency/plugin introduced before approval"
+            exit 1
+          fi
+          echo "PASSENGER_PUSH_FAIL_CLOSED=PASS"
+
   unit-and-build:
     name: Fail-closed Java policy, MockWebServer and Android debug compile
+    # Android CI covers JVM tests/Debug for feature/** and master PRs.
+    # Preserve full fallback for docs/** PR targets and explicit manual runs.
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.base_ref, 'docs/')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
