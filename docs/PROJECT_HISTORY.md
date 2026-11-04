@@ -99,3 +99,13 @@
 5. Приоритет — **проверка недостающего факта**, а не новый рефакторинг того, что уже существует.
 
 **Сверка источников:** GitHub REST history всех PR `TransferServis`, `uber-v3`, `public_html` от 30.10.2026; [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [VALIDATION.md](VALIDATION.md), [STAGING_ANDROID_DEBUG.md](STAGING_ANDROID_DEBUG.md), [RELEASE_SIGNING.md](RELEASE_SIGNING.md), [UI_02_HOME_QUOTE.md](UI_02_HOME_QUOTE.md), [API_CONTRACT_V1.md](https://github.com/lobanov0710-blip/uber-v3/blob/main/docs/API_CONTRACT_V1.md), технические аудиты от 17 и 21 октября.
+
+
+## 7. 04.11.2026 — SECURITY-01: ограничение Debug STAGING credential (отдельно от разработки STAGING)
+
+- Сверка правила владельца: основное окружение продукта — **production**, основная ветка Android `TransferServis/master` и backend `uber-v3/main`; STAGING используется только тогда, когда нужны изолированные тесты, и самостоятельно не развивается. Настоящая работа — устранение обнаруженного риска в Android, а не развитие STAGING.
+- Анализ `ApiClient.createHttpClient()`: в Debug временный заголовок `X-Staging-Access-Token` без проверки URL добавлялся на любую исходящую HTTP-цель при использовании общего OkHttpClient. Также допускались автоматические redirects с нестандартным секретным заголовком. Потенциальная утечка: **фактическая эксплуатация не подтверждена**.
+- Ветка исправления `security/staging-header-origin-guard-master` основана прямо на `TransferServis/master` (контрольный HEAD `43abdc8f24eb3bd77140a1b684357d9e34df2aaf`); независима от Draft PUSH-цепочки и CI PR №32/№33. Правка защищает точный HTTPS origin из BuildConfig.API_BASE_URL (host, port, scheme, отсутствие userinfo), запрещает automatic redirects Debug-клиента с временным токеном и сохраняет запрет staging credential в Release.
+- Обновлены локальные `DebugGatewayConfigurationTest` и `docs/STAGING_ANDROID_DEBUG.md`: тесты не обращаются к STAGING, production, D1, Firebase и не содержат реальных токенов. Клиент Java, остальная архитектура без изменений.
+- До выполнения CI/проверки Release и отдельного разрешения владельца статус изменения: **Draft, не слито, не развернуто**. Если CI выявит ошибку, исправить в рабочей ветке и зафиксировать повторный результат. Не изменять production runtime и никакие secrets.
+- В ходе подготовки был открыт зависимый Draft PR №34 на `ci/**`, для которого текущие workflows не запускают CI. Он будет заменён независимым PR от `master`, чтобы обеспечить основную CI-проверку и корректную базу слияния.
