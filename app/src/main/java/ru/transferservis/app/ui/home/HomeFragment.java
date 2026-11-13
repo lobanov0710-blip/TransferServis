@@ -89,6 +89,7 @@ public final class HomeFragment
 
 
     private boolean calculationRequested;
+    private boolean restoringViewState;
 
 
     @Nullable
@@ -112,6 +113,7 @@ public final class HomeFragment
             @NonNull View view,
             @Nullable Bundle savedInstanceState
     ) {
+        restoringViewState = true;
 
         super.onViewCreated(
                 view,
@@ -144,6 +146,12 @@ public final class HomeFragment
         observeFavoriteSelections();
         watchQuoteInputs();
         observeRepeatRoute();
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        restoringViewState = false;
     }
 
 
@@ -385,7 +393,7 @@ public final class HomeFragment
     }
 
     private void invalidateCurrentQuote() {
-        if (quoteViewModel == null) {
+        if (restoringViewState || quoteViewModel == null) {
             return;
         }
         // reset() аннулирует и запрос в полёте через requestSequence.
@@ -803,6 +811,12 @@ public final class HomeFragment
             return;
         }
 
+        // An explicit repeat route takes priority over an earlier quote response.
+        RepeatRouteViewModel repeatRoute = new ViewModelProvider(requireActivity())
+                .get(RepeatRouteViewModel.class);
+        if (repeatRoute.getPendingDraft().getValue() != null) {
+            return;
+        }
 
         calculationRequested =
                 false;

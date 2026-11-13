@@ -1,9 +1,14 @@
 package ru.transferservis.app.ui.quote;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+
+import java.util.concurrent.Executor;
 
 import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiErrorCode;
@@ -15,6 +20,7 @@ public final class QuoteViewModel
         extends ViewModel {
 
     private final QuoteRepository repository;
+    private final Executor mainExecutor;
 
     private final MutableLiveData<QuoteUiState> uiState =
             new MutableLiveData<>(
@@ -34,9 +40,12 @@ public final class QuoteViewModel
     public QuoteViewModel(
             @NonNull QuoteRepository repository
     ) {
+        this(repository, new Handler(Looper.getMainLooper())::post);
+    }
 
-        this.repository =
-                repository;
+    QuoteViewModel(@NonNull QuoteRepository repository, @NonNull Executor mainExecutor) {
+        this.repository = repository;
+        this.mainExecutor = mainExecutor;
     }
 
     @NonNull
@@ -70,9 +79,12 @@ public final class QuoteViewModel
                         return;
                     }
 
-                    handleResult(
-                            result
-                    );
+                    mainExecutor.execute(() -> {
+                        // Reset or a new request may occur before queued UI delivery.
+                        if (requestId == requestSequence) {
+                            handleResult(result);
+                        }
+                    });
                 }
         );
     }
@@ -88,7 +100,7 @@ public final class QuoteViewModel
 
             if (quote == null) {
 
-                uiState.postValue(
+                uiState.setValue(
                         QuoteUiState.error(
                                 ApiErrorCode.UNKNOWN
                         )
@@ -99,7 +111,7 @@ public final class QuoteViewModel
 
             if (quote.isExpired()) {
 
-                uiState.postValue(
+                uiState.setValue(
                         QuoteUiState.error(
                                 ApiErrorCode.QUOTE_EXPIRED
                         )
@@ -108,7 +120,7 @@ public final class QuoteViewModel
                 return;
             }
 
-            uiState.postValue(
+            uiState.setValue(
                     QuoteUiState.success(
                             quote
                     )
@@ -126,7 +138,7 @@ public final class QuoteViewModel
                     ApiErrorCode.UNKNOWN;
         }
 
-        uiState.postValue(
+        uiState.setValue(
                 QuoteUiState.error(
                         errorCode
                 )
@@ -140,5 +152,10 @@ public final class QuoteViewModel
         uiState.setValue(
                 QuoteUiState.idle()
         );
+    }
+
+    @Override
+    protected void onCleared() {
+        requestSequence++;
     }
 }

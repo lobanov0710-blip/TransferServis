@@ -1,4 +1,4 @@
-name: FAV-03 repeat-trip UI test
+name: FAV-03 repeat-trip and Home restoration UI tests
 
 on:
   pull_request:
@@ -7,12 +7,16 @@ on:
       - feature/**
     paths:
       - ".github/workflows/fav-03-repeat-trip-ui.yml"
+      - "app/build.gradle.kts"
+      - "gradle/libs.versions.toml"
       - "app/src/main/java/ru/transferservis/app/ui/history/**"
       - "app/src/main/java/ru/transferservis/app/ui/home/**"
+      - "app/src/main/java/ru/transferservis/app/ui/quote/**"
       - "app/src/main/java/ru/transferservis/app/domain/model/RouteDraft.java"
       - "app/src/main/res/layout/item_trip_history.xml"
       - "app/src/main/res/values/strings.xml"
       - "app/src/androidTest/java/ru/transferservis/app/ui/history/**"
+      - "app/src/androidTest/java/ru/transferservis/app/ui/HomeQuoteRestorationTest.java"
   workflow_dispatch:
 
 permissions:
@@ -24,7 +28,7 @@ concurrency:
 
 jobs:
   ui:
-    name: History to Home repeat route on disposable API 35 AVD
+    name: Repeat route and Home restoration on disposable API 35 AVD
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -39,7 +43,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Run FAV-03 instrumented test
+      - name: Run repeat-trip and Home restoration tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -50,7 +54,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x ./gradlew
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.ui.history.RepeatTripHistoryUiTest --stacktrace
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ru.transferservis.app.ui.history.RepeatTripHistoryUiTest,ru.transferservis.app.ui.HomeQuoteRestorationTest --stacktrace
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v6

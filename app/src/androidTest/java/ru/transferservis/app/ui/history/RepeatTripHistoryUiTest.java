@@ -2,8 +2,10 @@ package ru.transferservis.app.ui.history;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.swipeUp;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isChecked;
+import static androidx.test.espresso.matcher.ViewMatchers.isCompletelyDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.junit.Assert.assertEquals;
@@ -54,7 +56,10 @@ public final class RepeatTripHistoryUiTest {
             onView(withId(R.id.historyFragment)).perform(click());
             // Созданная запись имеет самое новое время и находится в первой
             // карточке на пустом тестовом AVD.
-            onView(withId(R.id.tripRepeatButton)).perform(click());
+            // На компактном экране нижняя часть карточки требует прокрутки.
+            onView(withId(R.id.historyRecycler)).perform(swipeUp());
+            onView(withId(R.id.tripRepeatButton))
+                    .check(matches(isCompletelyDisplayed())).perform(click());
             onView(withId(R.id.fromInput)).check(matches(
                     withText("Нижний Новгород, Московское шоссе")));
             onView(withId(R.id.toInput)).check(matches(
