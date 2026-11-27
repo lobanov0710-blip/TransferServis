@@ -33,6 +33,8 @@ import ru.transferservis.app.R;
 import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.domain.model.RouteDraft;
+import ru.transferservis.app.domain.model.ActiveOrder;
+import ru.transferservis.app.ui.common.TripUiText;
 import ru.transferservis.app.ui.active.ActiveOrderUiState;
 import ru.transferservis.app.ui.active.ActiveOrderViewModel;
 import ru.transferservis.app.ui.booking.OrderViewModel;
@@ -65,6 +67,11 @@ public final class HomeFragment
     private TextView tariffDescription;
 
     private MaterialButton activeOrderButton;
+    private MaterialCardView activeOrderCard;
+    private TextView activeOrderStatus;
+    private TextView activeOrderRoute;
+    private TextView activeOrderMeta;
+    private TextView activeOrderFreshness;
 
     private MaterialCardView pendingOrderNoticeCard;
     private TextView pendingOrderReference;
@@ -150,6 +157,11 @@ public final class HomeFragment
     private void bindViews(
             @NonNull View root
     ) {
+        activeOrderCard = root.findViewById(R.id.homeActiveOrderCard);
+        activeOrderStatus = root.findViewById(R.id.homeActiveOrderStatus);
+        activeOrderRoute = root.findViewById(R.id.homeActiveOrderRoute);
+        activeOrderMeta = root.findViewById(R.id.homeActiveOrderMeta);
+        activeOrderFreshness = root.findViewById(R.id.homeActiveOrderFreshness);
 
         fromInput =
                 root.findViewById(
@@ -592,31 +604,23 @@ public final class HomeFragment
     private void renderActiveOrderEntry(
             @NonNull ActiveOrderUiState state
     ) {
-
-        switch (state.getStatus()) {
-
-            case SUCCESS:
-
-            case ERROR:
-
-                activeOrderButton.setVisibility(
-                        View.VISIBLE
-                );
-
-                break;
-
-
-            case EMPTY:
-
-            case LOADING:
-
-            default:
-
-                activeOrderButton.setVisibility(
-                        View.GONE
-                );
-
-                break;
+        ActiveOrder order = state.getOrder();
+        boolean visible = order != null || state.getStatus() == ActiveOrderUiState.Status.ERROR;
+        activeOrderCard.setVisibility(visible ? View.VISIBLE : View.GONE);
+        activeOrderButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+        activeOrderRoute.setVisibility(order == null ? View.GONE : View.VISIBLE);
+        activeOrderMeta.setVisibility(order == null ? View.GONE : View.VISIBLE);
+        activeOrderFreshness.setVisibility(order != null && state.getCheckedAtMillis() > 0
+                ? View.VISIBLE : View.GONE);
+        activeOrderStatus.setText(order == null ? getString(R.string.ux_home_unavailable)
+                : TripUiText.status(requireContext(), order.getStatus()));
+        if (order != null) {
+            activeOrderRoute.setText(order.getRoute());
+            activeOrderMeta.setText(getString(R.string.ux_home_meta, order.getDate(),
+                    order.getTariff() == null ? getString(R.string.active_order_unknown_value)
+                            : order.getTariff().getDisplayName()));
+            activeOrderFreshness.setText(TripUiText.checkedAt(requireContext(),
+                    state.getCheckedAtMillis(), state.getStatus() == ActiveOrderUiState.Status.ERROR));
         }
     }
 
@@ -915,6 +919,11 @@ public final class HomeFragment
 
     @Override
     public void onDestroyView() {
+        activeOrderCard = null;
+        activeOrderStatus = null;
+        activeOrderRoute = null;
+        activeOrderMeta = null;
+        activeOrderFreshness = null;
 
         fromInput =
                 null;

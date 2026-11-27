@@ -7,7 +7,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
@@ -15,6 +14,14 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
+import com.google.gson.Gson;
+import mockwebserver3.MockWebServer;
+import mockwebserver3.MockResponse;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import ru.transferservis.app.data.remote.ApiService;
 
 import ru.transferservis.app.data.local.PassengerOrderSessionStore.Session;
 import ru.transferservis.app.data.model.OrderStatus;
@@ -102,6 +109,7 @@ public final class ActiveOrderRequestsTest {
     public void olderCallbackArrivesLast_cannotOverwriteNewRequestOrHistory() {
         requests.restoreActiveOrder();
         storage.runAll();
+        sessions.current = session("order-a", "replacement-token");
         requests.refresh();
         storage.runAll();
         loader.reply(1, success("order-a", OrderStatus.IN_PROGRESS, 200L));
@@ -262,6 +270,9 @@ public final class ActiveOrderRequestsTest {
         flush();
         assertEquals(ActiveOrderUiState.Status.ERROR, state().getStatus());
         assertEquals(ApiErrorCode.NETWORK, state().getErrorCode());
+        assertNotNull(state().getOrder());
+        assertEquals(OrderStatus.NEW, state().getOrder().getStatus());
+        assertTrue(state().getCheckedAtMillis() > 0L);
         assertNotNull(sessions.current);
         assertEquals("order-a", sessions.current.getOrderId());
         assertEquals("token-a", sessions.current.getAccessToken());
@@ -295,6 +306,109 @@ public final class ActiveOrderRequestsTest {
         assertEquals(OrderStatus.IN_PROGRESS, state().getOrder().getStatus());
         assertEquals(200L, state().getOrder().getUpdatedAtMillis());
         assertEquals(OrderStatus.IN_PROGRESS, history.get(history.size() - 1).getStatus());
+    }
+
+    @Test
+    public void lifecycleAndRefreshWhileInFlight_shareOneRequest() {
+        requests.restoreActiveOrder();
+        storage.runAll();
+        requests.restoreActiveOrder("order-a");
+        requests.refresh();
+        flush();
+        assertEquals(1, loader.tokens.size());
+        loader.reply(0, success("order-a", OrderStatus.TAKEN, 100L));
+        flush();
+        assertEquals(OrderStatus.TAKEN, state().getOrder().getStatus());
+        assertEquals(1, history.size());
+    }
+
+    @Test
+    public void replyQueuedBeforeNewLifecycleEvent_isJoinedWithoutSecondRequest() {
+        requests.restoreActiveOrder();
+        storage.runAll();
+        loader.reply(0, success("order-a", OrderStatus.NEW, 100L));
+        requests.restoreActiveOrder("order-a");
+        flush();
+        assertEquals(1, loader.tokens.size());
+        assertTrue(state().isSuccess());
+    }
+
+    @Test
+    public void forbiddenResponse_discardsSnapshot_andOfflineCannotResurrectIt() {
+        requests.refresh();
+        storage.runAll();
+        loader.reply(0, success("order-a", OrderStatus.TAKEN, 100L));
+        flush();
+        requests.refresh();
+        storage.runAll();
+        loader.reply(1, ApiResult.httpError(403, ApiErrorCode.REQUEST_FAILED));
+        flush();
+        assertNull(state().getOrder());
+        requests.refresh();
+        storage.runAll();
+        loader.reply(2, ApiResult.networkError(ApiErrorCode.NETWORK, null));
+        flush();
+        assertNull(state().getOrder());
+        assertEquals(0L, state().getCheckedAtMillis());
+    }
+
+    @Test
+    public void rotatingToken_neverReusesPreviousSnapshot() {
+        requests.refresh();
+        storage.runAll();
+        loader.reply(0, success("order-a", OrderStatus.TAKEN, 100L));
+        flush();
+        sessions.current = session("order-a", "replacement-token");
+        requests.refresh();
+        storage.runAll();
+        loader.reply(1, ApiResult.networkError(ApiErrorCode.NETWORK, null));
+        flush();
+        assertNull(state().getOrder());
+    }
+
+    @Test
+    public void expiredSession_dropsPreviouslyConfirmedDetails() {
+        requests.refresh();
+        storage.runAll();
+        loader.reply(0, success("order-a", OrderStatus.TAKEN, 100L));
+        flush();
+        sessions.current = null;
+        requests.refresh();
+        flush();
+        assertEquals(ActiveOrderUiState.Status.EMPTY, state().getStatus());
+        assertNull(state().getOrder());
+        assertEquals(1, loader.tokens.size());
+    }
+
+    @Test
+    public void realHttpLifecycleBurst_sendsExactlyOneStatusPost() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.start();
+            server.enqueue(new MockResponse.Builder().code(200).body(
+                    "{\"ok\":true,\"order\":{\"id\":\"order-a\",\"status\":\"new\","
+                    + "\"route\":\"A → B\",\"from\":\"A\",\"to\":\"B\",\"date\":\"2026-12-01\","
+                    + "\"tariff\":\"comfort\",\"distance\":20,\"duration\":30,\"price\":1000,"
+                    + "\"createdAt\":50,\"updatedAt\":100}}").build());
+            OrderRepository repository = new OrderRepository(new Retrofit.Builder()
+                    .baseUrl(server.url("/"))
+                    .addConverterFactory(GsonConverterFactory.create()).build()
+                    .create(ApiService.class), new Gson());
+            CountDownLatch response = new CountDownLatch(1);
+            requests = new ActiveOrderViewModel.Requests((token, callback) ->
+                    repository.getOrderStatus(token, result -> {
+                        callback.onResult(result);
+                        response.countDown();
+                    }), sessions, (order, current) -> { }, storage, main);
+            requests.restoreActiveOrder();
+            storage.runAll();
+            assertNotNull(server.takeRequest(5, TimeUnit.SECONDS));
+            requests.restoreActiveOrder("order-a");
+            requests.refresh();
+            assertTrue(response.await(5, TimeUnit.SECONDS));
+            flush();
+            assertTrue(state().isSuccess());
+            assertEquals(1, server.getRequestCount());
+        }
     }
 
     @Test
@@ -387,7 +501,7 @@ public final class ActiveOrderRequestsTest {
     }
 
     private static final class ManualExecutor extends AbstractExecutorService {
-        final Deque<Runnable> queue = new ArrayDeque<>();
+        final Deque<Runnable> queue = new ConcurrentLinkedDeque<>();
         boolean stopped;
 
         void runAll() {

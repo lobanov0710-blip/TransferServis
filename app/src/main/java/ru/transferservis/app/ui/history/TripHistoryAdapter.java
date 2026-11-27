@@ -16,12 +16,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.TripHistoryItem;
 import ru.transferservis.app.domain.model.RouteDraft;
+import ru.transferservis.app.ui.common.TripUiText;
 
 public final class TripHistoryAdapter
         extends RecyclerView.Adapter<TripHistoryAdapter.TripViewHolder> {
@@ -31,6 +33,14 @@ public final class TripHistoryAdapter
     }
 
     private final RepeatListener repeatListener;
+    @Nullable private String activeOrderId;
+    @Nullable private Runnable openCurrent;
+
+    public void setCurrentOrder(@Nullable String orderId, @Nullable Runnable open) {
+        activeOrderId = orderId;
+        openCurrent = open;
+        notifyDataSetChanged();
+    }
 
     public TripHistoryAdapter(@NonNull RepeatListener repeatListener) {
         this.repeatListener = repeatListener;
@@ -45,8 +55,7 @@ public final class TripHistoryAdapter
 
         if (newItems == null) {
 
-            items =
-                    Collections.emptyList();
+            items = new ArrayList<>();
 
         } else {
 
@@ -56,6 +65,8 @@ public final class TripHistoryAdapter
                     );
         }
 
+        items.sort(Comparator.comparing(TripHistoryItem::getTripDate).reversed()
+                .thenComparing(Comparator.comparingLong(TripHistoryItem::getCreatedAtMillis).reversed()));
         notifyDataSetChanged();
     }
 
@@ -88,12 +99,15 @@ public final class TripHistoryAdapter
             int position
     ) {
 
-        holder.bind(
-                items.get(
-                        position
-                ),
-                repeatListener
-        );
+        TripHistoryItem trip = items.get(position);
+        boolean showMonth = position == 0 || !monthKey(trip.getTripDate())
+                .equals(monthKey(items.get(position - 1).getTripDate()));
+        holder.bind(trip, repeatListener, showMonth,
+                trip.getOrderId().equals(activeOrderId) ? openCurrent : null);
+    }
+
+    private static String monthKey(String date) {
+        return date.length() >= 7 ? date.substring(0, 7) : date;
     }
 
     @Override
@@ -113,6 +127,8 @@ public final class TripHistoryAdapter
         private final TextView tripPrice;
         private final TextView tripOrderId;
         private final MaterialButton tripRepeatButton;
+        private final TextView tripMonth;
+        private final MaterialButton tripOpenButton;
 
         TripViewHolder(
                 @NonNull View itemView
@@ -156,15 +172,22 @@ public final class TripHistoryAdapter
                             R.id.tripOrderId
                     );
             tripRepeatButton = itemView.findViewById(R.id.tripRepeatButton);
+            tripMonth = itemView.findViewById(R.id.tripMonth);
+            tripOpenButton = itemView.findViewById(R.id.tripOpenButton);
         }
 
         void bind(
                 @NonNull TripHistoryItem item,
-                @NonNull RepeatListener listener
+                @NonNull RepeatListener listener, boolean showMonth,
+                @Nullable Runnable openCurrent
         ) {
 
             Context context =
                     itemView.getContext();
+            tripMonth.setVisibility(showMonth ? View.VISIBLE : View.GONE);
+            tripMonth.setText(formatMonth(context, item.getTripDate()));
+            tripOpenButton.setVisibility(openCurrent == null ? View.GONE : View.VISIBLE);
+            tripOpenButton.setOnClickListener(openCurrent == null ? null : v -> openCurrent.run());
 
             tripDate.setText(
                     formatDate(
@@ -173,9 +196,7 @@ public final class TripHistoryAdapter
             );
 
             tripStatus.setText(
-                    item
-                            .getStatus()
-                            .getDisplayName()
+                    TripUiText.status(context, item.getStatus())
             );
 
             tripFrom.setText(
@@ -217,6 +238,21 @@ public final class TripHistoryAdapter
             tripRepeatButton.setOnClickListener(canRepeat
                     ? view -> listener.onRepeat(item)
                     : null);
+        }
+
+        @NonNull
+        private String formatMonth(Context context, String value) {
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+            input.setLenient(false);
+            try {
+                java.util.Date date = input.parse(value);
+                if (date != null) {
+                    return new SimpleDateFormat("LLLL yyyy", new Locale("ru", "RU")).format(date);
+                }
+            } catch (ParseException ignored) {
+                // Старые локальные записи сохраняются даже с неизвестной датой.
+            }
+            return context.getString(R.string.ux_history_other_month);
         }
 
         @NonNull

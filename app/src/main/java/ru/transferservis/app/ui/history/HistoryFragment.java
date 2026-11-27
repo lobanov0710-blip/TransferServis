@@ -20,6 +20,8 @@ import java.util.List;
 
 import ru.transferservis.app.R;
 import ru.transferservis.app.domain.model.TripHistoryItem;
+import ru.transferservis.app.ui.active.ActiveOrderViewModel;
+import androidx.navigation.fragment.NavHostFragment;
 import ru.transferservis.app.domain.model.RouteDraft;
 import ru.transferservis.app.ui.home.RepeatRouteViewModel;
 
@@ -33,6 +35,7 @@ public final class HistoryFragment
     private TripHistoryAdapter adapter;
 
     private HistoryViewModel historyViewModel;
+    private ActiveOrderViewModel activeOrderViewModel;
 
     @Nullable
     @Override
@@ -66,6 +69,32 @@ public final class HistoryFragment
         configureRecyclerView();
 
         configureViewModel();
+        view.findViewById(R.id.historyStartButton).setOnClickListener(v -> {
+            BottomNavigationView bottom = requireActivity().findViewById(R.id.bottomNavigation);
+            if (bottom != null) { bottom.setSelectedItemId(R.id.homeFragment); }
+        });
+        activeOrderViewModel = new ViewModelProvider(requireActivity())
+                .get(ActiveOrderViewModel.class);
+        activeOrderViewModel.getUiState().observe(getViewLifecycleOwner(), state -> {
+            String id = state.getOrder() == null ? null : state.getOrder().getOrderId();
+            adapter.setCurrentOrder(id, id == null ? null : () -> openCurrentOrder(id));
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (activeOrderViewModel != null) { activeOrderViewModel.restoreActiveOrder(); }
+    }
+
+    private void openCurrentOrder(String expectedOrderId) {
+        androidx.navigation.NavController nav = NavHostFragment.findNavController(this);
+        if (nav.getCurrentDestination() == null
+                || nav.getCurrentDestination().getId() != R.id.historyFragment) { return; }
+        // В историю не переносится capability: экран заново проверит текущую сессию.
+        Bundle args = new Bundle();
+        args.putString("expected_order_id", expectedOrderId);
+        nav.navigate(R.id.activeOrderFragment, args);
     }
 
     private void bindViews(

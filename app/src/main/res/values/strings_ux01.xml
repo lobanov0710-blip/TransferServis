@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ux_brand">TRANSFER SERVIS</string>
+    <string name="ux_home_title">Куда едем?</string>
+    <string name="ux_your_trip">ВАША ПОЕЗДКА</string>
+    <string name="ux_open_trip">Открыть поездку</string>
+    <string name="ux_home_meta">%1$s · %2$s</string>
+    <string name="ux_vehicle_class">Класс автомобиля</string>
+    <string name="ux_service_short">Индивидуальные междугородние поездки</string>
+    <string name="ux_quote_title">Стоимость поездки</string>
+    <string name="ux_quote_price_caption">По вашему маршруту</string>
+    <string name="ux_duration_label">В пути, примерно</string>
+    <string name="ux_confirmation_explanation">После отправки заявки диспетчер свяжется с вами для подтверждения деталей поездки.</string>
+    <string name="ux_continue_booking">Продолжить оформление</string>
+    <string name="ux_booking_title">Оформление заявки</string>
+    <string name="ux_date_comment_title">Дата и комментарий</string>
+    <string name="ux_booking_check">Проверьте маршрут, дату и контактные данные.</string>
+    <string name="ux_send_booking">Отправить заявку</string>
+    <string name="ux_status_new">Заявка получена</string>
+    <string name="ux_status_waiting">Ожидайте подтверждения. Диспетчер согласует с вами детали поездки.</string>
+    <string name="ux_status_verified">Статус поездки получен от Transfer Servis.</string>
+    <string name="ux_checked_at">Проверено: %1$s</string>
+    <string name="ux_last_checked_at">Последняя успешная проверка: %1$s</string>
+    <string name="ux_offline_snapshot">Не удалось обновить. Ниже — данные последней успешной проверки. Проверьте подключение к интернету. Отсутствие связи не означает отмену заявки.</string>
+    <string name="ux_home_unavailable">Не удалось обновить сведения о поездке</string>
+    <string name="ux_assignment_title">Назначение водителя</string>
+    <string name="ux_assignment_unavailable">Сведения о назначенном водителе пока недоступны в приложении.</string>
+    <string name="ux_profile_subtitle">Данные для следующих поездок</string>
+    <string name="ux_history_local">История на этом устройстве</string>
+    <string name="ux_empty_calculate">Рассчитать поездку</string>
+    <string name="ux_history_other_month">Другие поездки</string>
+</resources>

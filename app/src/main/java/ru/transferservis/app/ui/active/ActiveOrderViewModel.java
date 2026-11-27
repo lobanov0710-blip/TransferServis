@@ -13,6 +13,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BooleanSupplier;
 
 import ru.transferservis.app.data.local.PassengerOrderSessionStore;
@@ -60,7 +61,7 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
         };
         requests = new Requests(statusLoader, sessions, historyWriter,
                 Executors.newSingleThreadExecutor(), ContextCompat.getMainExecutor(application));
-        requests.restoreActiveOrder();
+        // Первое чтение запускает видимый экран. Создание ViewModel не вызывает HTTP.
     }
 
     @NonNull
@@ -107,6 +108,19 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
         // Accessed only by the serial storage executor.
         @Nullable private Session lastConfirmedSession;
         @Nullable private ActiveOrder lastConfirmedOrder;
+        private long lastCheckedAtMillis;
+        @Nullable private Flight flight;
+
+        /** Один HTTP-запрос может обслужить несколько событий жизненного цикла. */
+        private static final class Flight {
+            final Session session;
+            long requestId;
+            @Nullable ApiResult<ActiveOrder> result;
+            Flight(Session session, long requestId) {
+                this.session = session;
+                this.requestId = requestId;
+            }
+        }
 
         Requests(StatusLoader statusLoader, SessionAccess sessions, HistoryWriter historyWriter,
                 ExecutorService storageExecutor, Executor mainExecutor) {
@@ -138,16 +152,73 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
                 }
                 if (session == null || (expectedOrderId != null
                         && !expectedOrderId.equals(session.getOrderId()))) {
+                    forgetSnapshot();
                     deliver(requestId, null, ActiveOrderUiState.empty());
                     return;
                 }
                 requestedSession = session;
+                if (!sameSession(session, lastConfirmedSession)) {
+                    forgetSnapshot();
+                }
+                // Даже после получения ответа сохраняем его, пока новейшее событие
+                // не обработает результат: queued onResume не создаёт второй HTTP.
+                if (flight != null && sameSession(session, flight.session)) {
+                    flight.requestId = requestId;
+                    if (flight.result != null) {
+                        finishFlight(flight);
+                    } else {
+                        deliver(requestId, session, snapshotOrLoading());
+                    }
+                    return;
+                }
+                Flight started = new Flight(session, requestId);
+                flight = started;
+                deliver(requestId, session, snapshotOrLoading());
                 statusLoader.load(session.getAccessToken(), result -> {
-                    if (isCurrentRequest(requestId)) {
-                        storageExecutor.execute(() -> handleResult(requestId, session, result));
+                    if (storageExecutor.isShutdown()) {
+                        return;
+                    }
+                    try {
+                        storageExecutor.execute(() -> {
+                            if (flight != started || started.result != null) {
+                                return;
+                            }
+                            started.result = result;
+                            finishFlight(started);
+                        });
+                    } catch (RejectedExecutionException closed) {
+                        // ViewModel мог закрыться между проверкой и постановкой callback.
+                        if (!storageExecutor.isShutdown()) { throw closed; }
                     }
                 });
             });
+        }
+
+        private void finishFlight(Flight completed) {
+            if (flight != completed || !isCurrentRequest(completed.requestId)) {
+                return;
+            }
+            flight = null;
+            handleResult(completed.requestId, completed.session, completed.result);
+        }
+
+        private void forgetSnapshot() {
+            lastConfirmedSession = null;
+            lastConfirmedOrder = null;
+            lastCheckedAtMillis = 0L;
+        }
+
+        private ActiveOrderUiState snapshotOrLoading() {
+            return lastConfirmedOrder == null ? ActiveOrderUiState.loading()
+                    : ActiveOrderUiState.snapshot(ActiveOrderUiState.Status.LOADING,
+                            lastConfirmedOrder, null, lastCheckedAtMillis);
+        }
+
+        private static boolean temporary(ApiResult<ActiveOrder> result) {
+            return result.getStatus() == ApiResult.Status.NETWORK_ERROR
+                    || (result.getStatus() == ApiResult.Status.HTTP_ERROR
+                    && (result.getHttpCode() == 429
+                    || (result.getHttpCode() >= 500 && result.getHttpCode() <= 599)));
         }
 
         private void handleResult(long requestId, Session session, ApiResult<ActiveOrder> result) {
@@ -155,23 +226,35 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
                 return;
             }
             if (!sessions.isCurrent(session)) {
+                forgetSnapshot();
                 restartIfCurrent(requestId);
                 return;
             }
             if (!result.isSuccess()) {
                 ApiErrorCode error = result.getErrorCode();
                 // Temporary network/HTTP errors never discard the capability token.
-                deliver(requestId, session, ActiveOrderUiState.error(
-                        error == null ? ApiErrorCode.UNKNOWN : error));
+                ApiErrorCode code = error == null ? ApiErrorCode.UNKNOWN : error;
+                // На 401/403, нарушении контракта или смене прав снимок не выдаётся.
+                // Ошибка сети не делает сохранённые сведения актуальными.
+                boolean keep = temporary(result) && sameSession(session, lastConfirmedSession)
+                        && lastConfirmedOrder != null;
+                ActiveOrderUiState state = keep
+                        ? ActiveOrderUiState.snapshot(ActiveOrderUiState.Status.ERROR,
+                                lastConfirmedOrder, code, lastCheckedAtMillis)
+                        : ActiveOrderUiState.error(code);
+                if (!keep) { forgetSnapshot(); }
+                deliver(requestId, session, state);
                 return;
             }
 
             ActiveOrder order = result.getData();
             if (order == null) {
+                forgetSnapshot();
                 deliver(requestId, session, ActiveOrderUiState.error(ApiErrorCode.INVALID_RESPONSE));
                 return;
             }
             if (!session.getOrderId().equals(order.getOrderId())) {
+                forgetSnapshot();
                 // The failed request must never remove a newly created session.
                 if (isCurrentRequest(requestId) && sessions.clearIfMatches(session)) {
                     deliver(requestId, null, ActiveOrderUiState.error(ApiErrorCode.INVALID_RESPONSE));
@@ -189,10 +272,12 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
 
             lastConfirmedSession = session;
             lastConfirmedOrder = order;
+            lastCheckedAtMillis = System.currentTimeMillis();
             historyWriter.update(order,
                     () -> isCurrentRequest(requestId) && sessions.isCurrent(session));
             // DONE/CANCELED remain visible; no new terminal-session policy is introduced.
-            deliver(requestId, session, ActiveOrderUiState.success(order));
+            deliver(requestId, session, ActiveOrderUiState.snapshot(
+                    ActiveOrderUiState.Status.SUCCESS, order, null, lastCheckedAtMillis));
         }
 
         private void deliver(long requestId, @Nullable Session session, ActiveOrderUiState state) {
@@ -247,6 +332,8 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
             requestedSession = null;
             uiState.setValue(ActiveOrderUiState.empty());
             storageExecutor.execute(() -> {
+                flight = null;
+                forgetSnapshot();
                 if (expected != null && isCurrentRequest(requestId)) {
                     sessions.clearIfMatches(expected);
                 }
