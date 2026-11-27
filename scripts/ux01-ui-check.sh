@@ -4,6 +4,18 @@ set -euo pipefail
 pkg="ru.transferservis.app.staging"
 out="build/ux01"
 mkdir -p "$out"
+# Pixel Launcher на API35 может зависать при смене density/font scale и
+# перекрывать приложение системным ANR-окном. Лаунчер не участвует в
+# этих сценариях: отключаем только распознанный Pixel Launcher на CI AVD.
+launcher_component="$(adb shell cmd package resolve-activity --brief \
+    -a android.intent.action.MAIN -c android.intent.category.HOME | tr -d '\r' | tail -n 1)"
+printf '%s\n' "$launcher_component" > "$out/launcher-component.txt"
+launcher_package="${launcher_component%%/*}"
+if [ "$launcher_package" = "com.google.android.apps.nexuslauncher" ]; then
+    adb shell pm disable-user --user 0 "$launcher_package"
+fi
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
 # Оба APK из одной сборки: одинаковая debug-подпись, только одноразовый AVD.
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
@@ -29,6 +41,9 @@ for config in "360:1.0" "360:2.0" "411:1.3"; do
     adb shell am instrument -w -r -e class "$classes" \
         "${pkg}.test/androidx.test.runner.AndroidJUnitRunner" \
         | tee "$out/$label/instrumentation.txt"
+    adb exec-out screencap -p > "$out/$label/after-suite.png"
+    adb shell dumpsys window windows > "$out/$label/window-state.txt"
+    adb logcat -d -t 500 > "$out/$label/logcat.txt"
     adb pull "/sdcard/Android/data/$pkg/files/ux01" "$out/$label/" >/dev/null
     UX01_LABEL="$label" python3 - <<'PY'
 from pathlib import Path

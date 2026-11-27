@@ -13,6 +13,7 @@ import android.widget.TextView;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.fragment.FragmentNavigator;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -80,13 +81,13 @@ public final class ApprovedPassengerUiTest {
             awaitDraw(scenario);
             scenario.onActivity(activity -> assertEquals(View.VISIBLE,
                     activity.findViewById(R.id.homeActiveOrderCard).getVisibility()));
-            capture("home");
+            capture(scenario, "home");
             navigate(scenario, R.id.activeOrderFragment);
             awaitEmpty(scenario);
             scenario.onActivity(activity -> publish(activity, ActiveOrderUiState.snapshot(
                     ActiveOrderUiState.Status.SUCCESS, demoOrder(), null, System.currentTimeMillis())));
             awaitDraw(scenario);
-            capture("active");
+            capture(scenario, "active");
             scenario.onActivity(activity -> {
                 publish(activity, ActiveOrderUiState.snapshot(ActiveOrderUiState.Status.ERROR,
                         demoOrder(), ApiErrorCode.NETWORK, System.currentTimeMillis() - 60000));
@@ -96,9 +97,9 @@ public final class ApprovedPassengerUiTest {
                         .getText().toString().contains(context.getString(R.string.ux_last_checked_at, "").trim()));
             });
             awaitDraw(scenario);
-            capture("offline");
+            capture(scenario, "offline");
             scrollTo(scenario, R.id.activeOrderRefreshButton);
-            capture("offline-action");
+            capture(scenario, "offline-action");
             scenario.onActivity(activity -> {
                 publish(activity, ActiveOrderUiState.error(ApiErrorCode.REQUEST_FAILED));
                 assertEquals(View.GONE, activity.findViewById(R.id.activeOrderContent).getVisibility());
@@ -119,17 +120,17 @@ public final class ApprovedPassengerUiTest {
                 assertTrue(activity.findViewById(R.id.continueBookingButton).isEnabled());
                 assertEquals(View.GONE, activity.findViewById(R.id.quoteErrorText).getVisibility());
             });
-            capture("quote");
+            capture(scenario, "quote");
             scrollTo(scenario, R.id.continueBookingButton);
             scenario.onActivity(activity -> activity.findViewById(R.id.continueBookingButton).performClick());
             awaitDestination(scenario, R.id.bookingFragment);
-            capture("booking");
+            capture(scenario, "booking");
             scrollTo(scenario, R.id.orderButton);
-            capture("booking-action"); // Кнопку отправки НЕ нажимаем.
+            capture(scenario, "booking-action"); // Кнопку отправки НЕ нажимаем.
             scenario.onActivity(activity -> ((BottomNavigationView) activity.findViewById(R.id.bottomNavigation))
                     .setSelectedItemId(R.id.profileFragment));
             awaitDestination(scenario, R.id.profileFragment);
-            capture("profile");
+            capture(scenario, "profile");
         }
     }
 
@@ -141,7 +142,7 @@ public final class ApprovedPassengerUiTest {
             awaitDestination(scenario, R.id.historyFragment);
             waitVisible(scenario, R.id.historyEmptyCard);
             awaitDraw(scenario);
-            capture("empty-history");
+            capture(scenario, "empty-history");
             scenario.onActivity(activity -> activity.findViewById(R.id.historyStartButton).performClick());
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(activity -> assertNotNull(activity.findViewById(R.id.fromInput)));
@@ -153,7 +154,7 @@ public final class ApprovedPassengerUiTest {
             awaitDestination(scenario, R.id.historyFragment);
             waitVisible(scenario, R.id.historyRecycler);
             awaitDraw(scenario);
-            capture("history");
+            capture(scenario, "history");
         }
         assertTrue(new PendingOrderSubmissionStore(context).begin(new CreateOrderRequest(
                 "123e4567-e89b-42d3-a456-426614174000", "Демо", "+79990000000", "2026-12-10", "")));
@@ -162,7 +163,7 @@ public final class ApprovedPassengerUiTest {
             waitVisible(scenario, R.id.pendingOrderNoticeCard);
             awaitDraw(scenario);
             scenario.onActivity(activity -> assertFalse(activity.findViewById(R.id.calculateButton).isEnabled()));
-            capture("pending-recovery");
+            capture(scenario, "pending-recovery");
         }
     }
 
@@ -194,7 +195,9 @@ public final class ApprovedPassengerUiTest {
                         .findFragmentById(R.id.navHostFragment);
                 Fragment screen = host.getChildFragmentManager().getPrimaryNavigationFragment();
                 ready.set(host.getNavController().getCurrentDestination().getId() == destination
-                        && screen != null && screen.getView() != null
+                        && screen != null && ((FragmentNavigator.Destination) host.getNavController()
+                                .getCurrentDestination()).getClassName().equals(screen.getClass().getName())
+                        && screen.getView() != null
                         && screen.getView().getHeight() > 0
                         && screen.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED));
             });
@@ -264,8 +267,10 @@ public final class ApprovedPassengerUiTest {
             assertEquals("Кнопка обрезана по ширине", view.getWidth(), visible.width());
         });
     }
-    private void capture(String name) throws Exception {
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+    private void capture(ActivityScenario<MainActivity> scenario, String name) throws Exception {
+        awaitDraw(scenario);
+        scenario.onActivity(activity -> assertTrue("Снимок перекрыт чужим окном",
+                activity.getWindow().getDecorView().hasWindowFocus()));
         Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
         assertNotNull(bitmap);
         File directory = context.getExternalFilesDir("ux01");
