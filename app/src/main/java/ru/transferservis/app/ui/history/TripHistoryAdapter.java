@@ -247,7 +247,7 @@ public final class TripHistoryAdapter
             try {
                 java.util.Date date = input.parse(value);
                 if (date != null) {
-                    return new SimpleDateFormat("LLLL yyyy", new Locale("ru", "RU")).format(date);
+                    return new SimpleDateFormat("LLLL yyyy", Locale.forLanguageTag("ru-RU")).format(date);
                 }
             } catch (ParseException ignored) {
                 // Старые локальные записи сохраняются даже с неизвестной датой.

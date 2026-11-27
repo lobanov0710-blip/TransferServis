@@ -421,6 +421,8 @@ public final class ActiveOrderFragment
         routeText.setText(
                 order.getRoute()
         );
+        routeText.setVisibility(order.getFrom().isEmpty() || order.getTo().isEmpty()
+                ? View.VISIBLE : View.GONE);
 
 
         fromText.setText(
@@ -438,7 +440,7 @@ public final class ActiveOrderFragment
 
 
         dateText.setText(
-                order.getDate()
+                TripUiText.date(order.getDate())
         );
 
 

@@ -616,11 +616,15 @@ public final class HomeFragment
                 : TripUiText.status(requireContext(), order.getStatus()));
         if (order != null) {
             activeOrderRoute.setText(order.getRoute());
-            activeOrderMeta.setText(getString(R.string.ux_home_meta, order.getDate(),
+            activeOrderMeta.setText(getString(R.string.ux_home_meta, TripUiText.date(order.getDate()),
                     order.getTariff() == null ? getString(R.string.active_order_unknown_value)
                             : order.getTariff().getDisplayName()));
             activeOrderFreshness.setText(TripUiText.checkedAt(requireContext(),
                     state.getCheckedAtMillis(), state.getStatus() == ActiveOrderUiState.Status.ERROR));
+            if (state.getStatus() == ActiveOrderUiState.Status.ERROR) {
+                activeOrderFreshness.setText(getString(R.string.ux_home_stale,
+                        activeOrderFreshness.getText()));
+            }
         }
     }
 

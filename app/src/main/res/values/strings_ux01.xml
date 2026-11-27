@@ -23,6 +23,7 @@
     <string name="ux_last_checked_at">Последняя успешная проверка: %1$s</string>
     <string name="ux_offline_snapshot">Не удалось обновить. Ниже — данные последней успешной проверки. Проверьте подключение к интернету. Отсутствие связи не означает отмену заявки.</string>
     <string name="ux_home_unavailable">Не удалось обновить сведения о поездке</string>
+    <string name="ux_home_stale">Не удалось обновить. %1$s</string>
     <string name="ux_assignment_title">Назначение водителя</string>
     <string name="ux_assignment_unavailable">Сведения о назначенном водителе пока недоступны в приложении.</string>
     <string name="ux_profile_subtitle">Данные для следующих поездок</string>

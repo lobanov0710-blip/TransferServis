@@ -98,6 +98,7 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
         private final ExecutorService storageExecutor;
         private final Executor mainExecutor;
         private final AtomicLong requestSequence = new AtomicLong();
+        private volatile long completedRequestId = -1L;
         private final MutableLiveData<ActiveOrderUiState> uiState =
                 new MutableLiveData<>(ActiveOrderUiState.empty());
 
@@ -199,6 +200,7 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
                 return;
             }
             flight = null;
+            completedRequestId = completed.requestId;
             handleResult(completed.requestId, completed.session, completed.result);
         }
 
@@ -284,6 +286,13 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
             mainExecutor.execute(() -> {
                 // Check at delivery, not just before posting: another refresh may be queued first.
                 if (!isCurrentRequest(requestId)) {
+                    return;
+                }
+                // Очередь UI могла ещё не показать LOADING, когда ответ уже
+                // завершил запрос (в том числе безопасно очистил неверную сессию).
+                // Старый LOADING не должен запустить новое чтение и затереть отказ.
+                if (state.getStatus() == ActiveOrderUiState.Status.LOADING
+                        && completedRequestId >= requestId) {
                     return;
                 }
                 if (session != null && !sessions.isCurrent(session)) {
