@@ -21,7 +21,8 @@ public final class TripUiText {
 
     public static String checkedAt(Context context, long millis, boolean previous) {
         if (millis <= 0L) { return ""; }
-        String display = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+        String display = DateFormat.getDateTimeInstance(
+                DateFormat.SHORT, DateFormat.SHORT, Locale.forLanguageTag("ru-RU"))
                 .format(new Date(millis));
         return context.getString(previous ? R.string.ux_last_checked_at
                 : R.string.ux_checked_at, display);
