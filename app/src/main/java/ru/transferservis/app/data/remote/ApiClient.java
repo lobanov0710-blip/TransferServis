@@ -35,6 +35,8 @@ public final class ApiClient {
                         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        // Status v2 must stay on the approved staging origin, including redirects.
+                        .followRedirects(!BuildConfig.PASSENGER_STATUS_V2)
                         // Не повторяем POST автоматически: при потере ответа заказ
                         // мог уже сохраниться на сервере.
                         .retryOnConnectionFailure(false);

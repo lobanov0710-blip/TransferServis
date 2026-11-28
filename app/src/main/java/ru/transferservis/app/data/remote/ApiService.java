@@ -43,4 +43,8 @@ public interface ApiService {
     Call<OrderStatusResponse> getOrderStatus(
             @Body OrderStatusRequest request
     );
+
+    @Headers("Accept: application/json")
+    @POST("api/v2/order-status.php")
+    Call<OrderStatusResponse> getOrderStatusV2(@Body OrderStatusRequest request);
 }

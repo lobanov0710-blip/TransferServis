@@ -30,4 +30,8 @@
     <string name="ux_history_local">История на этом устройстве</string>
     <string name="ux_empty_calculate">Рассчитать поездку</string>
     <string name="ux_history_other_month">Другие поездки</string>
+    <string name="tz02_assignment_driver">Водитель: %1$s</string>
+    <string name="tz02_assignment_vehicle">Автомобиль: %1$s</string>
+    <string name="tz02_assignment_color">Цвет: %1$s</string>
+    <string name="tz02_assignment_plate">Госномер: %1$s</string>
 </resources>

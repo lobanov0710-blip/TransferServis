@@ -15,6 +15,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import ru.transferservis.app.BuildConfig;
 import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiClient;
@@ -29,6 +30,7 @@ import ru.transferservis.app.data.remote.dto.OrderStatusRequest;
 import ru.transferservis.app.data.remote.dto.OrderStatusResponse;
 import ru.transferservis.app.data.remote.dto.PassengerOrderDto;
 import ru.transferservis.app.domain.model.ActiveOrder;
+import ru.transferservis.app.domain.model.AssignedVehicle;
 import ru.transferservis.app.domain.model.OrderReceipt;
 import ru.transferservis.app.domain.model.Quote;
 import ru.transferservis.app.domain.validation.PassengerValidator;
@@ -57,12 +59,12 @@ public final class OrderRepository {
     private final ApiService apiService;
 
     private final Gson gson;
+    private final boolean statusV2;
 
     public OrderRepository() {
 
         this(
-                ApiClient.getApiService(),
-                new Gson()
+                ApiClient.getApiService(), new Gson(), BuildConfig.PASSENGER_STATUS_V2
         );
     }
 
@@ -70,12 +72,13 @@ public final class OrderRepository {
             @NonNull ApiService apiService,
             @NonNull Gson gson
     ) {
+        this(apiService, gson, false);
+    }
 
-        this.apiService =
-                apiService;
-
-        this.gson =
-                gson;
+    OrderRepository(@NonNull ApiService apiService, @NonNull Gson gson, boolean statusV2) {
+        this.apiService = apiService;
+        this.gson = gson;
+        this.statusV2 = statusV2;
     }
 
     public interface OrderCallback {
@@ -384,11 +387,9 @@ public final class OrderRepository {
                 );
 
 
-        apiService
-                .getOrderStatus(
-                        request
-                )
-                .enqueue(
+        Call<OrderStatusResponse> statusCall = statusV2
+                ? apiService.getOrderStatusV2(request) : apiService.getOrderStatus(request);
+        statusCall.enqueue(
                         new Callback<OrderStatusResponse>() {
 
                             @Override
@@ -719,6 +720,11 @@ public final class OrderRepository {
         }
 
 
+        Long revision = statusV2 ? dto.getRevision() : null;
+        if (statusV2 && (revision == null || revision <= 0L)) {
+            return ApiResult.invalidResponse(httpCode, ApiErrorCode.INVALID_RESPONSE);
+        }
+
         ActiveOrder activeOrder =
                 new ActiveOrder(
                         orderId,
@@ -732,7 +738,9 @@ public final class OrderRepository {
                         duration,
                         price,
                         createdAt,
-                        updatedAt
+                        updatedAt,
+                        revision,
+                        statusV2 ? mapAssignment(dto.getAssignment(), status) : null
                 );
 
 
@@ -740,6 +748,20 @@ public final class OrderRepository {
                 activeOrder,
                 httpCode
         );
+    }
+
+    @Nullable
+    private AssignedVehicle mapAssignment(@Nullable PassengerOrderDto.Assignment dto,
+            @NonNull OrderStatus status) {
+        if (dto == null || (status != OrderStatus.TAKEN && status != OrderStatus.IN_PROGRESS)) {
+            return null;
+        }
+        PassengerOrderDto.Vehicle vehicle = dto.getVehicle();
+        if (vehicle == null) return null;
+        AssignedVehicle assignment = new AssignedVehicle(cleanString(dto.getDriverDisplayName()),
+                cleanString(vehicle.getMake()), cleanString(vehicle.getModel()),
+                cleanString(vehicle.getColor()), cleanString(vehicle.getPlate()));
+        return assignment.hasDisplayData() ? assignment : null;
     }
 
     @NonNull

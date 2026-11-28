@@ -30,6 +30,7 @@ import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.ApiResult;
 import ru.transferservis.app.data.repository.OrderRepository;
 import ru.transferservis.app.domain.model.ActiveOrder;
+import ru.transferservis.app.domain.model.AssignedVehicle;
 
 import static org.junit.Assert.*;
 
@@ -306,6 +307,46 @@ public final class ActiveOrderRequestsTest {
         assertEquals(OrderStatus.IN_PROGRESS, state().getOrder().getStatus());
         assertEquals(200L, state().getOrder().getUpdatedAtMillis());
         assertEquals(OrderStatus.IN_PROGRESS, history.get(history.size() - 1).getStatus());
+    }
+
+    @Test
+    public void v2Assignment_isFreshOnly_andOlderRevisionNeverRepublishesIt() {
+        requests.refresh();
+        storage.runAll();
+        loader.reply(0, v2(3L, "DEMO-03"));
+        flush();
+        assertEquals("DEMO-03", state().getOrder().getAssignment().plate);
+        assertNull(history.get(0).getAssignment());
+        final long checked = state().getCheckedAtMillis();
+
+        requests.refresh();
+        flush();
+        assertNull(state().getOrder().getAssignment());
+        loader.reply(1, v2(2L, "DEMO-02"));
+        flush();
+        assertEquals(ActiveOrderUiState.Status.ERROR, state().getStatus());
+        assertEquals(Long.valueOf(3), state().getOrder().getRevision());
+        assertEquals(checked, state().getCheckedAtMillis());
+        assertNull(state().getOrder().getAssignment());
+        assertEquals(1, history.size());
+
+        requests.refresh();
+        flush();
+        loader.reply(2, v2(4L, "DEMO-04"));
+        flush();
+        assertEquals("DEMO-04", state().getOrder().getAssignment().plate);
+        requests.refresh();
+        flush();
+        loader.reply(3, ApiResult.networkError(ApiErrorCode.NETWORK, null));
+        flush();
+        assertEquals(ActiveOrderUiState.Status.ERROR, state().getStatus());
+        assertNull(state().getOrder().getAssignment());
+    }
+
+    private static ApiResult<ActiveOrder> v2(long revision, String plate) {
+        return ApiResult.success(new ActiveOrder("order-a", OrderStatus.TAKEN, "A → B", "A", "B",
+                "2026-10-20", TariffType.COMFORT, 20.0, 30.0, 1000, 50L, 100L, revision,
+                new AssignedVehicle(null, "Demo", null, null, plate)), 200);
     }
 
     @Test

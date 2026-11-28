@@ -1,7 +1,7 @@
 name: UX-01 approved passenger UI
 on:
   pull_request:
-    branches: [master, docs/ux-01-approved-mockups-20261127]
+    branches: [master, docs/ux-01-approved-mockups-20261127, feature/ux-01-approved-passenger-ui]
     paths: ["app/**", "scripts/ux01-ui-check.sh", ".github/workflows/ux01-approved-ui.yml"]
   workflow_dispatch:
 permissions:

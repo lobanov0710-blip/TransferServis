@@ -266,16 +266,24 @@ public final class ActiveOrderViewModel extends AndroidViewModel {
                 return;
             }
 
-            if (sameSession(session, lastConfirmedSession) && lastConfirmedOrder != null
-                    && order.getUpdatedAtMillis() < lastConfirmedOrder.getUpdatedAtMillis()) {
+            boolean sameSnapshot = sameSession(session, lastConfirmedSession) && lastConfirmedOrder != null;
+            if (sameSnapshot && order.getRevision() != null && lastConfirmedOrder.getRevision() != null
+                    && (order.getRevision() < lastConfirmedOrder.getRevision()
+                    || order.getUpdatedAtMillis() < lastConfirmedOrder.getUpdatedAtMillis())) {
+                // An old v2 snapshot never republishes an assignment or updates checkedAt.
+                deliver(requestId, session, ActiveOrderUiState.snapshot(ActiveOrderUiState.Status.ERROR,
+                        lastConfirmedOrder, ApiErrorCode.INVALID_RESPONSE, lastCheckedAtMillis));
+                return;
+            }
+            if (sameSnapshot && order.getUpdatedAtMillis() < lastConfirmedOrder.getUpdatedAtMillis()) {
                 // A stale replica response must not move the visible/history status backwards.
                 order = lastConfirmedOrder;
             }
 
             lastConfirmedSession = session;
-            lastConfirmedOrder = order;
+            lastConfirmedOrder = order.withoutAssignment();
             lastCheckedAtMillis = System.currentTimeMillis();
-            historyWriter.update(order,
+            historyWriter.update(lastConfirmedOrder,
                     () -> isCurrentRequest(requestId) && sessions.isCurrent(session));
             // DONE/CANCELED remain visible; no new terminal-session policy is introduced.
             deliver(requestId, session, ActiveOrderUiState.snapshot(

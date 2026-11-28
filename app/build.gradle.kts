@@ -34,6 +34,12 @@ require(transferStagingAccessToken.none { it == '"' || it == '\\' || it == '\n' 
     "Invalid staging tester token"
 }
 
+val transferPassengerStatusV2 = providers.gradleProperty("transferPassengerStatusV2")
+    .orNull == "true"
+require(!transferPassengerStatusV2 || transferStagingBaseUrl == "https://staging.transfer-servis52.ru/") {
+    "Passenger status v2 requires the approved STAGING PHP origin"
+}
+
 android {
     namespace = "ru.transferservis.app"
 
@@ -63,10 +69,12 @@ android {
         debug {
             // Отдельный package ID и хранилище: staging APK не заменяет рабочее приложение.
             applicationIdSuffix = ".staging"
+            buildConfigField("boolean", "PASSENGER_STATUS_V2", transferPassengerStatusV2.toString())
             buildConfigField("String", "API_BASE_URL", "\"$transferStagingBaseUrl\"")
             buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
         }
         release {
+            buildConfigField("boolean", "PASSENGER_STATUS_V2", "false")
             buildConfigField("String", "API_BASE_URL", "\"https://transfer-servis52.ru/\"")
             buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"\"")
             optimization {
