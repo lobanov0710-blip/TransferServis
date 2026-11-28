@@ -1,0 +1,61 @@
+name: TZ-02 staging acceptance build
+on:
+  push:
+    branches: [qa/tz02-staging-acceptance]
+permissions:
+  contents: read
+concurrency:
+  group: tz02-staging-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  debug-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build explicit v2 and test redirect behavior without real credentials
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest --tests '*PassengerStatusV2AcceptanceBuildTest' :app:assembleDebug \
+            -PtransferPassengerStatusV2=true \
+            -PtransferStagingBaseUrl=https://staging.transfer-servis52.ru/ \
+            -PtransferStagingAccessToken=
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as E
+          [result] = Path('app/build/test-results/testDebugUnitTest').glob('*PassengerStatusV2AcceptanceBuildTest.xml')
+          cases = E.parse(result).findall('testcase')
+          assert len(cases) == 1 and len(cases[0]) == 0, 'Opt-in test must run and pass'
+          PY
+      - name: Verify opt-in rejects a non-approved staging host
+        run: |
+          if ./gradlew :app:help -PtransferPassengerStatusV2=true \
+              -PtransferStagingBaseUrl=https://other-staging.invalid/ -PtransferStagingAccessToken= \
+              > "$RUNNER_TEMP/refusal.txt" 2>&1; then
+            echo 'Unexpectedly accepted another endpoint'
+            exit 1
+          fi
+          grep -F 'Passenger status v2 requires the approved STAGING PHP origin' "$RUNNER_TEMP/refusal.txt"
+      - name: Verify staging package and debug signature
+        run: |
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          sdk_tools=$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)
+          "$(dirname "$sdk_tools")/aapt" dump badging "$apk" | grep -F "package: name='ru.transferservis.app.staging'"
+          "$sdk_tools" verify --print-certs "$apk" | grep -F 'CN=Android Debug'
+          sha256sum "$apk" | tee app/build/outputs/apk/debug/SHA256SUMS
+      - uses: actions/upload-artifact@v6
+        with:
+          name: tz02-opt-in-debug-empty-token
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/SHA256SUMS
+            app/build/test-results/testDebugUnitTest/*PassengerStatusV2AcceptanceBuildTest.xml
+          if-no-files-found: error
+          retention-days: 14
