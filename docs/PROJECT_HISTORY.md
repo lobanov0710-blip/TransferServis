@@ -111,4 +111,10 @@
 
 - Владелец ответил «Утверждаю» на предложенный единый ответ v2 и состав карточки. До решения о публичном имени поле `driverDisplayName` пустое. Контакт для звонков остаётся отдельным вопросом TZ-03.
 - В [Worker PR №48](https://github.com/lobanov0710-blip/uber-v3/pull/48) реализован единый запрос статуса и автомобиля по действующей capability. Прошли 82 npm набора и отдельный локальный smoke workerd/D1. Обе ветки схемы G2 и серверной реализации остаются черновыми.
-- [PHP PR №13](https://github.com/lobanov0710-blip/public_html/pull/13) содержит отдельный маршрут только для STAGING. [PHP CI №46111762581](https://github.com/lobanov0710-blip/public_html/actions/runs/46111762581) успешно проверил синтаксис, подпись пути и общий лимит. Рабочие флаги не включены, текущий production не затронут. Android v2 ожидает интеграционного прогона. Физическая проверка UX-01 также остаётся неподтверждённой.
+- [PHP PR №13](https://github.com/lobanov0710-blip/public_html/pull/13) содержит отдельный маршрут только для STAGING. [PHP CI №46111762581](https://github.com/lobanov0710-blip/public_html/actions/runs/46111762581) успешно проверил синтаксис, подпись пути и общий лимит. Рабочие флаги не включены, текущий production не затронут. На момент этого среза Android v2 ожидал интеграционного прогона. Физическая проверка UX-01 также остаётся неподтверждённой.
+
+### 28.11.2026 — TZ-02: сквозная проверка и Android
+
+- [Локальная цепочка PHP/cURL → TLS → Worker → D1](https://github.com/lobanov0710-blip/public_html/actions/runs/46112287479) прошла на синтетическом заказе.
+- В [Android PR №43](https://github.com/lobanov0710-blip/TransferServis/pull/43) v2 доступен по отдельному Debug-флагу только на согласованном STAGING URL. [Android CI](https://github.com/lobanov0710-blip/TransferServis/actions/runs/46112647298) и [24/24 UI-проверки](https://github.com/lobanov0710-blip/TransferServis/actions/runs/46112647316) прошли на `fe5ece8`.
+- Следующая приёмка зависит от доступности согласованной схемы G2 в тестовом контуре. Проверка развёрнутого STAGING и физического телефона остаётся открытой.
