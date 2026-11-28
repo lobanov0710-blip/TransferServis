@@ -34,6 +34,46 @@ CI: стандартные Debug/unsigned Release проверки и отдел
 
 Этот последующий коммит меняет только документацию; код приложения и тестов совпадает с указанным проверенным SHA. Физический телефон, живой backend и production E2E этим прогоном не проверялись.
 
+
+## Приёмка на физическом телефоне
+
+Проверка на телефоне ожидается. Проверенный APK — `app-debug.apk` из [артефакта Android CI](https://github.com/lobanov0710-blip/TransferServis/actions/runs/46064506385/artifacts/15230117989). Скачайте ZIP из GitHub на Windows под своей учётной записью, извлеките APK и скопируйте его по USB в папку `Download` на телефоне. По данным GitHub артефакт хранится до 11.12.2026.
+
+Если скачивание в браузере не работает, используйте GitHub CLI на Windows под учётной записью с доступом к репозиторию:
+
+```powershell
+$apkDir = Join-Path $env:TEMP ('TransferServis-UX01-' + [Guid]::NewGuid().ToString('N'))
+gh run download 46064506385 --repo lobanov0710-blip/TransferServis --name transfer-servis-debug-apk --dir $apkDir
+if ($LASTEXITCODE -ne 0) { throw 'Не удалось скачать APK из GitHub Actions.' }
+$apk = Join-Path $apkDir 'app-debug.apk'
+if ((Get-FileHash -LiteralPath $apk -Algorithm SHA256 -ErrorAction Stop).Hash -ne 'fa626ac71f6a21b6d77607ad89592c9867d10d19833b8235c89739d46973881e') {
+    throw 'SHA-256 APK не совпадает с проверенной сборкой.'
+}
+Get-Item -LiteralPath $apk
+```
+
+Если артефакт недоступен, соберите проверенный коммит в новой папке. Нужны Android SDK API 37 и настроенные Java и Android SDK. В CI для Gradle использовался JDK 17, исходный код приложения компилируется с совместимостью Java 11. Команда задаёт отключённый тестовый адрес и пустой токен явно, чтобы локальные настройки Gradle не подключили сервер.
+
+```powershell
+$checkout = Join-Path $env:TEMP ('TransferServis-UX01-source-' + [Guid]::NewGuid().ToString('N'))
+git clone --branch feature/ux-01-approved-passenger-ui --single-branch https://github.com/lobanov0710-blip/TransferServis.git $checkout
+if ($LASTEXITCODE -ne 0) { throw 'Не удалось получить исходники.' }
+Push-Location $checkout
+try {
+    git switch --detach 0c4ad997ef1ec8c68a7b139991584008d88473ea
+    if ($LASTEXITCODE -ne 0) { throw 'Не удалось открыть проверенный коммит.' }
+    & .\gradlew.bat ':app:assembleDebug' '-PtransferStagingBaseUrl=https://staging-not-configured.invalid/' '-PtransferStagingAccessToken='
+    if ($LASTEXITCODE -ne 0) { throw 'Не удалось собрать Debug APK.' }
+    Get-Item -LiteralPath '.\app\build\outputs\apk\debug\app-debug.apk'
+} finally {
+    Pop-Location
+}
+```
+
+Локальная сборка использует отладочный сертификат Windows-компьютера, поэтому её SHA-256 может отличаться от CI. Если Android сообщает о конфликте подписи с установленной staging-сборкой, зафиксируйте сообщение установщика. Сохраните существующую установку и её данные.
+
+После установки проверьте запуск, вкладки «Главная», «Поездки» и «Профиль», ввод и обмен адресами, избранное, тарифы, прокрутку и подписи при крупном шрифте и TalkBack. Запишите модель телефона, версию Android и результат. Сборка без сервера позволяет проверить эти экраны и локальные действия. Расчёт, оформление и статус реального заказа требуют отдельной проверки с настроенным STAGING.
+
 ## Границы
 
 Контракт API, backend, БД, release-конфигурация, FCM, тарифы и права не менялись. Серверные время подачи, пожелания, карта, чат и звонки этим PR не реализуются. Не объединять автоматически с отдельной PUSH/security/release цепочкой; при интеграции обязательно сохранить ранее подготовленный origin guard из PR №35/№39.
