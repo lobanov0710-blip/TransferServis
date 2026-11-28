@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import mockwebserver3.MockResponse;
+import okhttp3.OkHttpClient;
 import mockwebserver3.MockWebServer;
 
 import retrofit2.Retrofit;
@@ -34,6 +35,8 @@ public final class OrderRepositoryStatusHttpTest {
     private MockWebServer server;
 
     private OrderRepository repository;
+    private ApiService apiService;
+    private final AtomicReference<String> lastPath = new AtomicReference<>();
 
 
     @Before
@@ -57,6 +60,10 @@ public final class OrderRepositoryStatusHttpTest {
                                         "/"
                                 )
                         )
+                        .client(new OkHttpClient.Builder().addInterceptor(chain -> {
+                            lastPath.set(chain.request().url().encodedPath());
+                            return chain.proceed(chain.request());
+                        }).build())
                         .addConverterFactory(
                                 GsonConverterFactory.create(
                                         gson
@@ -65,7 +72,7 @@ public final class OrderRepositoryStatusHttpTest {
                         .build();
 
 
-        ApiService apiService =
+        apiService =
                 retrofit.create(
                         ApiService.class
                 );
@@ -390,6 +397,48 @@ public final class OrderRepositoryStatusHttpTest {
         );
     }
 
+
+    private static final String TZ02_BODY = "{\"ok\":true,\"order\":{"
+            + "\"id\":\"order-123\",\"status\":\"taken\",\"route\":\"A → B\","
+            + "\"date\":\"2026-10-20\",\"createdAt\":50,\"updatedAt\":100,\"revision\":2,"
+            + "\"assignment\":{\"driverDisplayName\":null,\"vehicle\":{\"make\":\"Toyota\",\"plate\":\"DEMO-02\"}}}}";
+
+    @Test public void statusV2_selectsOnePathAndReadsOnlyAvailableAssignmentFields() throws Exception {
+        repository = new OrderRepository(apiService, new Gson(), true);
+        enqueueJson(200, TZ02_BODY);
+        ApiResult<ActiveOrder> result = getOrderStatus("synthetic-capability");
+        assertTrue(result.isSuccess());
+        assertEquals("/api/v2/order-status.php", lastPath.get());
+        assertEquals(1, server.getRequestCount());
+        assertEquals("{\"accessToken\":\"synthetic-capability\"}", server.takeRequest().getBody().utf8());
+        assertEquals(Long.valueOf(2), result.getData().getRevision());
+        assertEquals("Toyota", result.getData().getAssignment().make);
+        assertNull(result.getData().getAssignment().driverName);
+        assertNull(result.getData().getAssignment().color);
+    }
+
+    @Test public void statusV2_failureDoesNotFallBackAndV1IgnoresCardFields() throws Exception {
+        repository = new OrderRepository(apiService, new Gson(), true);
+        enqueueJson(404, "{\"ok\":false,\"error\":\"not found\"}");
+        assertEquals(404, getOrderStatus("synthetic-capability").getHttpCode());
+        assertEquals("/api/v2/order-status.php", lastPath.get());
+        assertEquals(1, server.getRequestCount());
+
+        repository = new OrderRepository(apiService, new Gson());
+        enqueueJson(200, TZ02_BODY);
+        ActiveOrder v1 = getOrderStatus("synthetic-capability").getData();
+        assertEquals("/api/order-status.php", lastPath.get());
+        assertNull(v1.getRevision());
+        assertNull(v1.getAssignment());
+    }
+
+    @Test public void statusV2_rejectsMissingRevisionAndHidesTerminalCard() throws Exception {
+        repository = new OrderRepository(apiService, new Gson(), true);
+        enqueueJson(200, TZ02_BODY.replace("\"revision\":2,", ""));
+        assertEquals(ApiErrorCode.INVALID_RESPONSE, getOrderStatus("synthetic-capability").getErrorCode());
+        enqueueJson(200, TZ02_BODY.replace("\"taken\"", "\"done\""));
+        assertNull(getOrderStatus("synthetic-capability").getData().getAssignment());
+    }
 
     private ApiResult<ActiveOrder> getOrderStatus(
             String accessToken

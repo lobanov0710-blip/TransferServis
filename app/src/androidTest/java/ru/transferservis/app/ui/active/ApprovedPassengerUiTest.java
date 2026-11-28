@@ -38,6 +38,7 @@ import ru.transferservis.app.data.model.TariffType;
 import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.data.remote.dto.CreateOrderRequest;
 import ru.transferservis.app.domain.model.ActiveOrder;
+import ru.transferservis.app.domain.model.AssignedVehicle;
 import ru.transferservis.app.domain.model.Quote;
 import ru.transferservis.app.ui.quote.QuoteUiState;
 import ru.transferservis.app.ui.quote.QuoteViewModel;
@@ -100,6 +101,22 @@ public final class ApprovedPassengerUiTest {
             capture(scenario, "offline");
             scrollTo(scenario, R.id.activeOrderRefreshButton);
             capture(scenario, "offline-action");
+            scenario.onActivity(activity -> {
+                ActiveOrder confirmed = new ActiveOrder("demo-order", OrderStatus.TAKEN,
+                        "Нижний Новгород → Москва", "Нижний Новгород", "Москва", "2026-11-30",
+                        TariffType.COMFORT, 436.8, 325.0, 24024, 100, 200, 2L,
+                        new AssignedVehicle(null, "Demo", "Car", "Синий", "DEMO-02"));
+                View card = activity.findViewById(R.id.activeOrderAssignmentInfo);
+                TextView text = activity.findViewById(R.id.activeOrderAssignmentText);
+                publish(activity, ActiveOrderUiState.success(confirmed));
+                assertEquals(View.VISIBLE, card.getVisibility());
+                assertTrue(text.getText().toString().contains("DEMO-02"));
+                assertFalse(text.getText().toString().contains("Водитель:"));
+                publish(activity, ActiveOrderUiState.snapshot(ActiveOrderUiState.Status.ERROR,
+                        confirmed.withoutAssignment(), ApiErrorCode.NETWORK, System.currentTimeMillis()));
+                assertEquals(View.GONE, card.getVisibility());
+                assertEquals(0, text.getText().length());
+            });
             scenario.onActivity(activity -> {
                 publish(activity, ActiveOrderUiState.error(ApiErrorCode.REQUEST_FAILED));
                 assertEquals(View.GONE, activity.findViewById(R.id.activeOrderContent).getVisibility());

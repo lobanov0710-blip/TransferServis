@@ -31,6 +31,8 @@ public final class ActiveOrder {
     private final long createdAtMillis;
 
     private final long updatedAtMillis;
+    @Nullable private final Long revision;
+    @Nullable private final AssignedVehicle assignment;
 
 
     public ActiveOrder(
@@ -47,7 +49,17 @@ public final class ActiveOrder {
             long createdAtMillis,
             long updatedAtMillis
     ) {
+        this(orderId, status, route, from, to, date, tariff, distanceKm, durationMinutes,
+                priceRub, createdAtMillis, updatedAtMillis, null, null);
+    }
 
+    public ActiveOrder(@NonNull String orderId, @NonNull OrderStatus status,
+            @NonNull String route, @NonNull String from, @NonNull String to, @NonNull String date,
+            @Nullable TariffType tariff, @Nullable Double distanceKm, @Nullable Double durationMinutes,
+            @Nullable Integer priceRub, long createdAtMillis, long updatedAtMillis,
+            @Nullable Long revision, @Nullable AssignedVehicle assignment) {
+        this.revision = revision;
+        this.assignment = assignment;
         this.orderId =
                 orderId;
 
@@ -85,6 +97,16 @@ public final class ActiveOrder {
                 updatedAtMillis;
     }
 
+
+    @Nullable public Long getRevision() { return revision; }
+
+    @Nullable public AssignedVehicle getAssignment() { return assignment; }
+
+    public ActiveOrder withoutAssignment() {
+        return assignment == null ? this : new ActiveOrder(orderId, status, route, from, to, date,
+                tariff, distanceKm, durationMinutes, priceRub, createdAtMillis, updatedAtMillis,
+                revision, null);
+    }
 
     @NonNull
     public String getOrderId() {

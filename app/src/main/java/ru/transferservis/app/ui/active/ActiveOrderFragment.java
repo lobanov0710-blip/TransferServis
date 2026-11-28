@@ -1,6 +1,7 @@
 package ru.transferservis.app.ui.active;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,10 +18,14 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ru.transferservis.app.R;
 import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.domain.model.ActiveOrder;
+import ru.transferservis.app.domain.model.AssignedVehicle;
 import ru.transferservis.app.ui.common.TripUiText;
 
 public final class ActiveOrderFragment
@@ -45,6 +50,7 @@ public final class ActiveOrderFragment
     private TextView checkedAtText;
     private TextView statusMessage;
     private View assignmentInfo;
+    private TextView assignmentText;
 
     private TextView errorText;
 
@@ -100,6 +106,7 @@ public final class ActiveOrderFragment
         checkedAtText = root.findViewById(R.id.activeOrderCheckedAt);
         statusMessage = root.findViewById(R.id.activeOrderStatusMessage);
         assignmentInfo = root.findViewById(R.id.activeOrderAssignmentInfo);
+        assignmentText = root.findViewById(R.id.activeOrderAssignmentText);
 
         progress =
                 root.findViewById(
@@ -243,6 +250,12 @@ public final class ActiveOrderFragment
         }
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        renderAssignment(null, false);
+    }
+
     @Nullable
     private String expectedOrderId() {
         Bundle arguments = getArguments();
@@ -253,6 +266,7 @@ public final class ActiveOrderFragment
     private void renderState(
             @NonNull ActiveOrderUiState state
     ) {
+        renderAssignment(state.getOrder(), state.isSuccess() && isResumed());
         if (state.hasActiveOrder()) {
             renderSuccess(state.getOrder());
             checkedAtText.setText(TripUiText.checkedAt(requireContext(),
@@ -304,6 +318,36 @@ public final class ActiveOrderFragment
         }
     }
 
+
+    private void renderAssignment(@Nullable ActiveOrder order, boolean fresh) {
+        assignmentInfo.setVisibility(View.GONE);
+        assignmentText.setText(null);
+        if (order == null || order.getStatus() == OrderStatus.DONE
+                || order.getStatus() == OrderStatus.CANCELED) return;
+        if (order.getRevision() == null) {
+            // Preserve the v1 placeholder for existing builds.
+            assignmentText.setText(R.string.ux_assignment_unavailable);
+            assignmentInfo.setVisibility(View.VISIBLE);
+            return;
+        }
+        AssignedVehicle vehicle = order.getAssignment();
+        if (!fresh || vehicle == null || (order.getStatus() != OrderStatus.TAKEN
+                && order.getStatus() != OrderStatus.IN_PROGRESS)) return;
+
+        List<String> lines = new ArrayList<>();
+        if (vehicle.driverName != null) lines.add(getString(R.string.tz02_assignment_driver, vehicle.driverName));
+        if (vehicle.make != null || vehicle.model != null) {
+            String name = ((vehicle.make == null ? "" : vehicle.make) + " "
+                    + (vehicle.model == null ? "" : vehicle.model)).trim();
+            lines.add(getString(R.string.tz02_assignment_vehicle, name));
+        }
+        if (vehicle.color != null) lines.add(getString(R.string.tz02_assignment_color, vehicle.color));
+        if (vehicle.plate != null) lines.add(getString(R.string.tz02_assignment_plate, vehicle.plate));
+        if (!lines.isEmpty()) {
+            assignmentText.setText(TextUtils.join("\n", lines));
+            assignmentInfo.setVisibility(View.VISIBLE);
+        }
+    }
 
     private void renderLoading() {
 
@@ -405,8 +449,6 @@ public final class ActiveOrderFragment
         );
         statusMessage.setText(order.getStatus() == OrderStatus.NEW
                 ? R.string.ux_status_waiting : R.string.ux_status_verified);
-        assignmentInfo.setVisibility(order.getStatus() == OrderStatus.DONE
-                || order.getStatus() == OrderStatus.CANCELED ? View.GONE : View.VISIBLE);
 
 
         statusText.setTextColor(
@@ -712,6 +754,7 @@ public final class ActiveOrderFragment
         checkedAtText = null;
         statusMessage = null;
         assignmentInfo = null;
+        assignmentText = null;
 
         progress =
                 null;

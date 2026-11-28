@@ -28,6 +28,33 @@ public final class PassengerOrderDto {
 
     private Long updatedAt;
 
+    private Long revision;
+
+    private Assignment assignment;
+
+    public static final class Assignment {
+        private String driverDisplayName;
+        private Vehicle vehicle;
+
+        @Nullable public String getDriverDisplayName() { return driverDisplayName; }
+        @Nullable public Vehicle getVehicle() { return vehicle; }
+    }
+
+    public static final class Vehicle {
+        private String make;
+        private String model;
+        private String color;
+        private String plate;
+
+        @Nullable public String getMake() { return make; }
+        @Nullable public String getModel() { return model; }
+        @Nullable public String getColor() { return color; }
+        @Nullable public String getPlate() { return plate; }
+    }
+
+    @Nullable public Long getRevision() { return revision; }
+    @Nullable public Assignment getAssignment() { return assignment; }
+
 
     @Nullable
     public String getId() {

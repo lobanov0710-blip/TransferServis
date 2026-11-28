@@ -424,6 +424,11 @@ public final class OrderRepositoryValidationTest {
         private CreateOrderRequest lastOrderRequest;
 
         @Override
+        public Call<OrderStatusResponse> getOrderStatusV2(OrderStatusRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Call<CalculateResponse> calculate(
                 CalculateRequest request
         ) {

@@ -73,6 +73,30 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Verify and assemble the isolated TZ-02 QA APK
+        if: github.event_name == 'push' && github.ref_name == 'feature/tz02-passenger-vehicle-card'
+        run: |
+          set -euo pipefail
+          ./gradlew :app:testDebugUnitTest --tests '*Tz02QaGatewayTest' :app:assembleDebug \
+            -PtransferPassengerTz02Qa=true \
+            -PtransferStagingBaseUrl=https://staging.transfer-servis52.ru/ \
+            -PtransferStagingAccessToken=
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          apksigner="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
+          "$apksigner" verify "$apk"
+          mkdir -p qa-apk
+          cp "$apk" qa-apk/TransferServis_TZ02_QA.apk
+          sha256sum qa-apk/TransferServis_TZ02_QA.apk
+
+      - name: Upload the isolated TZ-02 QA APK
+        if: success() && github.event_name == 'push' && github.ref_name == 'feature/tz02-passenger-vehicle-card'
+        uses: actions/upload-artifact@v6
+        with:
+          name: TransferServis_TZ02_QA
+          path: qa-apk/TransferServis_TZ02_QA.apk
+          if-no-files-found: error
+          retention-days: 14
   release_gate:
     name: Unsigned Release verification (no publishing)
     runs-on: ubuntu-latest

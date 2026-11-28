@@ -256,7 +256,7 @@
                         android:layout_height="wrap_content"
                         android:textAppearance="@style/TextAppearance.TransferServis.Body"
                         android:layout_marginTop="8dp"
-                        android:text="@string/ux_assignment_unavailable" />
+                        android:id="@+id/activeOrderAssignmentText" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
             <TextView
