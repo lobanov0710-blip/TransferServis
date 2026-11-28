@@ -22,6 +22,7 @@ public final class ActiveOrderUiState {
     private final ActiveOrder order;
 
     private final ApiErrorCode errorCode;
+    private final long checkedAtMillis;
 
 
     private ActiveOrderUiState(
@@ -29,6 +30,11 @@ public final class ActiveOrderUiState {
             @Nullable ActiveOrder order,
             @Nullable ApiErrorCode errorCode
     ) {
+        this(status, order, errorCode, 0L);
+    }
+
+    private ActiveOrderUiState(Status status, @Nullable ActiveOrder order,
+            @Nullable ApiErrorCode errorCode, long checkedAtMillis) {
 
         this.status =
                 status;
@@ -38,6 +44,7 @@ public final class ActiveOrderUiState {
 
         this.errorCode =
                 errorCode;
+        this.checkedAtMillis = checkedAtMillis;
     }
 
 
@@ -73,6 +80,17 @@ public final class ActiveOrderUiState {
                 order,
                 null
         );
+    }
+
+    /** Последний снимок выдаётся только после проверки принадлежности текущей сессии. */
+    @NonNull
+    static ActiveOrderUiState snapshot(Status status, @NonNull ActiveOrder order,
+            @Nullable ApiErrorCode error, long checkedAtMillis) {
+        return new ActiveOrderUiState(status, order, error, checkedAtMillis);
+    }
+
+    public long getCheckedAtMillis() {
+        return checkedAtMillis;
     }
 
 

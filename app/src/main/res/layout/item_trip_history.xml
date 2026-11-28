@@ -1,160 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<com.google.android.material.card.MaterialCardView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-
-    android:layout_marginBottom="12dp"
-
-    app:cardBackgroundColor="@color/ts_surface"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="0dp"
-
-    app:strokeColor="@color/ts_outline"
-    app:strokeWidth="1dp">
-
-    <LinearLayout
+    android:orientation="vertical">
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-
-        android:orientation="vertical"
-
-        android:padding="20dp">
-
+        android:textAppearance="@style/TextAppearance.TransferServis.Label"
+        android:layout_marginTop="16dp"
+        android:accessibilityHeading="true"
+        android:id="@+id/tripMonth" />
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.TransferServis.Card"
+        android:layout_marginTop="16dp">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
+            android:orientation="vertical"
+            android:padding="16dp">
             <TextView
-                android:id="@+id/tripDate"
-
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-
-                android:layout_weight="1"
-
-                android:textColor="@color/ts_text_primary"
-
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
+                android:textAppearance="@style/TextAppearance.TransferServis.Label"
+                android:id="@+id/tripDate" />
             <TextView
-                android:id="@+id/tripStatus"
-
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-
-                android:textColor="@color/ts_primary"
-
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
+                android:textAppearance="@style/TextAppearance.TransferServis.Status"
+                android:layout_marginTop="8dp"
+                android:id="@+id/tripStatus" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.TransferServis.SectionTitle"
+                android:layout_marginTop="12dp"
+                android:id="@+id/tripFrom" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.TransferServis.Value"
+                android:layout_marginTop="6dp"
+                android:id="@+id/tripTo" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.TransferServis.Body"
+                android:layout_marginTop="12dp"
+                android:id="@+id/tripMeta" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.TransferServis.PriceSmall"
+                android:layout_marginTop="8dp"
+                android:id="@+id/tripPrice" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.TransferServis.Label"
+                android:layout_marginTop="8dp"
+                android:id="@+id/tripOrderId" />
+            <com.google.android.material.button.MaterialButton
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/tripOpenButton"
+                android:text="@string/ux_open_trip"
+                style="@style/Widget.TransferServis.SecondaryButton"
+                android:layout_marginTop="12dp"
+                android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/tripRepeatButton"
+                android:text="@string/history_repeat_route"
+                style="@style/Widget.TransferServis.SecondaryButton"
+                android:layout_marginTop="12dp"
+                android:visibility="gone" />
         </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-
-            android:layout_marginTop="16dp"
-
-            android:background="@color/ts_divider" />
-
-        <TextView
-            android:id="@+id/tripFrom"
-
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginTop="16dp"
-
-            android:textColor="@color/ts_text_primary"
-
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginStart="3dp"
-            android:layout_marginTop="5dp"
-
-            android:text="↓"
-
-            android:textColor="@color/ts_primary"
-
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tripTo"
-
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginTop="5dp"
-
-            android:textColor="@color/ts_text_primary"
-
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tripMeta"
-
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginTop="16dp"
-
-            android:textColor="@color/ts_text_secondary"
-
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/tripPrice"
-
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginTop="10dp"
-
-            android:textColor="@color/ts_primary"
-
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tripRepeatButton"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:minHeight="48dp"
-            android:text="@string/history_repeat_route"
-            android:textAllCaps="false"
-            android:visibility="gone"
-            app:cornerRadius="12dp" />
-
-        <TextView
-            android:id="@+id/tripOrderId"
-
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:layout_marginTop="8dp"
-
-            android:textColor="@color/ts_text_muted"
-
-            android:textIsSelectable="true"
-            android:textSize="11sp" />
-
-    </LinearLayout>
-
-</com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

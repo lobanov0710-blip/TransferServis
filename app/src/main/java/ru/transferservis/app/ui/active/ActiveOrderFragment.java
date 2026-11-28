@@ -21,6 +21,7 @@ import ru.transferservis.app.R;
 import ru.transferservis.app.data.model.OrderStatus;
 import ru.transferservis.app.data.remote.ApiErrorCode;
 import ru.transferservis.app.domain.model.ActiveOrder;
+import ru.transferservis.app.ui.common.TripUiText;
 
 public final class ActiveOrderFragment
         extends Fragment {
@@ -41,6 +42,9 @@ public final class ActiveOrderFragment
     private TextView durationText;
     private TextView priceText;
     private TextView orderIdText;
+    private TextView checkedAtText;
+    private TextView statusMessage;
+    private View assignmentInfo;
 
     private TextView errorText;
 
@@ -93,6 +97,9 @@ public final class ActiveOrderFragment
     private void bindViews(
             @NonNull View root
     ) {
+        checkedAtText = root.findViewById(R.id.activeOrderCheckedAt);
+        statusMessage = root.findViewById(R.id.activeOrderStatusMessage);
+        assignmentInfo = root.findViewById(R.id.activeOrderAssignmentInfo);
 
         progress =
                 root.findViewById(
@@ -246,6 +253,21 @@ public final class ActiveOrderFragment
     private void renderState(
             @NonNull ActiveOrderUiState state
     ) {
+        if (state.hasActiveOrder()) {
+            renderSuccess(state.getOrder());
+            checkedAtText.setText(TripUiText.checkedAt(requireContext(),
+                    state.getCheckedAtMillis(), state.getStatus() == ActiveOrderUiState.Status.ERROR));
+            checkedAtText.setVisibility(state.getCheckedAtMillis() > 0L ? View.VISIBLE : View.GONE);
+            if (state.getStatus() == ActiveOrderUiState.Status.LOADING) {
+                progress.setVisibility(View.VISIBLE);
+                refreshButton.setEnabled(false);
+            } else if (state.getStatus() == ActiveOrderUiState.Status.ERROR) {
+                errorText.setText(R.string.ux_offline_snapshot);
+                errorText.setTextColor(requireContext().getColor(R.color.ts_secondary));
+                errorText.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
 
         switch (state.getStatus()) {
 
@@ -379,10 +401,12 @@ public final class ActiveOrderFragment
 
 
         statusText.setText(
-                order
-                        .getStatus()
-                        .getDisplayName()
+                TripUiText.status(requireContext(), order.getStatus())
         );
+        statusMessage.setText(order.getStatus() == OrderStatus.NEW
+                ? R.string.ux_status_waiting : R.string.ux_status_verified);
+        assignmentInfo.setVisibility(order.getStatus() == OrderStatus.DONE
+                || order.getStatus() == OrderStatus.CANCELED ? View.GONE : View.VISIBLE);
 
 
         statusText.setTextColor(
@@ -397,6 +421,8 @@ public final class ActiveOrderFragment
         routeText.setText(
                 order.getRoute()
         );
+        routeText.setVisibility(order.getFrom().isEmpty() || order.getTo().isEmpty()
+                ? View.VISIBLE : View.GONE);
 
 
         fromText.setText(
@@ -414,7 +440,7 @@ public final class ActiveOrderFragment
 
 
         dateText.setText(
-                order.getDate()
+                TripUiText.date(order.getDate())
         );
 
 
@@ -505,6 +531,7 @@ public final class ActiveOrderFragment
                         errorCode
                 )
         );
+        errorText.setTextColor(requireContext().getColor(R.color.ts_error));
 
 
         errorText.setVisibility(
@@ -682,6 +709,9 @@ public final class ActiveOrderFragment
 
     @Override
     public void onDestroyView() {
+        checkedAtText = null;
+        statusMessage = null;
+        assignmentInfo = null;
 
         progress =
                 null;
