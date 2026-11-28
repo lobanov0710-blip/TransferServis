@@ -36,9 +36,16 @@ require(transferStagingAccessToken.none { it == '"' || it == '\\' || it == '\n' 
 
 val transferPassengerStatusV2 = providers.gradleProperty("transferPassengerStatusV2")
     .orNull == "true"
-require(!transferPassengerStatusV2 || transferStagingBaseUrl == "https://staging.transfer-servis52.ru/") {
+val transferPassengerTz02Qa = providers.gradleProperty("transferPassengerTz02Qa").orNull == "true"
+require(!(transferPassengerStatusV2 || transferPassengerTz02Qa) ||
+    transferStagingBaseUrl == "https://staging.transfer-servis52.ru/") {
     "Passenger status v2 requires the approved STAGING PHP origin"
 }
+require(!transferPassengerTz02Qa || (!transferPassengerStatusV2 && transferStagingAccessToken.isEmpty())) {
+    "TZ-02 QA uses its own route and a tester token installed locally on the device"
+}
+val legacyStatusV2Path = "api/v2/order-status.php"
+val qaStatusPath = "api/tz02-qa/order-status.php"
 
 android {
     namespace = "ru.transferservis.app"
@@ -68,13 +75,18 @@ android {
     buildTypes {
         debug {
             // Отдельный package ID и хранилище: staging APK не заменяет рабочее приложение.
-            applicationIdSuffix = ".staging"
-            buildConfigField("boolean", "PASSENGER_STATUS_V2", transferPassengerStatusV2.toString())
+            applicationIdSuffix = if (transferPassengerTz02Qa) ".tz02qa" else ".staging"
+            buildConfigField("boolean", "PASSENGER_STATUS_V2", (transferPassengerStatusV2 || transferPassengerTz02Qa).toString())
+            buildConfigField("boolean", "PASSENGER_TZ02_QA", transferPassengerTz02Qa.toString())
+            val statusPath = if (transferPassengerTz02Qa) qaStatusPath else legacyStatusV2Path
+            buildConfigField("String", "PASSENGER_STATUS_V2_PATH", "\"$statusPath\"")
             buildConfigField("String", "API_BASE_URL", "\"$transferStagingBaseUrl\"")
             buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"$transferStagingAccessToken\"")
         }
         release {
             buildConfigField("boolean", "PASSENGER_STATUS_V2", "false")
+            buildConfigField("boolean", "PASSENGER_TZ02_QA", "false")
+            buildConfigField("String", "PASSENGER_STATUS_V2_PATH", "\"$legacyStatusV2Path\"")
             buildConfigField("String", "API_BASE_URL", "\"https://transfer-servis52.ru/\"")
             buildConfigField("String", "STAGING_ACCESS_TOKEN", "\"\"")
             optimization {

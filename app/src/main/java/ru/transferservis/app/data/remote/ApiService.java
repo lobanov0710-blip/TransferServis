@@ -1,5 +1,6 @@
 package ru.transferservis.app.data.remote;
 
+import ru.transferservis.app.BuildConfig;
 import ru.transferservis.app.constants.AppConstants;
 
 import ru.transferservis.app.data.remote.dto.CalculateRequest;
@@ -45,6 +46,6 @@ public interface ApiService {
     );
 
     @Headers("Accept: application/json")
-    @POST("api/v2/order-status.php")
+    @POST(BuildConfig.PASSENGER_STATUS_V2_PATH)
     Call<OrderStatusResponse> getOrderStatusV2(@Body OrderStatusRequest request);
 }

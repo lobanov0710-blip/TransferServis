@@ -1,29 +1,44 @@
 # TZ-02. Отдельный контур для приёмки на телефоне
 
-28.11.2026. Владелец утвердил подготовку отдельного пассажирского QA. Локальная цепочка проверена. Параметры облачных ресурсов ниже предложены для согласования. Фактические адреса и ID новой базы пока не подтверждены.
+28.11.2026. Владелец утвердил отдельные Worker и D1 для пассажирского QA и выбрал существующий PHP-хост `staging.transfer-servis52.ru`. Развёртывание Worker, UUID новой базы и наличие нового маршрута на Timeweb пока не подтверждены.
 
-| Компонент | Предложение |
+| Компонент | Согласованная конфигурация |
 | --- | --- |
 | Worker | `uber-v3-tz02-qa` по адресу `https://uber-v3-tz02-qa.lobanov0710.workers.dev` |
 | D1 | Новая пустая `transfer-servis52-tz02-qa`, отдельный UUID |
-| PHP | `https://staging-tz02.transfer-servis52.ru/` с отдельным document root |
-| Android | Отдельная Debug-сборка для согласованного HTTPS-адреса, предлагаемый пакет `ru.transferservis.app.tz02qa` |
+| PHP | `https://staging.transfer-servis52.ru/api/tz02-qa/order-status.php` на существующем хосте |
+| Android | Отдельная Debug-сборка `ru.transferservis.app.tz02qa`, отправляет только POST по указанному PHP-адресу |
 
-В выделенном Worker доступен только `POST /v2/order-status`; у PHP только `POST /api/v2/order-status.php`. Worker проверяет точный origin, proxy HMAC и capability, а PHP проверяет тестовый токен и подписывает исходное тело. У Worker один D1 binding. Уведомления, cron, выдача capability по HTTP и создание заказа через приложение для данного QA не предусмотрены. Текущий OWNER-only продолжает обслуживать проверку Admin.
+В выделенном Worker доступен только `POST /v2/order-status`. Отдельный PHP-маршрут проверяет собственный тестовый токен и подписывает исходное тело своим HMAC-ключом. Worker проверяет точный адрес, подпись и право чтения заказа. У Worker один D1 binding. Существующий OWNER-only остаётся контуром для Admin.
 
 ## Проверенные версии
 
 - [Worker PR №49](https://github.com/lobanov0710-blip/uber-v3/pull/49), `90c16dcbc1c6217ae6fb6ff06faa40065b65530a`. Локальный workerd/D1 прошёл четыре состояния заказа. Проверены отказ вне заданного origin, отсутствие лишних маршрутов и сохранение результата при повторном применении перехода. Wrangler 4.125.0 собрал отдельный Worker в режиме dry-run. Генератор отклонил ID двух существующих баз и прежний адрес Worker.
-- [PHP PR №14](https://github.com/lobanov0710-blip/public_html/pull/14), `ae5814a9d40b20dfe9d6a33d37fe7185eaec5bc7`. [Сквозной CI №46130449128](https://github.com/lobanov0710-blip/public_html/actions/runs/46130449128) проверил настоящий PHP/cURL, локальный TLS, изолированный Worker и D1. Подтверждены точная HMAC-подпись, один переход через PHP на чтение, отсутствие карточки до назначения и после отмены, замена карточки при переназначении. Запрос с ошибочным тестовым токеном и настройка прежнего Worker не дошли до upstream.
-- [Android PR №43](https://github.com/lobanov0710-blip/TransferServis/pull/43). Карточка и поведение при ошибке проверены. Отдельная привязка Android и загрузка синтетической сессии на телефон готовятся после утверждения QA-адреса. Прежний APK с флагом v2 фиксирует прежний адрес STAGING и для нового QA не подходит.
+- [PHP PR №14](https://github.com/lobanov0710-blip/public_html/pull/14), `aea593c2b8fbbed2c461c2aef2cf2e67e3e5ecd2`. [Сквозной CI №46131298691](https://github.com/lobanov0710-blip/public_html/actions/runs/46131298691) проверил два маршрута на одном PHP-хосте, взаимный отказ токенов, сохранение закрытого штатного v2, точную подпись и по одному обращению к Worker при чтении. Подтверждены все четыре состояния синтетического заказа.
+- [Android PR №43](https://github.com/lobanov0710-blip/TransferServis/pull/43). Новый режим QA включается `transferPassengerTz02Qa=true`, использует отдельное хранилище и принимает тестовые реквизиты локально через ADB. Предыдущая Debug-сборка `.staging` обращается к другому пути и для этого сценария не используется.
 
-## Порядок после согласования адресов
+## Порядок развёртывания
 
 1. В Cloudflare сверить целевой аккаунт и доступность выбранного имени. Создать **новую пустую D1** и сохранить её UUID из панели. Точные uuid и имя проверяются перед любым применением миграций. Пакет не использует данные существующих баз.
 2. В отдельной копии Worker на закреплённом коммите установить зависимости из lockfile с `npm ci --ignore-scripts` под Node 24. Запустить `node qa/tz02/prepare.mjs` с аргументами в порядке: новая закрытая папка, утверждённый полный HTTPS-адрес Worker, UUID новой D1. Генератор выполняется локально. Он создаёт отдельную конфигурацию Wrangler, приватные ключи для выбранных компонентов, SQL и файл с синтетической сессией. Содержимое секретов не выводится. На Windows закрыть доступ к родительской папке для других пользователей до генерации.
 3. Через сгенерированный Wrangler config подтвердить пустую выделенную базу, выполнить миграции из закреплённой цепочки `0001`–`0025`, сверить список применённых миграций и импортировать `00-seed.sql` в эту же базу. Проверить результат загрузки перед публикацией Worker. Для 4.125.0 локально проверена доступность `--config`, `--remote`, `d1 execute --file` и `deploy --secrets-file`. `worker-secrets.private.json` остаётся в частной папке владельца.
-4. На выделенном PHP-хосте положить содержимое `staging-gateway/passenger-qa-public` в document root. Рядом с document root разместить `_bootstrap.php` и каталог `private/` с `staging-access.key`, `staging-hmac.key`, `passenger-qa-upstream.txt` из подготовки. Включить флаг `PASSENGER_ASSIGNMENT_V2_ENABLED=true` для выделенного PHP. Сверить действующий TLS и проверить, что fail-closed отказы работают до использования синтетической сессии. Рабочие сайты и существующий document root не используются.
-5. Собрать отдельный Android Debug с точным утверждённым PHP-адресом и своим package ID. Установить на телефон и через локальный тестовый импорт сохранить синтетическую сессию в `PassengerOrderSessionStore`. В отчёт попадает только результат импорта. Тестовый токен остаётся у владельца. Сессия не переносится через QR, URL или публичный APK.
+4. На Timeweb подтвердить document root существующего `staging.transfer-servis52.ru`. Создать рядом с ним каталог `passenger-qa/`. В нём разместить копию `staging-gateway/_bootstrap.php` и `private/` с `staging-access.key`, `staging-hmac.key`, `passenger-qa-upstream.txt` из шага 2. Использовать обычные файлы с правами `600`, закрытые каталоги с правами `700` и доступом для PHP. После сверки сертификата и конфигурации добавить в действующий document root только `api/tz02-qa/order-status.php` из PR №14. Прежний bootstrap, ключи и переменные окружения сохраняются. Путь проверяется отдельно от всех существующих API.
+5. После проверки HTTPS установить подписанный Debug APK на физический телефон. При локальной сборке из корня Android-репозитория используется команда ниже. Тестовый токен и сессия передаются через ADB напрямую в закрытые файлы пакета. Реквизиты в командной строке и в APK отсутствуют.
+
+```powershell
+.\gradlew.bat :app:assembleDebug '-PtransferPassengerTz02Qa=true' '-PtransferStagingBaseUrl=https://staging.transfer-servis52.ru/' '-PtransferStagingAccessToken='
+```
+
+Из `cmd.exe` на ПК. Подставить серийный номер именно физического тестового устройства и локальные пути из шага 2. ADB должен быть установлен, телефон должен одобрить USB-отладку для этого ПК.
+
+```bat
+adb devices
+adb -s PHONE_SERIAL shell am force-stop ru.transferservis.app.tz02qa
+adb -s PHONE_SERIAL shell -T "run-as ru.transferservis.app.tz02qa sh -c 'umask 077; mkdir -p no_backup && cat > no_backup/.tester.tmp && mv no_backup/.tester.tmp no_backup/tz02-qa-tester.key'" < "C:\QA-PRIVATE\staging-access.key"
+adb -s PHONE_SERIAL shell -T "run-as ru.transferservis.app.tz02qa sh -c 'umask 077; mkdir -p no_backup && cat > no_backup/.session.tmp && mv no_backup/.session.tmp no_backup/tz02-qa-session.json'" < "C:\QA-PRIVATE\passenger-session.private.json"
+```
+
+После запуска приложение импортирует только `tz02_qa_synthetic_order` в зашифрованное хранилище сессии и удаляет входной JSON. Для проверки импорта искать строку `TZ02_SESSION_IMPORTED` в журнале `TransferServisTz02Qa`. На устройстве эти команды ещё не проверялись. В отчёт вносится статус импорта без реквизитов.
 
 ## Сценарий и откат
 
